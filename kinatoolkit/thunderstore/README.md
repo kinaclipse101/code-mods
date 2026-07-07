@@ -1,13 +1,16 @@
 # kinatoolkit .,.,
 
 ## commands ,.,. 
-**play_sound** - similar to debug toolkit's **post_sound_event** command but has an autocomplete and prints the aksound event index to use with **stop_sound** .,,. note !! since the autocomplete has entries for nearly every playable sound um ,.,. if you open the drop down without typing anything in yet itll freeze a second to load them .,., \
-**stop_sound** - stops a sound based on its aksound event index .,,. useful for killing looped sounds spawned by **play_sound** !!! \
-**spawn_effectdef** - spawns an effectdef based on its name ,.,. autocomplete support !! will spawn it at 1 scale by default but can be specified ,.. \
-**list_effectdef** - functionally identical to [wolffixes](https://thunderstore.io/c/riskofrain2/p/Wolfo/WolfFixes/) **list_effectdef** command but put here in case you want ,.,. \
-**disable_interactables** - disables spawning of interactables ,..,, \
-**spawn_dummy** - spawns a specified character master with 9999999 BoostHp items and ai disabled .,., \
-
+| commands .,,.  | descriptions ,.,. |
+|--|--|
+| ``play_sound`` | similar to debug toolkit's ``post_sound_event`` command but has an autocomplete and prints the aksound event index to use with ``stop_sound`` .,,. note !! since the autocomplete has entries for nearly every playable sound um ,.,. if you open the drop down without typing anything in yet itll freeze a second to load them .,., |
+| ``stop_sound`` | stops a sound based on its aksound event index .,,. useful for killing looped sounds spawned by **play_sound** !!! |
+| ``spawn_effectdef`` | spawns an effectdef based on its name ,.,. autocomplete support !! will spawn it at 1 scale by default but can be specified ,.. |
+| ``list_effectdef`` | functionally identical to [wolffixes](https://thunderstore.io/c/riskofrain2/p/Wolfo/WolfFixes/) ``list_effectdef`` command but put here in case you want ,.,. |
+| ``disable_interactables`` | disables spawning of interactables ,..,, |
+| ``spawn_dummy`` | spawns a specified character master with 9999999 BoostHp items and ai disabled .,., |
+| ``set_difficulty`` | allows you to change difficulty mid run .,,. has autocomplete support !! and !! works with modded difficulties !!!!! and updates ui ,.. |
+| ``reload_json`` | loads the debugPlains.json file as if you were loading into debug plains and clears everything but pickups that were previously created by the json .,, . good for if youre doing edits and want to see how they look in game quickly !! |
 
 ## features ,., creachers, .,. 
 ### debug plains ,.,. 
@@ -19,8 +22,9 @@
 - also also also dummy is spawned on a new team so doing kill_all doesnt effect it ., ., if this affects you in literally any way ping me in modcord and ill add a config or something ,. .
 
 ### low fps in background .,. 
+![low fps .,., while tabbning .,,.  ](https://files.catbox.moe/bhlkl4.gif)
 - lowers your fps while the game isnt focused so your gpu doesnt melt when trying to test things .,,. set to 30 by default !! 
 
 ### cursor free er ., .,
-![cursor ., .,being free .,., ](https://files.catbox.moe/brximh.png)
+![cursor ., .,being free .,., ](https://files.catbox.moe/xb58vl.gif)
 - adds a keybind to free the cursor whenever you want ,.., no more opening console then dragging it off while in runtime inspector :face_holding_back_tears: ., ., (default mouse 4 side button.,, .

@@ -4,6 +4,8 @@ using System.Linq;
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using RoR2.UI;
+using RoR2.UI.SkinControllers;
 using Console = RoR2.Console;
 
 namespace kinatoolkit.patches.basegame;
@@ -36,6 +38,7 @@ public class debugplains : PatchBase<debugplains>
             Run.onRunStartGlobal += OnRunStart;
             On.RoR2.Stage.Start += StageOnStart;
             On.RoR2.PickupTransmutationManager.GetGroupFromPickupIndex += PickupTransmutationManagerOnGetGroupFromPickupIndex;
+            On.RoR2.UI.PauseScreenController.Awake += PauseScreenControllerOnAwake;
         }
         else
         {
@@ -46,9 +49,38 @@ public class debugplains : PatchBase<debugplains>
             Run.onRunStartGlobal -= OnRunStart;
             On.RoR2.Stage.Start -= StageOnStart;
             On.RoR2.PickupTransmutationManager.GetGroupFromPickupIndex -= PickupTransmutationManagerOnGetGroupFromPickupIndex;
+            On.RoR2.UI.PauseScreenController.Awake -= PauseScreenControllerOnAwake;
         }
     }
     
+    private static void PauseScreenControllerOnAwake(On.RoR2.UI.PauseScreenController.orig_Awake orig, RoR2.UI.PauseScreenController self)
+    {
+        orig(self);
+        if (buttonIndex.Value < 0) return;
+        
+        //stole this from photomode ,.,. sorry !!
+        GameObject button = self.GetComponentInChildren<ButtonSkinController>().gameObject;
+        GameObject buttonCopy = Object.Instantiate(button, button.transform.parent);
+        buttonCopy.name = "GenericMenuButton (Debug Plains)";
+        buttonCopy.SetActive(value: true);
+        
+        ButtonSkinController buttonSkinController = buttonCopy.GetComponent<ButtonSkinController>();
+        buttonSkinController.GetComponent<LanguageTextMeshController>().token = "Enter Debug Plains";
+        
+        HGButton hgButton = buttonCopy.GetComponent<HGButton>();
+        hgButton.interactable = RoR2.Run.instance;
+        hgButton.onClick.AddListener(() => {
+            Log.Debug("heading to debug plains !!!");
+            Console.instance.RunCmd(LocalUserManager.GetFirstLocalUser(), "set_scene", ["golemplains"]);
+            changedSpawnTransform = 0;
+            runStartCommands = false;
+            stageStartCommands = false;
+            oldDisableInteractables = commands.disableInteractables;
+            commands.disableInteractables = true;
+        });
+        
+        buttonCopy.transform.SetSiblingIndex(buttonIndex.Value + 1);
+    }
 
     private PickupIndex[] PickupTransmutationManagerOnGetGroupFromPickupIndex(On.RoR2.PickupTransmutationManager.orig_GetGroupFromPickupIndex orig, PickupIndex pickupindex)
     {
@@ -141,21 +173,28 @@ public class debugplains : PatchBase<debugplains>
         {
             stageStartCommands = true;
             
-            foreach (string runCommand in stageCommands.Value.Split(";"))
-            {
-                string trimCommand = runCommand.Trim();
-                List<string> commandArgs = trimCommand.Split(" ").ToList();
-                string command = commandArgs[0];
-                commandArgs.RemoveAt(0);
-
-                string commandargs = commandArgs.Aggregate("", (current, arg) => current + (arg + " "));
-                Log.Debug($"Running command: {command} with args {commandargs}");
-            
-                Console.instance.RunCmd(LocalUserManager.GetFirstLocalUser(), command, commandArgs);
-            }
+            PlayerCharacterMasterController.instances[0].master.onBodyStart += MasterOnonBodyStart;
         }
         
         yield return orig(self);
+    }
+
+    private static void MasterOnonBodyStart(CharacterBody body)
+    {
+        PlayerCharacterMasterController.instances[0].master.onBodyStart -= MasterOnonBodyStart;
+        
+        foreach (string runCommand in stageCommands.Value.Split(";"))
+        {
+            string trimCommand = runCommand.Trim();
+            List<string> commandArgs = trimCommand.Split(" ").ToList();
+            string command = commandArgs[0];
+            commandArgs.RemoveAt(0);
+
+            string commandargs = commandArgs.Aggregate("", (current, arg) => current + (arg + " "));
+            Log.Debug($"Running command: {command} with args {commandargs}");
+            
+            Console.instance.RunCmd(LocalUserManager.GetFirstLocalUser(), command, commandArgs);
+        }
     }
 
     private static void OnRunStart(Run run)
@@ -222,6 +261,12 @@ public class debugplains : PatchBase<debugplains>
             "stop_timer 1; give_money 99999",
             "Comamnds run upon starting in the Debug Plains stage.");
         Utils.StringConfig(stageCommands);
+        
+        buttonIndex = config.Bind("kinaToolkit - debugplains", 
+            "Enter debug plains button index", 
+            4,
+            "Index of the \"Enter Debug Plains\" button. Set to -1 to disable.");
+        Utils.SliderConfig(0, 6, buttonIndex);
     }
 
     private ConfigEntry<bool> enabled;
@@ -231,4 +276,5 @@ public class debugplains : PatchBase<debugplains>
     private static ConfigEntry<bool> disableInteractables;
     private static ConfigEntry<string> runCommands;
     private static ConfigEntry<string> stageCommands;
+    private static ConfigEntry<int> buttonIndex;
 }

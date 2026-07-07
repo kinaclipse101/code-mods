@@ -1,11 +1,12 @@
 ﻿{
 	"name": "kinatoolkit",
-	"version_number": "0.1.1",
+	"version_number": "0.1.4",
 	"website_url": "https://github.com/gamrtiem/code-mods/tree/main/kinatoolkit",
 	"description": "debugging mod with some cool features .,. likes nemesis debug plains ,.,.",
 	"dependencies": [
 		"Rune580-Risk_Of_Options-2.8.5",
 		"RiskofThunder-R2API_Teams-1.0.2",
-		"IHarbHD-DebugToolkit-3.21.2"
+		"IHarbHD-DebugToolkit-3.21.2",
+		"RiskofThunder-R2API_Difficulty-1.1.2"
 	]
 }

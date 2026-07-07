@@ -24,12 +24,7 @@
 		<PackageReference Include="RiskOfRain2.GameLibs" Version="1.4.0-r.0" />
 		<PackageReference Include="MMHOOK.RoR2" Version="2025.11.19" NoWarn="NU1701" />
 		<PackageReference Include="RoR2BepInExPack" Version="1.36.0" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Reference Include="UnityHotReload">
-	    <HintPath>..\libs\UnityHotReload.dll</HintPath>
-	  </Reference>
+		<PackageReference Include="xiaoxiao921-UnityHotReload" Version="1.0.1" />
 	</ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">

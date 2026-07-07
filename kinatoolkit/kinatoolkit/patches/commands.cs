@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -5,11 +6,15 @@ using kinatoolkit.patches.basegame;
 using RoR2;
 using UnityEngine;
 using DebugToolkit;
+using Newtonsoft.Json.Utilities;
 using R2API;
+using RiskOfOptions.Lib;
 using RoR2.Artifacts;
 using RoR2.CharacterAI;
+using RoR2.UI;
 using UnityEngine.AddressableAssets;
 using UnityEngine.Networking;
+using Object = UnityEngine.Object;
 
 namespace kinatoolkit.patches;
 
@@ -57,6 +62,8 @@ public static class commands
         parser.RegisterStaticVariable("ai", MasterCatalog.allAiMasters.Select(i => $"{(int)i.masterIndex}|{i.name}|{StringFinder.GetLangInvar(StringFinder.GetMasterName(i))}"), 1);
         parser.RegisterStaticVariable("soundID", soundIDs.soundID.Keys, 1);
         parser.RegisterStaticVariable("effect", EffectCatalog.entries.Select(i => i.prefabName), 1);
+        parser.RegisterStaticVariable("difficultydef", DifficultyAPI.difficultyDefinitions!.Values.Where(def => def != null).Select(def => $"\"{Language.GetString(def.nameToken)}\""), 1);
+        
         parser.Scan(System.Reflection.Assembly.GetExecutingAssembly());
     }
 
@@ -210,6 +217,41 @@ public static class commands
         }
     }
     
+    [ConCommand(commandName = "set_difficulty", flags = ConVarFlags.None)]
+    [AutoComplete("Requires 1 argument: {difficultydef}")]
+    public static void SetDifficulty(ConCommandArgs args)
+    {
+        string difficultyDefName = args[0];
+        if (difficultyDefName == "")
+        {
+            Debug.LogWarning("No difficulty name provided.");
+            return;
+        }
+
+        DifficultyIndex difficultyIndex = DifficultyIndex.Invalid;
+        DifficultyDef difficultyDef = null;
+        for (int index = 0; index < DifficultyAPI.difficultyDefinitions!.Values.ToArray().Length; index++)
+        {
+            if (DifficultyAPI.difficultyDefinitions.Values.ToArray()[index] != null && Language.GetString(DifficultyAPI.difficultyDefinitions.Values.ToArray()[index].nameToken) == difficultyDefName)
+            {
+                difficultyIndex = DifficultyAPI.difficultyDefinitions.Keys.ToArray()[index];
+                difficultyDef = DifficultyAPI.difficultyDefinitions.Values.ToArray()[index];
+            }
+        }
+        if (difficultyIndex == DifficultyIndex.Invalid)
+        {
+            Debug.LogWarning($"Couldn't find difficulty \"{difficultyDefName}\".");
+            return;
+        }
+
+        Run.instance.selectedDifficulty = difficultyIndex;
+        Debug.Log($"Set difficulty to \"<color=#{ColorUtility.ToHtmlStringRGB(difficultyDef!.color)}>{difficultyDefName}</color>\".");
+        foreach (HUD hud in HUD.instancesList)
+        {
+            hud.gameModeUiInstance?.transform.Find("SetDifficultyPanel")?.Find("DifficultyIcon")?.gameObject.GetComponent<CurrentDifficultyIconController>()?.Start();
+        }
+    }
+    
     [ConCommand(commandName = "reload_json", flags = ConVarFlags.None, helpText = "Loads the current json for debug plains.")]
     public static void LoadJson(ConCommandArgs args)
     {
@@ -230,77 +272,95 @@ public static class commands
 
     public static void ChangeSpawnPos(CharacterBody body)
     {
-        debugplainsJSON.JSONedit jsonEdits = debugplainsJSON.loadJSON();
-        TeleportHelper.TeleportBody(body, new Vector3(jsonEdits.spawnPos.position.x, jsonEdits.spawnPos.position.y, jsonEdits.spawnPos.position.z), true);
-        body.gameObject.GetComponent<CharacterMotor>().Motor.SetRotation(Quaternion.Euler(jsonEdits.spawnPos.rotation.x, jsonEdits.spawnPos.rotation.y, jsonEdits.spawnPos.rotation.z));
         PlayerCharacterMasterController._instances[0].master.onBodyStart -= ChangeSpawnPos;
+        debugplainsJSON.JSONedit jsonEdits = debugplainsJSON.loadJSON();
+        body.master.Respawn(new Vector3(jsonEdits.spawnPos.position.x, jsonEdits.spawnPos.position.y, jsonEdits.spawnPos.position.z), Quaternion.Euler(jsonEdits.spawnPos.rotation.x, jsonEdits.spawnPos.rotation.y, jsonEdits.spawnPos.rotation.z));
     }
 
     public static void LoadJson()
     {
-        debugplainsJSON.JSONedit jsonEdits = debugplainsJSON.loadJSON();
+        try
+        {
+            debugplainsJSON.JSONedit jsonEdits = debugplainsJSON.loadJSON();
 
-        PlayerCharacterMasterController._instances[0].master.onBodyStart += ChangeSpawnPos;
-        
-            
-        foreach (debugplainsJSON.Dummy dummy in jsonEdits.dummies)
-        {
-            JSONMasters.Add(SpawnDummy(dummy.masterName, new Vector3(dummy.position.x, dummy.position.y, dummy.position.z), Quaternion.Euler(dummy.rotation.x, dummy.rotation.y, dummy.rotation.z)));
-        }
-            
-        foreach (debugplainsJSON.Interactables interactable in jsonEdits.interactables)
-        {
-            InteractableSpawnCard spawnCard = Addressables.LoadAssetAsync<InteractableSpawnCard>(interactable.interactableCard).WaitForCompletion();
-            if (!spawnCard)
+            PlayerCharacterMasterController._instances[0].master.onBodyStart += ChangeSpawnPos;
+
+            foreach (debugplainsJSON.Dummy dummy in jsonEdits.dummies)
             {
-                Log.Warning($"Couldn't load interactable card {interactable.interactableCard}.");
-                break;
+                JSONMasters.Add(SpawnDummy(dummy.masterName,
+                    new Vector3(dummy.position.x, dummy.position.y, dummy.position.z),
+                    Quaternion.Euler(dummy.rotation.x, dummy.rotation.y, dummy.rotation.z)));
             }
-            SpawnCard.SpawnResult spawned = spawnCard.DoSpawn(new Vector3(interactable.position.x, interactable.position.y, interactable.position.z), Quaternion.Euler(interactable.rotation.x, interactable.rotation.y, interactable.rotation.z), new DirectorSpawnRequest(spawnCard, null, RoR2Application.rng));
-            spawned.spawnedInstance.transform.rotation = Quaternion.Euler(interactable.rotation.x, interactable.rotation.y, interactable.rotation.z);
-            JSONObjects.Add(spawned.spawnedInstance);
-        }
-        
-        bool prevCommandEnabled = RunArtifactManager.instance._enabledArtifacts[(int)CommandArtifactManager.myArtifact.artifactIndex];
-        RunArtifactManager.instance._enabledArtifacts[(int)CommandArtifactManager.myArtifact.artifactIndex] = true;
-        debugplains.enableAllFoodItems = true;
-        foreach (debugplainsJSON.commandPickup commandPickup in jsonEdits.commandPickups)
-        {
-            ItemTier? searchTier = ItemTierCatalog.itemTierDefs.FirstOrDefault(def => def.name.Replace("Def", "") == commandPickup.tier)?.tier;
-            PickupIndex? pickupIndex;
-            if (searchTier == null)
+
+            foreach (debugplainsJSON.Interactables interactable in jsonEdits.interactables)
             {
-                if (commandPickup.tier == "LunarTierEquip")
+                InteractableSpawnCard spawnCard = Addressables
+                    .LoadAssetAsync<InteractableSpawnCard>(interactable.interactableCard).WaitForCompletion();
+                if (!spawnCard)
                 {
-                    pickupIndex = PickupCatalog.FindPickupIndex(EquipmentCatalog.equipmentDefs.FirstOrDefault(def => def.name == "Tonic")!.equipmentIndex);
+                    Log.Warning($"Couldn't load interactable card {interactable.interactableCard}.");
+                    break;
                 }
-                else if (commandPickup.tier == "BossTier")
+
+                SpawnCard.SpawnResult spawned = spawnCard.DoSpawn(
+                    new Vector3(interactable.position.x, interactable.position.y, interactable.position.z),
+                    Quaternion.Euler(interactable.rotation.x, interactable.rotation.y, interactable.rotation.z),
+                    new DirectorSpawnRequest(spawnCard, null, RoR2Application.rng));
+                spawned.spawnedInstance.transform.rotation = Quaternion.Euler(interactable.rotation.x,
+                    interactable.rotation.y, interactable.rotation.z);
+                JSONObjects.Add(spawned.spawnedInstance);
+            }
+
+            bool prevCommandEnabled = RunArtifactManager.instance._enabledArtifacts[(int)CommandArtifactManager.myArtifact.artifactIndex];
+            RunArtifactManager.instance._enabledArtifacts[(int)CommandArtifactManager.myArtifact.artifactIndex] = true;
+            debugplains.enableAllFoodItems = true;
+            foreach (debugplainsJSON.commandPickup commandPickup in jsonEdits.commandPickups)
+            {
+                ItemTier? searchTier = ItemTierCatalog.itemTierDefs.FirstOrDefault(def => def.name.Replace("Def", "") == commandPickup.tier)?.tier;
+                PickupIndex? pickupIndex;
+                if (searchTier == null)
                 {
-                    pickupIndex = PickupCatalog.FindPickupIndex(RoR2Content.Items.Knurl.itemIndex);
+                    if (commandPickup.tier == "LunarTierEquip")
+                    {
+                        pickupIndex = PickupCatalog.FindPickupIndex(EquipmentCatalog.equipmentDefs.FirstOrDefault(def => def.name == "Tonic")!.equipmentIndex);
+                    }
+                    else
+                    {
+                        Log.Warning($"Couldn't find tier {commandPickup.tier} in ItemTierCatalog.");
+                        continue;
+                    }
                 }
                 else
                 {
-                    Log.Warning($"Couldn't find tier {commandPickup.tier} in ItemTierCatalog.");
-                    continue;
+                    pickupIndex = PickupCatalog.FindPickupIndex(ItemCatalog.itemDefs.First(item => item.tier == searchTier).itemIndex);
                 }
-            }
-            else
-            {
-                pickupIndex = PickupCatalog.FindPickupIndex(ItemCatalog.itemDefs.First(item => item.tier == searchTier).itemIndex);
-            }
-
-            PickupDropletController.CreatePickupDroplet(new GenericPickupController.CreatePickupInfo
-            {
-                pickup = new UniquePickup
+                
+                if (commandPickup.tier == "BossTier")
                 {
-                    pickupIndex = (PickupIndex)pickupIndex,
-                    decayValue = 0f,
-                },
-            }, new Vector3(commandPickup.position.x, commandPickup.position.y, commandPickup.position.z), new Vector3(0, 0, 0));
-        }
+                    Log.Debug($"command tier was boss tier ! changing to knurl ,. .,");
+                    pickupIndex = PickupCatalog.FindPickupIndex(RoR2Content.Items.Knurl.itemIndex);
+                }
 
-        Run.onRunDestroyGlobal += _ => { debugplains.enableAllFoodItems = false; };
+                PickupDropletController.CreatePickupDroplet(new GenericPickupController.CreatePickupInfo
+                    {
+                        pickup = new UniquePickup
+                        {
+                            pickupIndex = (PickupIndex)pickupIndex,
+                            decayValue = 0f,
+                        },
+                    }, new Vector3(commandPickup.position.x, commandPickup.position.y, commandPickup.position.z),
+                    new Vector3(0, 0, 0));
+            }
+
+            Run.onRunDestroyGlobal += _ => { debugplains.enableAllFoodItems = false; };
+
+            RunArtifactManager.instance._enabledArtifacts[(int)CommandArtifactManager.myArtifact.artifactIndex] =
+                prevCommandEnabled;
+        }
+        catch (Exception e)
+        {
+            Log.Error($"Error while loading JSON! Are you sure debugPlains.json exists in the correct spot? {e}");
+        }
         
-        RunArtifactManager.instance._enabledArtifacts[(int)CommandArtifactManager.myArtifact.artifactIndex] = prevCommandEnabled;
     }
 }

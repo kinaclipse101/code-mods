@@ -26,11 +26,12 @@ namespace ExamplePlugin
         private void Update()
         {
 #if DEBUG
-            if (Input.GetKeyUp(KeyCode.F8))
+            if (Input.GetKeyUp(KeyCode.F7))
             {
                 if (UHRInstalled)
                 {
-                    UHRSupport.hotReload(typeof(ExamplePlugin).Assembly, System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Info.Location)!, "ExamplePlugin.dll"));
+                    Log.Debug(nameof(ExamplePlugin) + ".dll");
+                    UHRSupport.hotReload(typeof(ExamplePlugin).Assembly, System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Info.Location)!, nameof(ExamplePlugin) + ".dll"));
                 }
                 else
                 {

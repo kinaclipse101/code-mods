@@ -49,13 +49,13 @@ public class lowfpsinbg : PatchBase<lowfpsinbg>
         {
             Application.targetFrameRate = oldFramerate;
             oldFramerate = 0;
-            Log.Debug($"back in focus ! set fps back to {Application.targetFrameRate} ,..,");
+            //Log.Debug($"back in focus ! set fps back to {Application.targetFrameRate} ,..,");
         }
         else if (!hasFocus)
         {
             oldFramerate = Application.targetFrameRate;
             Application.targetFrameRate = targetFPS.Value;
-            Log.Debug($"out of focus ! previous fps {oldFramerate} ,..,");
+            //Log.Debug($"out of focus ! previous fps {oldFramerate} ,..,");
         }
     }
     

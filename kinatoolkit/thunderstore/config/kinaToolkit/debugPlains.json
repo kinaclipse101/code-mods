@@ -493,7 +493,7 @@
       }
     },
     {
-      "tier": "VoidTier2",
+      "tier": "VoidTier3",
       "position": {
         "x": 275,
         "y": -30,
@@ -501,19 +501,11 @@
       }
     },
     {
-      "tier": "VoidTier3",
-      "position": {
-        "x": 275,
-        "y": -30,
-        "z": -210
-      }
-    },
-    {
       "tier": "FoodTier",
       "position": {
         "x": 275,
         "y": -30,
-        "z": -215
+        "z": -210
       }
     }
   ],
