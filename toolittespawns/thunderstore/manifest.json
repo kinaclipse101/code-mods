@@ -1,6 +1,6 @@
 {
     "name": "TooLittleSpawns",
-    "version_number": "1.0.0",
+    "version_number": "1.0.1",
     "website_url": "https://github.com/gamrtiem/code-mods/tree/main/toolittespawns",
     "description": "fixes an issue with TooManyFriends/mods that increase the player cap inadvertently causing spawn points to be less randomized.,.,",
     "dependencies": [

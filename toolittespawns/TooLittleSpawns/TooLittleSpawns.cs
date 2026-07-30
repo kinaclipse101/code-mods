@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using BepInEx;
 using BepInEx.Bootstrap;
@@ -6,6 +7,7 @@ using HG;
 using RoR2;
 using RoR2.Navigation;
 using UnityEngine;
+using Object = UnityEngine.Object;
 using SceneDirector = On.RoR2.SceneDirector;
 
 namespace TooLittleSpawns
@@ -18,7 +20,7 @@ namespace TooLittleSpawns
         private const string PluginGUID = PluginAuthor + "." + PluginName;
         private const string PluginAuthor = "kina";
         private const string PluginName = "TooLittleSpawns";
-        private const string PluginVersion = "1.0.0";
+        private const string PluginVersion = "1.0.1";
 
         private static bool UHRInstalled => Chainloader.PluginInfos.ContainsKey("iDeathHD.UnityHotReload");
         private static bool ROOInstalled => Chainloader.PluginInfos.ContainsKey("com.rune580.riskofoptions");
@@ -67,144 +69,155 @@ namespace TooLittleSpawns
             {
                 return orig();
             }
-            
-            Log.Debug("entering !");
-            
-            if (!initialSpawn)
-            {
-                Log.Debug("creating initial spawn .,,.");
-                List<SpawnPoint> spawnPoints = new List<SpawnPoint>(SpawnPoint.readOnlyInstancesList);
-                spawnPoints.Sort((SpawnPoint a, SpawnPoint b) => (teleporterObject.transform.position).sqrMagnitude.CompareTo((teleporterObject.transform.position - b.transform.position).sqrMagnitude));
-                initialSpawn = spawnPoints[^1];
-                initialSpawn.consumed = true;
-                newSpawns.Add(initialSpawn);
-                return initialSpawn;
-            }
 
-            SpawnPoint spawnPoint = null;
-            float minDist = float.MaxValue;
-            foreach (SpawnPoint spawn in SpawnPoint.readOnlyInstancesList)
+            try
             {
-                if (spawn.consumed) continue;
+                if (!initialSpawn)
+                {
+                    Log.Debug("creating initial spawn .,,.");
+                    if (SpawnPoint.readOnlyInstancesList.Count == 0)
+                    {
+                        Log.Debug("no spawn points found at all .,.,. using default behavior !!");
+                        return orig();
+                    }
                     
-                float dist = Vector3.Distance(spawn.gameObject.transform.position, initialSpawn.gameObject.transform.position);
-                if (dist < minDist && dist < 40)
-                {
-                    spawnPoint = spawn;
-                    minDist = dist;
-                }
-            }
-            Log.Debug("bwa");
-
-            if (!spawnPoint)
-            {
-                NodeGraph groundNodes = SceneInfo.instance.groundNodes;
-                NodeFlags requiredFlags = NodeFlags.None;
-                NodeFlags nodeFlags = NodeFlags.None;
-                nodeFlags |= NodeFlags.NoCharacterSpawn;
-                List<NodeGraph.NodeIndex> list = groundNodes.GetActiveNodesForHullMaskWithFlagConditions(HullMask.Golem, requiredFlags, nodeFlags);
-
-                for (int i = 0; i < list.Count; i++)
-                {
-                    if (!RoR2.SceneDirector.IsNodeSuitableForPod(groundNodes, list[i]))
+                    List<SpawnPoint> spawnPoints = new List<SpawnPoint>(SpawnPoint.readOnlyInstancesList);
+                    if (teleporterObject)
                     {
-                        groundNodes.GetNodePosition(list[i], out var position2);
-                        list.RemoveAt(i);
+                        spawnPoints.Sort((SpawnPoint a, SpawnPoint b) => (teleporterObject.transform.position).sqrMagnitude.CompareTo((teleporterObject.transform.position - b.transform.position).sqrMagnitude));
                     }
-                }
                     
-                if (PlayerSpawnInhibitor.readOnlyInstancesList.Count > 0)
-                {
-                    List<NodeGraph.NodeIndex> list2 = new List<NodeGraph.NodeIndex>();
-                    for (int i = 0; i < list.Count; i++)
-                    {
-                        bool flag = false;
-                        foreach (PlayerSpawnInhibitor readOnlyInstances in PlayerSpawnInhibitor.readOnlyInstancesList)
-                        {
-                            if (readOnlyInstances.IsInhibiting(groundNodes, list[i]))
-                            {
-                                flag = true;
-                                break;
-                            }
-                        }
-                        if (!flag)
-                        {
-                            list2.Add(list[i]);
-                        }
-                    }
-                    if (list2.Count > 0)
-                    {
-                        list = list2;
-                    }
+                    initialSpawn = spawnPoints[^1];
+                    initialSpawn.consumed = true;
+                    newSpawns.Add(initialSpawn);
+                    return initialSpawn;
                 }
 
-                minDist = float.MaxValue;
-                NodeGraph.NodeIndex? spawnNode = null;
-                foreach (NodeGraph.NodeIndex nodeIndex in list)
+                SpawnPoint spawnPoint = null;
+                float minDist = float.MaxValue;
+                foreach (SpawnPoint spawn in SpawnPoint.readOnlyInstancesList)
                 {
-                    groundNodes.GetNodePosition(nodeIndex, out var nodePos);
-
-                    bool consumed = false;
-                    foreach (SpawnPoint spawn in newSpawns)
-                    {
-                        if (spawn && spawn.gameObject.transform.position == nodePos)
-                        {
-                            Log.Debug($"already spawned point at {nodePos} ! skipping ,.,.");
-                            consumed = true;
-                        }
-
-                        if (spawn && Vector3.Distance(spawn.gameObject.transform.position, nodePos) < 5)
-                        {
-                            Log.Debug($"spawnpoint at {nodePos} to close to existing ! skipping ,.,.");
-                            consumed = true;
-                        }
-                    }
-                    if (consumed) continue;
+                    if (spawn.consumed) continue;
                         
-                    float dist = Vector3.Distance(nodePos, initialSpawn.gameObject.transform.position);
-                    if (dist < minDist)
+                    float dist = Vector3.Distance(spawn.gameObject.transform.position, initialSpawn.gameObject.transform.position);
+                    if (dist < minDist && dist < 40)
                     {
-                        spawnNode = nodeIndex;
+                        spawnPoint = spawn;
                         minDist = dist;
                     }
                 }
-                    
-                Log.Debug($"list length {list.Count} ");
 
-                if (!spawnNode.HasValue)
+                if (!spawnPoint)
                 {
-                    Log.Error("new spawn node is null ! gorp ,.., ");
-                    return SpawnPoint.readOnlyInstancesList[0];
-                }
+                    NodeGraph groundNodes = SceneInfo.instance.groundNodes;
+                    NodeFlags requiredFlags = NodeFlags.None;
+                    NodeFlags nodeFlags = NodeFlags.None;
+                    nodeFlags |= NodeFlags.NoCharacterSpawn;
+                    List<NodeGraph.NodeIndex> list = groundNodes.GetActiveNodesForHullMaskWithFlagConditions(HullMask.Golem, requiredFlags, nodeFlags);
+
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        if (!RoR2.SceneDirector.IsNodeSuitableForPod(groundNodes, list[i]))
+                        {
+                            list.RemoveAt(i);
+                        }
+                    }
+                        
+                    if (PlayerSpawnInhibitor.readOnlyInstancesList.Count > 0)
+                    {
+                        List<NodeGraph.NodeIndex> list2 = new List<NodeGraph.NodeIndex>();
+                        for (int i = 0; i < list.Count; i++)
+                        {
+                            bool flag = false;
+                            foreach (PlayerSpawnInhibitor readOnlyInstances in PlayerSpawnInhibitor.readOnlyInstancesList)
+                            {
+                                if (readOnlyInstances.IsInhibiting(groundNodes, list[i]))
+                                {
+                                    flag = true;
+                                    break;
+                                }
+                            }
+                            if (!flag)
+                            {
+                                list2.Add(list[i]);
+                            }
+                        }
+                        if (list2.Count > 0)
+                        {
+                            list = list2;
+                        }
+                    }
+
+                    minDist = float.MaxValue;
+                    NodeGraph.NodeIndex? spawnNode = null;
+                    foreach (NodeGraph.NodeIndex nodeIndex in list)
+                    {
+                        groundNodes.GetNodePosition(nodeIndex, out var nodePos);
+
+                        bool consumed = false;
+                        foreach (SpawnPoint spawn in newSpawns)
+                        {
+                            if (spawn && spawn.gameObject.transform.position == nodePos)
+                            {
+                                consumed = true;
+                            }
+
+                            if (spawn && Vector3.Distance(spawn.gameObject.transform.position, nodePos) < 5)
+                            {
+                                consumed = true;
+                            }
+                        }
+                        if (consumed) continue;
+                            
+                        float dist = Vector3.Distance(nodePos, initialSpawn.gameObject.transform.position);
+                        if (dist < minDist)
+                        {
+                            spawnNode = nodeIndex;
+                            minDist = dist;
+                        }
+                    }
                     
-                groundNodes.GetNodePosition(spawnNode.Value, out var position);
-                List<NodeGraph.LinkIndex> linkedNodes = CollectionPool<NodeGraph.LinkIndex, List<NodeGraph.LinkIndex>>.RentCollection();
-                groundNodes.GetActiveNodeLinks(spawnNode.Value, linkedNodes);
-                Quaternion rotation;
-                if (linkedNodes.Count > 0)
-                {
-                    NodeGraph.LinkIndex linkIndex = Run.instance.spawnRng.NextElementUniform(linkedNodes);
-                    groundNodes.GetNodePosition(groundNodes.GetLinkEndNode(linkIndex), out var position2);
-                    rotation = Util.QuaternionSafeLookRotation(position2 - position);
+                    if (!spawnNode.HasValue)
+                    {
+                        Log.Error("new spawn node is null ! gorp ,.., falling back on first spawn entry ,..,");
+                        return SpawnPoint.readOnlyInstancesList[0];
+                    }
+                        
+                    groundNodes.GetNodePosition(spawnNode.Value, out var position);
+                    List<NodeGraph.LinkIndex> linkedNodes = CollectionPool<NodeGraph.LinkIndex, List<NodeGraph.LinkIndex>>.RentCollection();
+                    groundNodes.GetActiveNodeLinks(spawnNode.Value, linkedNodes);
+                    Quaternion rotation;
+                    if (linkedNodes.Count > 0)
+                    {
+                        NodeGraph.LinkIndex linkIndex = Run.instance.spawnRng.NextElementUniform(linkedNodes);
+                        groundNodes.GetNodePosition(groundNodes.GetLinkEndNode(linkIndex), out var position2);
+                        rotation = Util.QuaternionSafeLookRotation(position2 - position);
+                    }
+                    else
+                    {
+                        rotation = Quaternion.Euler(0f, Run.instance.spawnRng.nextNormalizedFloat * 360f, 0f);
+                    }
+                        
+                    GameObject objectSpawn = Object.Instantiate(SpawnPoint.prefab, position, rotation);
+                    spawnPoint = objectSpawn.GetComponent<SpawnPoint>();
+                    newSpawns.Add(spawnPoint);
+                        
+                    Log.Debug($"finalized spawn from nodegraph {objectSpawn.transform.position} !");
                 }
                 else
                 {
-                    rotation = Quaternion.Euler(0f, Run.instance.spawnRng.nextNormalizedFloat * 360f, 0f);
+                    Log.Debug($"got spawn from spawnlist {spawnPoint.gameObject.transform.position}");
                 }
-                    
-                GameObject objectSpawn = Object.Instantiate(SpawnPoint.prefab, position, rotation);
-                spawnPoint = objectSpawn.GetComponent<SpawnPoint>();
-                newSpawns.Add(spawnPoint);
-                    
-                Log.Warning($"finalized spawn from nodegraph {objectSpawn.transform.position} !");
+                
+                spawnPoint.consumed = true;
+                return spawnPoint;
             }
-            else
+            catch (Exception e)
             {
-                Log.Warning($"got spawn from spawnlist {spawnPoint.gameObject.transform.position}");
+                Log.Warning("error while trying to generate a new spawn point !!! falling back on default behavior ,..,,.");
+                Log.Warning(e);
+                return orig();
             }
-            
-            spawnPoint.consumed = true;
-            return spawnPoint;
         }
         
 
