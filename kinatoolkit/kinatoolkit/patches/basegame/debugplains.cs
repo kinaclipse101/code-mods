@@ -75,8 +75,7 @@ public class debugplains : PatchBase<debugplains>
             changedSpawnTransform = 0;
             runStartCommands = false;
             stageStartCommands = false;
-            oldDisableInteractables = commands.disableInteractables;
-            commands.disableInteractables = true;
+            oldDisableInteractables = true;
         });
         
         buttonCopy.transform.SetSiblingIndex(buttonIndex.Value + 1);
@@ -137,7 +136,7 @@ public class debugplains : PatchBase<debugplains>
             
         if (disableInteractables.Value)
         {
-            commands.disableInteractables = oldDisableInteractables;
+            commands.disableInteractables = false;
         }
 
         return spawnPoint;

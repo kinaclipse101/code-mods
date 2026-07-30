@@ -7,9 +7,7 @@
 | ``stop_sound`` | stops a sound based on its aksound event index .,,. useful for killing looped sounds spawned by **play_sound** !!! |
 | ``spawn_effectdef`` | spawns an effectdef based on its name ,.,. autocomplete support !! will spawn it at 1 scale by default but can be specified ,.. |
 | ``list_effectdef`` | functionally identical to [wolffixes](https://thunderstore.io/c/riskofrain2/p/Wolfo/WolfFixes/) ``list_effectdef`` command but put here in case you want ,.,. |
-| ``disable_interactables`` | disables spawning of interactables ,..,, |
 | ``spawn_dummy`` | spawns a specified character master with 9999999 BoostHp items and ai disabled .,., |
-| ``set_difficulty`` | allows you to change difficulty mid run .,,. has autocomplete support !! and !! works with modded difficulties !!!!! and updates ui ,.. |
 | ``reload_json`` | loads the debugPlains.json file as if you were loading into debug plains and clears everything but pickups that were previously created by the json .,, . good for if youre doing edits and want to see how they look in game quickly !! |
 
 ## features ,., creachers, .,. 

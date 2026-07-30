@@ -1,3 +1,6 @@
+## 0.1.5
+- removed ``disable_interactables`` and ``set_difficulty`` due to debug toolkits ``no_interactables`` and ``set_difficulty`` commands making them obsolete .,,.,.,.
+
 ## 0.1.4
 - i did an oops and accidentally got rid of the default json config oops should be fixed sorry .,,. 
 

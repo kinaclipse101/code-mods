@@ -1,6 +1,6 @@
 ﻿{
 	"name": "kinatoolkit",
-	"version_number": "0.1.4",
+	"version_number": "0.1.5",
 	"website_url": "https://github.com/gamrtiem/code-mods/tree/main/kinatoolkit",
 	"description": "debugging mod with some cool features .,. likes nemesis debug plains ,.,.",
 	"dependencies": [

@@ -16,7 +16,7 @@ namespace kinatoolkit
 
         private const string PluginAuthor = "kina";
         private const string PluginName = "kinatoolkit";
-        private const string PluginVersion = "0.1.4";
+        private const string PluginVersion = "0.1.5";
         
         public static kinatoolkit instance;
         

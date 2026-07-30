@@ -23,22 +23,6 @@ public static class commands
     public static bool disableInteractables;
     public static TeamIndex dummyTeamIndex;
     
-    [ConCommand(commandName = "disable_interactables", flags = ConVarFlags.None)]
-    public static void CreateSkin(ConCommandArgs args)
-    {
-        bool? interactableBool = args.TryGetArgBool(0);
-        if (interactableBool != null)
-        {
-            disableInteractables = interactableBool.Value;
-        }
-        else
-        {
-            disableInteractables = !disableInteractables;
-        }
-        string color = disableInteractables ? "green" : "red";
-        Debug.Log($"Disabled interactables <color={color}>{disableInteractables}</color>.");
-    }
-
     public static void Init()
     {
         On.RoR2.InteractableSpawnCard.Spawn += InteractableSpawnCardOnSpawn;
@@ -62,7 +46,6 @@ public static class commands
         parser.RegisterStaticVariable("ai", MasterCatalog.allAiMasters.Select(i => $"{(int)i.masterIndex}|{i.name}|{StringFinder.GetLangInvar(StringFinder.GetMasterName(i))}"), 1);
         parser.RegisterStaticVariable("soundID", soundIDs.soundID.Keys, 1);
         parser.RegisterStaticVariable("effect", EffectCatalog.entries.Select(i => i.prefabName), 1);
-        parser.RegisterStaticVariable("difficultydef", DifficultyAPI.difficultyDefinitions!.Values.Where(def => def != null).Select(def => $"\"{Language.GetString(def.nameToken)}\""), 1);
         
         parser.Scan(System.Reflection.Assembly.GetExecutingAssembly());
     }
@@ -214,41 +197,6 @@ public static class commands
         {
             Log.Warning($"Couldn't find master prefab of {masterName}.");
             return null;
-        }
-    }
-    
-    [ConCommand(commandName = "set_difficulty", flags = ConVarFlags.None)]
-    [AutoComplete("Requires 1 argument: {difficultydef}")]
-    public static void SetDifficulty(ConCommandArgs args)
-    {
-        string difficultyDefName = args[0];
-        if (difficultyDefName == "")
-        {
-            Debug.LogWarning("No difficulty name provided.");
-            return;
-        }
-
-        DifficultyIndex difficultyIndex = DifficultyIndex.Invalid;
-        DifficultyDef difficultyDef = null;
-        for (int index = 0; index < DifficultyAPI.difficultyDefinitions!.Values.ToArray().Length; index++)
-        {
-            if (DifficultyAPI.difficultyDefinitions.Values.ToArray()[index] != null && Language.GetString(DifficultyAPI.difficultyDefinitions.Values.ToArray()[index].nameToken) == difficultyDefName)
-            {
-                difficultyIndex = DifficultyAPI.difficultyDefinitions.Keys.ToArray()[index];
-                difficultyDef = DifficultyAPI.difficultyDefinitions.Values.ToArray()[index];
-            }
-        }
-        if (difficultyIndex == DifficultyIndex.Invalid)
-        {
-            Debug.LogWarning($"Couldn't find difficulty \"{difficultyDefName}\".");
-            return;
-        }
-
-        Run.instance.selectedDifficulty = difficultyIndex;
-        Debug.Log($"Set difficulty to \"<color=#{ColorUtility.ToHtmlStringRGB(difficultyDef!.color)}>{difficultyDefName}</color>\".");
-        foreach (HUD hud in HUD.instancesList)
-        {
-            hud.gameModeUiInstance?.transform.Find("SetDifficultyPanel")?.Find("DifficultyIcon")?.gameObject.GetComponent<CurrentDifficultyIconController>()?.Start();
         }
     }
     
