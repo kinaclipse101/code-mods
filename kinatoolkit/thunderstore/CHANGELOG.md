@@ -1,3 +1,6 @@
+## 0.1.6
+- i keep accidentally shipping debug builds rahhhhhhhhhhhh made hot reload support proper so shouldnt spam errors in log if i do that agai n.,,.
+
 ## 0.1.5
 - removed ``disable_interactables`` and ``set_difficulty`` due to debug toolkits ``no_interactables`` and ``set_difficulty`` commands making them obsolete .,,.,.,.
 

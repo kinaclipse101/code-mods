@@ -203,11 +203,11 @@ public static class commands
     [ConCommand(commandName = "reload_json", flags = ConVarFlags.None, helpText = "Loads the current json for debug plains.")]
     public static void LoadJson(ConCommandArgs args)
     {
-        foreach (GameObject interactable in JSONObjects.Where(interactable => interactable))
+        foreach (GameObject interactable in JSONObjects.Where(interactable => interactable != null))
         {
             Object.Destroy(interactable);
         }
-        foreach (CharacterMaster master in JSONMasters.Where(master => master))
+        foreach (CharacterMaster master in JSONMasters.Where(master => master != null))
         {
             master.TrueKill();
         }
@@ -235,15 +235,22 @@ public static class commands
 
             foreach (debugplainsJSON.Dummy dummy in jsonEdits.dummies)
             {
-                JSONMasters.Add(SpawnDummy(dummy.masterName,
-                    new Vector3(dummy.position.x, dummy.position.y, dummy.position.z),
-                    Quaternion.Euler(dummy.rotation.x, dummy.rotation.y, dummy.rotation.z)));
+                try
+                {
+                    JSONMasters.Add(SpawnDummy(dummy.masterName,
+                        new Vector3(dummy.position.x, dummy.position.y, dummy.position.z),
+                        Quaternion.Euler(dummy.rotation.x, dummy.rotation.y, dummy.rotation.z)));
+                }
+                catch (Exception e)
+                {
+                    Log.Error("Error while parsing dummy from json !");
+                    Log.Error(e);
+                }
             }
 
             foreach (debugplainsJSON.Interactables interactable in jsonEdits.interactables)
             {
-                InteractableSpawnCard spawnCard = Addressables
-                    .LoadAssetAsync<InteractableSpawnCard>(interactable.interactableCard).WaitForCompletion();
+                InteractableSpawnCard spawnCard = Addressables.LoadAssetAsync<InteractableSpawnCard>(interactable.interactableCard).WaitForCompletion();
                 if (!spawnCard)
                 {
                     Log.Warning($"Couldn't load interactable card {interactable.interactableCard}.");
@@ -254,7 +261,7 @@ public static class commands
                     new Vector3(interactable.position.x, interactable.position.y, interactable.position.z),
                     Quaternion.Euler(interactable.rotation.x, interactable.rotation.y, interactable.rotation.z),
                     new DirectorSpawnRequest(spawnCard, null, RoR2Application.rng));
-                spawned.spawnedInstance.transform.rotation = Quaternion.Euler(interactable.rotation.x,
+                spawned.spawnedInstance?.transform.rotation = Quaternion.Euler(interactable.rotation.x,
                     interactable.rotation.y, interactable.rotation.z);
                 JSONObjects.Add(spawned.spawnedInstance);
             }
@@ -302,12 +309,12 @@ public static class commands
 
             Run.onRunDestroyGlobal += _ => { debugplains.enableAllFoodItems = false; };
 
-            RunArtifactManager.instance._enabledArtifacts[(int)CommandArtifactManager.myArtifact.artifactIndex] =
-                prevCommandEnabled;
+            RunArtifactManager.instance._enabledArtifacts[(int)CommandArtifactManager.myArtifact.artifactIndex] = prevCommandEnabled;
         }
         catch (Exception e)
         {
-            Log.Error($"Error while loading JSON! Are you sure debugPlains.json exists in the correct spot? {e}");
+            Log.Error($"Error while loading JSON! Are you sure debugPlains.json exists in the correct spot?");
+            Log.Error(e);
         }
         
     }

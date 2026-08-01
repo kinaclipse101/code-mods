@@ -16,7 +16,7 @@ namespace kinatoolkit
 
         private const string PluginAuthor = "kina";
         private const string PluginName = "kinatoolkit";
-        private const string PluginVersion = "0.1.5";
+        private const string PluginVersion = "0.1.6";
         
         public static kinatoolkit instance;
         
@@ -49,7 +49,7 @@ namespace kinatoolkit
         {
             if (Input.GetKeyUp(KeyCode.F7))
             {
-                UnityHotReloadNS.UnityHotReload.LoadNewAssemblyVersion(typeof(kinatoolkit).Assembly, System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Info.Location)!, "kinatoolkit.dll"));
+                UHRSupport.hotReload(typeof(kinatoolkit).Assembly, System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Info.Location)!, "kinatoolkit.dll"));
             }
         }
 #endif  
