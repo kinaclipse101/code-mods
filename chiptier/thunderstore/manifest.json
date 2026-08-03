@@ -1,0 +1,9 @@
+{
+    "name": "ScarfTweaks",
+    "version_number": "1.0.0",
+    "website_url": "https://github.com/gamrtiem/code-mods/tree/main/chiptier",
+    "description": "changes explorers scarf from robitems to be legendary and buffs it .,., configurable !,..,,.., meant for pairing with enemyabilities,.,.,.",
+    "dependencies": [
+        "rob-RobItems-1.4.1"
+    ]
+}

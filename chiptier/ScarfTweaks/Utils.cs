@@ -1,14 +1,22 @@
+using System.Collections.Generic;
 using BepInEx.Configuration;
 using RiskOfOptions;
 using RiskOfOptions.OptionConfigs;
 using RiskOfOptions.Options;
 
-namespace ChipTier;
+namespace ScarfTweaks;
 
 public static class Utils
 {
-    public static void SliderConfig(float min, float max, ConfigEntry<float> config)
+    private static List<string> addedConfigs = [];
+    public static ConfigEntry<float> SliderConfig(float min, float max, ConfigEntry<float> config)
     {
+        if (addedConfigs.Contains(config.Definition.Key))
+        {
+            return config;
+        }
+        addedConfigs.Add(config.Definition.Key);
+        
         StepSliderConfig stepSliderConfig = new StepSliderConfig
         {
             max = max,
@@ -17,6 +25,28 @@ public static class Utils
         };
         StepSliderOption stepSliderOption = new StepSliderOption(config, stepSliderConfig);
         ModSettingsManager.AddOption(stepSliderOption);
+        
+        return config;
+    }
+    
+    public static ConfigEntry<float> SliderConfig(ConfigEntry<float> config)
+    {
+        if (addedConfigs.Contains(config.Definition.Key))
+        {
+            return config;
+        }
+        addedConfigs.Add(config.Definition.Key);
+        
+        StepSliderConfig stepSliderConfig = new StepSliderConfig
+        {
+            max = (float)config.DefaultValue * 2f,
+            min = 0,
+            FormatString = "{0:0}"
+        };
+        StepSliderOption stepSliderOption = new StepSliderOption(config, stepSliderConfig);
+        ModSettingsManager.AddOption(stepSliderOption);
+        
+        return config;
     }
 
     public static void SliderConfig(int min, int max, ConfigEntry<int> config)

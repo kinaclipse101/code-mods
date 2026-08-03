@@ -1,16 +1,16 @@
 using System;
 using BepInEx;
 using BepInEx.Bootstrap;
+using BepInEx.Configuration;
 using HarmonyLib;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using RoR2;
-using R2API;
 using RobItems.Content;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 
-namespace ChipTier
+namespace ScarfTweaks
 {
     [BepInDependency("iDeathHD.UnityHotReload", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency(RobItems.Plugin.MODUID)]
@@ -19,18 +19,28 @@ namespace ChipTier
     {
         private const string PluginGUID = PluginAuthor + "." + PluginName;
         private const string PluginAuthor = "kina";
-        private const string PluginName = "ChipTier";
+        private const string PluginName = "ScarfTweaks";
         private const string PluginVersion = "1.0.0";
 
         private static bool UHRInstalled => Chainloader.PluginInfos.ContainsKey("iDeathHD.UnityHotReload");
 
+        private static ChipTier instance;
         private static AssetBundle assetbundle;
+
+        private enum tier 
+        {
+            common,
+            uncommon,
+            legendary,
+            lunar
+        }
         
         public void Awake()
         {
             Log.Init(Logger);
             
-            assetbundle = AssetBundle.LoadFromFile(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Info.Location)!, "asseetbundle_chip"));
+            instance = this;
+            assetbundle = AssetBundle.LoadFromFile(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Info.Location)!, "chipbundle"));
             
             Harmony harmony = new Harmony(Info.Metadata.GUID);
             harmony.CreateClassProcessor(typeof(ChipChanges)).Patch();
@@ -40,9 +50,27 @@ namespace ChipTier
 
         private void UpgradeChip()
         {
-            RobItems.Content.FriendScarf.instance.ItemDef.tier = ItemTier.Tier3;
-            RobItems.Content.FriendScarf.instance.ItemDef._itemTierDef = Addressables.LoadAssetAsync<ItemTierDef>(RoR2BepInExPack.GameAssetPathsBetter.RoR2_Base_Common.Tier3Def_asset).WaitForCompletion();
-            RobItems.Content.FriendScarf.instance.ItemDef.pickupIconSprite = assetbundle.LoadAsset<Sprite>("texIconsTemplate"); 
+            ConfigEntry<tier> realtier = instance.Config.Bind("ScarfTweaks", "scarf tier", tier.legendary, "");
+            
+            string key = realtier.Value switch
+            {
+                tier.common => RoR2BepInExPack.GameAssetPathsBetter.RoR2_Base_Common.Tier1Def_asset,
+                tier.uncommon => RoR2BepInExPack.GameAssetPathsBetter.RoR2_Base_Common.Tier2Def_asset,
+                tier.legendary => RoR2BepInExPack.GameAssetPathsBetter.RoR2_Base_Common.Tier3Def_asset,
+                tier.lunar => RoR2BepInExPack.GameAssetPathsBetter.RoR2_Base_Common.LunarTierDef_asset,
+                _ => ""
+            };
+            string sprite = realtier.Value switch
+            {
+                tier.common => "tier1",
+                tier.uncommon => "tier2",
+                tier.legendary => "tier3",
+                tier.lunar => "lunar",
+                _ => ""
+            };
+            
+            FriendScarf.instance.ItemDef._itemTierDef = Addressables.LoadAssetAsync<ItemTierDef>(key).WaitForCompletion();
+            FriendScarf.instance.ItemDef.pickupIconSprite = assetbundle.LoadAsset<Sprite>(sprite); 
         }
         
         [HarmonyPatch]
@@ -52,21 +80,7 @@ namespace ChipTier
             [HarmonyPostfix]
             public static void HandleSizePostFix(FriendHandler __instance)
             {
-                __instance.characterBody.modelLocator.modelTransform.localScale *= 2;
-            }
-            
-            [HarmonyPatch(typeof(FriendHandler), "Awake")]
-            [HarmonyPostfix]
-            public static void AwakePostfix(FriendHandler __instance)
-            {
-                __instance.roarStopwatch = 30f;
-            }
-            
-           /* [HarmonyPatch(typeof(FriendHandler), "Roar")]
-            [HarmonyPostfix]
-            public static void RoarPostfix(FriendHandler __instance)
-            {
-                Log.Debug("roar.,,.");
+                __instance.characterBody.modelLocator.modelTransform.localScale *= Utils.SliderConfig(0, 10, instance.Config.Bind("ScarfTweaks", "chip size multiplier", 2f, "")).Value;
             }
 
             [HarmonyPatch(typeof(FriendHandler), "Roar")]
@@ -77,57 +91,41 @@ namespace ChipTier
                 c.SearchTarget = SearchTarget.Prev;
                 
                 try
-                {
-                    
-                      // val.radius = 300f;
-                       //IL_0035: ldloc.1
-                       //IL_0036: ldc.r4 300
-                       //IL_003b: stfld float32 [RoR2]RoR2.BlastAttack::radius
-                     
+                { 
+                    //val.radius = 300f;
+                    //IL_0035: ldloc.1
+                    //IL_0036: ldc.r4 300
+                    //IL_003b: stfld float32 [RoR2]RoR2.BlastAttack::radius
 
                     if (c.TryGotoNext(x => x.MatchLdloc(1),
                             x => x.MatchLdcR4(300f),
                             x => x.MatchStfld<RoR2.BlastAttack>("radius")))
                     {
-                        Log.Debug(c);
                         c.RemoveRange(3);
-                        c.Emit(OpCodes.Ldarg_0);
-                        c.Emit(OpCodes.Ldc_R4, 400f);
+                        c.Emit(OpCodes.Ldloc_1);
+                        c.Emit(OpCodes.Ldc_R4, Utils.SliderConfig(0, 800, instance.Config.Bind("ScarfTweaks", "chip roar far attack radius", 400f, "base 300")).Value);
                         c.Emit(OpCodes.Stfld, typeof(BlastAttack).GetField("radius"));
-                    }
-                    else
-                    {
-                        Log.Error("Couldn't match radius for first blast attack on chip !!!");
                     }
                     
                     if (c.TryGotoNext(x => x.MatchLdloc(1),
                             x => x.MatchLdcR4(0.0f),
                             x => x.MatchStfld<RoR2.BlastAttack>("procCoefficient")))
                     {
-                        Log.Debug(c);
                         c.RemoveRange(3);
-                        c.Emit(OpCodes.Ldarg_0);
-                        c.Emit(OpCodes.Ldc_R4, 1f);
+                        c.Emit(OpCodes.Ldloc_1);
+                        c.Emit(OpCodes.Ldc_R4, Utils.SliderConfig(0, 10, instance.Config.Bind("ScarfTweaks", "chip roar far attack proc", 1f, "base 0")).Value);
                         c.Emit(OpCodes.Stfld, typeof(BlastAttack).GetField("procCoefficient"));
-                    }
-                    else
-                    {
-                        Log.Error("Couldn't match proc coeff for first blast attack on chip !!!");
                     }
                     
                     if (c.TryGotoNext(x => x.MatchLdloc(1),
                             x => x.MatchLdcR4(1f),
                             x => x.MatchStfld<RoR2.BlastAttack>("baseDamage")))
                     {
-                        Log.Debug(c);
                         c.RemoveRange(3);
+                        c.Emit(OpCodes.Ldloc_1);
                         c.Emit(OpCodes.Ldarg_0);
-                        c.Emit(OpCodes.Ldc_R4, 20f);
+                        c.EmitDelegate<Func<FriendHandler, float>>((friend) => friend.characterBody.damage * Utils.SliderConfig(0, 40, instance.Config.Bind("ScarfTweaks", "chip roar far attack damage", 15f, "")).Value);
                         c.Emit(OpCodes.Stfld, typeof(BlastAttack).GetField("baseDamage"));
-                    }
-                    else
-                    {
-                        Log.Error("Couldn't match damage for first blast attack on chip !!!");
                     }
                     
                     //roar has two blast attacks, this should match for the second one ,,.
@@ -137,107 +135,59 @@ namespace ChipTier
                             x => x.MatchLdcR4(50),
                             x => x.MatchStfld<RoR2.BlastAttack>("radius")))
                     {
-                        Log.Debug(c);
                         c.RemoveRange(3);
-                        c.Emit(OpCodes.Ldarg_0);
-                        c.Emit(OpCodes.Ldc_R4, 100f);
+                        c.Emit(OpCodes.Ldloc_1);
+                        c.Emit(OpCodes.Ldc_R4, Utils.SliderConfig(0, 400, instance.Config.Bind("ScarfTweaks", "chip roar close attack radius", 100f, "base 50")).Value);
                         c.Emit(OpCodes.Stfld, typeof(BlastAttack).GetField("radius"));
-                    }
-                    else
-                    {
-                        Log.Error("Couldn't match radius for second blast attack on chip !!!");
                     }
                     
                     if (c.TryGotoNext(x => x.MatchLdloc(1),
                             x => x.MatchLdcR4(0.0f),
                             x => x.MatchStfld<RoR2.BlastAttack>("procCoefficient")))
                     {
-                        Log.Debug(c);
                         c.RemoveRange(3);
-                        c.Emit(OpCodes.Ldarg_0);
-                        c.Emit(OpCodes.Ldc_R4, 1f);
+                        c.Emit(OpCodes.Ldloc_1);
+                        c.Emit(OpCodes.Ldc_R4, Utils.SliderConfig(0, 10, instance.Config.Bind("ScarfTweaks", "chip roar close attack proc", 1f, "base 0")).Value);
                         c.Emit(OpCodes.Stfld, typeof(BlastAttack).GetField("procCoefficient"));
-                    }
-                    else
-                    {
-                        Log.Error("Couldn't match proc coeff for second blast attack on chip !!!");
                     }
                     
                     if (c.TryGotoNext(x => x.MatchLdloc(1),
                             x => x.MatchLdcR4(1f),
                             x => x.MatchStfld<RoR2.BlastAttack>("baseDamage")))
                     {
-                        Log.Debug(c);
                         c.RemoveRange(3);
+                        c.Emit(OpCodes.Ldloc_1);
                         c.Emit(OpCodes.Ldarg_0);
-                        c.Emit(OpCodes.Ldc_R4, 30f);
+                        c.EmitDelegate<Func<FriendHandler, float>>((friend) => friend.characterBody.damage * Utils.SliderConfig(0, 40, instance.Config.Bind("ScarfTweaks", "chip roar damage from close attack", 30f, "")).Value);
+                        //c.Emit(OpCodes.Ldc_R4, (12 + (TeamManager.instance.GetTeamLevel(TeamIndex.Player) - 1) * 2.4) * 4f);
                         c.Emit(OpCodes.Stfld, typeof(BlastAttack).GetField("baseDamage"));
-                    }
-                    else
-                    {
-                        Log.Error("Couldn't match damage for second blast attack on chip !!!");
                     }
                     
                     if (c.TryGotoNext(x => x.MatchLdloc(1),
                             x => x.MatchLdcR4(2000f),
                             x => x.MatchStfld<RoR2.BlastAttack>("baseForce")))
                     {
-                        Log.Debug(c);
                         c.RemoveRange(3);
-                        c.Emit(OpCodes.Ldarg_0);
-                        c.Emit(OpCodes.Ldc_R4, 4000f);
+                        c.Emit(OpCodes.Ldloc_1);
+                        c.Emit(OpCodes.Ldc_R4, Utils.SliderConfig(0, 8000, instance.Config.Bind("ScarfTweaks", "chip roar close attack force", 4000f, "base 2000")).Value);
                         c.Emit(OpCodes.Stfld, typeof(BlastAttack).GetField("baseForce"));
                     }
-                    else
-                    {
-                        Log.Error("Couldn't match force for second blast attack on chip !!!");
-                    }
-                    
-                    Log.Debug(il);
                 }
                 catch (Exception e)
                 {
                     Log.Error("error while il patching roar !!!");
                     Log.Error(e);
                 }
-            }*/
-            
-            [HarmonyPatch(typeof(FriendHandler), "FixedUpdate")]
-            [HarmonyILManipulator]
-            public static void FixedUpdateIL(ILContext il)
-            {
-                ILCursor c = new ILCursor(il);
-                c.SearchTarget = SearchTarget.Prev;
-                
-                try
-                {
-                    /*
-                     *  // [47 5 - 47 29]
-                          IL_0058: ldarg.0      // this
-                          IL_0059: ldc.r4       60
-                          IL_005e: stfld        float32 RobItems.Content.FriendHandler::roarStopwatch
-                     */
+            }
 
-                    if (c.TryGotoNext(x => x.MatchLdarg(0),
-                            x => x.MatchLdcR4(60),
-                            x => x.MatchStfld<FriendHandler>("roarStopwatch")))
-                    {
-                        c.RemoveRange(3);
-                        c.Emit(OpCodes.Ldarg_0);
-                        c.Emit(OpCodes.Ldc_R4, 30f);
-                        c.Emit(OpCodes.Stfld, typeof(FriendHandler).GetField("roarStopwatch"));
-                    }
-                    else
-                    {
-                        Log.Error("Couldn't match fast roar !!!");
-                    }
-                    
-                    Log.Debug(il);
-                }
-                catch (Exception e)
+            private static ConfigEntry<float> cooldown = Utils.SliderConfig(0, 400, instance.Config.Bind("ScarfTweaks", "chip roar cooldown", 30f, ""));
+            [HarmonyPatch(typeof(FriendHandler), "FixedUpdate")]
+            [HarmonyPostfix]
+            public static void FixedUpdatePostfix(FriendHandler __instance)
+            {
+                if (__instance.roarStopwatch > cooldown.Value)
                 {
-                    Log.Error("error while il patching roar !!!");
-                    Log.Error(e);
+                    __instance.roarStopwatch = cooldown.Value;
                 }
             }
         }
@@ -256,11 +206,6 @@ namespace ChipTier
                 {
                     Log.Debug("couldnt finds unity hot reload !!");
                 }
-            }
-            
-            if (Input.GetKeyUp(KeyCode.I))
-            {
-                
             }
 #endif  
         }

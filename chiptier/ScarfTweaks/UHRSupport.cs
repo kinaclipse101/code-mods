@@ -1,7 +1,7 @@
 #if DEBUG
 using System.Reflection;
 
-namespace ChipTier;
+namespace ScarfTweaks;
 
 internal static class UHRSupport
 {

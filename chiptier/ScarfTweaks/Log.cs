@@ -1,6 +1,6 @@
 using BepInEx.Logging;
 
-namespace ChipTier
+namespace ScarfTweaks
 {
     internal static class Log
     {
