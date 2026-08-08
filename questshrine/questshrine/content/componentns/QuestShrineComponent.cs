@@ -1,4 +1,8 @@
 using System;
+using System.Linq;
+using System.Reflection;
+using questshrine.bases;
+using R2API.Utils;
 using RoR2;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
@@ -55,10 +59,41 @@ public class QuestShrineComponent : NetworkBehaviour
                 weight /= 2;
             }
             
+            PropertyInfo tagsProperty = itemTypeCombo.GetProperty("tags");
+            if (tagsProperty != null)
+            {
+                string tags = (string)tagsProperty.GetValue(null);
+                if (tags != null)
+                {
+                    if (tags.Split(",").Contains("noStack") && questCount > 0)
+                    {
+                        weight = 0;
+                    }
+                    if (tags.Split(",").Contains("requireScrapper"))
+                    {
+                        GameObject scrapper = GameObject.Find("Scrapper(Clone)");
+                        if (!scrapper)
+                        {
+                            weight = 0;
+                        }
+                    }
+                }
+            }
+            
+            
+            //string tags = propertyInfo.GetValue(itemTypeCombo).ToString();
+            //Log.Debug($"{itemTypeCombo} test {tags}");
+
             weightedSelection.AddChoice(itemTypeCombo, weight);
         }
-        
+
         Type component = weightedSelection.Evaluate(Run.instance.runRNG.nextNormalizedFloat);
         context.activatorBody.gameObject.AddComponent(component);
     }
+
+    //public Type FindValid(WeightedSelection<Type> weightedSelection)
+    //{
+    //    QuestBehaviorBase component = (QuestBehaviorBase)weightedSelection.Evaluate(Run.instance.runRNG.nextNormalizedFloat);
+    //
+    //}
 }

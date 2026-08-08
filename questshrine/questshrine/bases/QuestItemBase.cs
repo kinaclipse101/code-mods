@@ -29,7 +29,7 @@ public abstract class QuestItemBase : ItemBase
     public override ItemTier Tier => QuestTier.instance.tierDef.tier;
     public override GameObject ItemModel => Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Mystery/PickupMystery.prefab").WaitForCompletion();
     public virtual bool CanRemove => false;
-    public abstract Type ComponentType { get; }
+    public abstract Type BehaviorType { get; }
 
     public override void Init(ConfigFile config)
     {
@@ -65,9 +65,10 @@ public abstract class QuestItemBase : ItemBase
         return new ItemDisplayRuleDict();
     }
 
+    private static BasicPickupDropTable chest1DT = Addressables.LoadAssetAsync<BasicPickupDropTable>(RoR2BepInExPack.GameAssetPaths.Version_1_35_0.RoR2_Base_Chest1.dtChest1_asset).WaitForCompletion(); 
     public static void GiveReward(CharacterBody body)
     {
-        PickupIndex final = PickupCatalog.FindPickupIndex(RoR2Content.Items.Bear.itemIndex);
+        PickupIndex final = chest1DT.GeneratePickup(Run.instance.runRNG).pickupIndex;
         PickupDropletController.CreatePickupDroplet(new GenericPickupController.CreatePickupInfo
         {
             pickup = new UniquePickup

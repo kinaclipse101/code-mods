@@ -13,6 +13,7 @@ public abstract class QuestBehaviorBase : MonoBehaviour
     public virtual bool gaveReward { get; set; }
     public abstract Type objectiveType { get; }
     public abstract string titleText { get; }
+    
     public string internalDesc;
 
     private void Awake()

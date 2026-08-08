@@ -12,7 +12,7 @@ public class KillEnemies : QuestItemBase<KillEnemies>
 {
     public override string ItemName => "Kill Enemies";
     public override string ItemLangTokenName => "KILLENEMIES";
-    public override Type ComponentType => typeof(KillEnemiesBehaviorBase);
+    public override Type BehaviorType => typeof(KillEnemiesBehaviorBase);
     public override Sprite ItemIcon => questshrine.bundle.LoadAsset<Sprite>("killenemies");
 
     public override void CreateConfig(ConfigFile config)
@@ -36,8 +36,8 @@ public class KillEnemies : QuestItemBase<KillEnemies>
             List<CharacterMaster> availableMasters = [];
             foreach (WeightedSelection<DirectorCard>.ChoiceInfo choice in classicStageInfo.monsterSelection.choices)
             {
-                if (choice.value.minimumStageCompletions > Run.instance.stageClearCount) continue;
-                if (!choice.value.spawnCard.prefab.TryGetComponent(out CharacterMaster master)) continue;
+                if (choice.value?.minimumStageCompletions > Run.instance.stageClearCount) continue;
+                if (choice.value?.spawnCard?.prefab?.TryGetComponent(out CharacterMaster master) != true) continue;
                 
                 if (master.bodyPrefab.GetComponent<CharacterBody>().isChampion)
                 {
@@ -51,10 +51,10 @@ public class KillEnemies : QuestItemBase<KillEnemies>
                     continue;
                 }
                     
-                Log.Debug(master.name);
+                /*Log.Debug(master.name);
                 Log.Debug(choice.value.spawnCard.prefab);
                 Log.Debug(choice.value.cost);
-                Log.Debug(choice.weight);
+                Log.Debug(choice.weight);*/
                 
                 availableChoices.Add(choice);
                 availableMasters.Add(master);

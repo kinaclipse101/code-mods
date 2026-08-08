@@ -109,7 +109,7 @@ namespace questshrine
                 item.Init(Config);
                 if (item.enabled)
                 {
-                    questComponents.Add(item.ComponentType);
+                    questComponents.Add(item.BehaviorType);
                 }
             }
         }
