@@ -41,7 +41,6 @@ public class QuestShrineComponent : NetworkBehaviour
             scale = 3f,
             color = new Color32(103, 77, 170, 255)
         }, true);
-        Chat.SendBroadcastChat(new Chat.SimpleChatMessage() { baseToken = "<style=cEvent><color=#674DAA>quest shrine activated .,.,.,</color></style>" });
 
         ActivateQuest(context);
         
@@ -56,7 +55,7 @@ public class QuestShrineComponent : NetworkBehaviour
         {
             float weight = 10;
             
-            int questCount = context.activatorBody.gameObject.GetComponents(questBase.Behavior).Length;
+            int questCount = context.activatorMaster.gameObject.GetComponents(questBase.Behavior).Length;
             for (int i = 0; i < questCount; i++)
             {
                 weight /= 2;
@@ -85,11 +84,10 @@ public class QuestShrineComponent : NetworkBehaviour
                 }
             }
             
-            
             weightedSelection.AddChoice(questBase, weight);
         }
 
         Type component = weightedSelection.Evaluate(Run.instance.runRNG.nextNormalizedFloat).Behavior;
-        context.activatorBody.gameObject.AddComponent(component);
+        context.activatorMaster.gameObject.AddComponent(component);
     }
 }

@@ -25,6 +25,7 @@ public abstract class QuestBase
     public abstract string QuestDesc { get; }
     public abstract Sprite QuestIcon { get; }
     public abstract Type Behavior { get; }
+    public virtual bool useListeners { get; }
     public virtual string[] Tags { get; }
 
     public bool enabled => Utils.CheckboxConfig(questshrine.instance.Config.Bind($"Quest Shrine - {QuestName}", $"Enable {QuestName}", true, "")).Value;

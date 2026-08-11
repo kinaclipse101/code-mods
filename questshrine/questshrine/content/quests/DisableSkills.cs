@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using BepInEx.Configuration;
 using questshrine.bases;
 using RoR2;
@@ -22,8 +21,8 @@ public class DisableSkills : QuestBase<DisableSkills>
     
     public override void CreateConfig(ConfigFile config)
     {
-        minTimer = Utils.SliderConfig(ConfigHelper("min timer value", 15, "minimum timer value for skills being disabled .,,."));
-        maxTimer = Utils.SliderConfig(ConfigHelper("max timer value", 45, "max timer value for skills being disabled .,,."));
+        minTimer = Utils.SliderConfig(ConfigHelper("min timer value", 10, "minimum timer value for skills being disabled .,,."));
+        maxTimer = Utils.SliderConfig(ConfigHelper("max timer value", 25, "max timer value for skills being disabled .,,."));
     }
 
     public class DisableSkillsBehaviorBase : QuestBehaviorBase
@@ -38,28 +37,35 @@ public class DisableSkills : QuestBase<DisableSkills>
         {
             startingTime = Run.instance.runRNG.RangeFloat(minTimer.Value, maxTimer.Value) - 0.5f;
             timer = startingTime + 2;
-       
-            if (body.skillLocator)
-            {
-                if (body.skillLocator.primary)
-                    body.skillLocator.primary.SetSkillOverride(this, CharacterBody.CommonAssets.disabledSkill, GenericSkill.SkillOverridePriority.Contextual);
 
-                if (body.skillLocator.secondary)
-                    body.skillLocator.secondary.SetSkillOverride(this, CharacterBody.CommonAssets.disabledSkill, GenericSkill.SkillOverridePriority.Contextual);
-
-                if (body.skillLocator.utility)
-                    body.skillLocator.utility.SetSkillOverride(this, CharacterBody.CommonAssets.disabledSkill, GenericSkill.SkillOverridePriority.Contextual);
-
-                if (body.skillLocator.special)
-                    body.skillLocator.special.SetSkillOverride(this, CharacterBody.CommonAssets.disabledSkill, GenericSkill.SkillOverridePriority.Contextual);
-            }
+            DisableSkills(body);
+            charMaster.onBodyStart += DisableSkills;// fuck your dios <3 ,.,.
             
             QuestDescInternal = string.Format(instance.QuestDesc, startingTime.ToString("0"));
             base.OnEnable();
         }
 
+        public void DisableSkills(CharacterBody characterBody)
+        {
+            if (!characterBody.skillLocator) return;
+            
+            if (characterBody.skillLocator.primary)
+                characterBody.skillLocator.primary.SetSkillOverride(this, CharacterBody.CommonAssets.disabledSkill, GenericSkill.SkillOverridePriority.Contextual);
+
+            if (characterBody.skillLocator.secondary)
+                characterBody.skillLocator.secondary.SetSkillOverride(this, CharacterBody.CommonAssets.disabledSkill, GenericSkill.SkillOverridePriority.Contextual);
+
+            if (characterBody.skillLocator.utility)
+                characterBody.skillLocator.utility.SetSkillOverride(this, CharacterBody.CommonAssets.disabledSkill, GenericSkill.SkillOverridePriority.Contextual);
+
+            if (characterBody.skillLocator.special)
+                characterBody.skillLocator.special.SetSkillOverride(this, CharacterBody.CommonAssets.disabledSkill, GenericSkill.SkillOverridePriority.Contextual);
+        }
+
         public override void OnDisable()
         {
+            charMaster.onBodyStart -= DisableSkills;
+
             if (body.skillLocator)
             {
                 if (body.skillLocator.primary)
@@ -88,10 +94,10 @@ public class DisableSkills : QuestBase<DisableSkills>
             }
         }
     }
-    
-    public class NoDamageObjective : ObjectivePanelController.ObjectiveTracker
+
+    private class NoDamageObjective : ObjectivePanelController.ObjectiveTracker
     {
-        DisableSkillsBehaviorBase _disableSkillsQuest;
+        private DisableSkillsBehaviorBase _disableSkillsQuest;
         private float localTimer;
         
         public override string GenerateString()

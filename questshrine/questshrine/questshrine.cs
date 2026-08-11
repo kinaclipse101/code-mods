@@ -77,10 +77,9 @@ namespace questshrine
                     c.EmitDelegate<Func<NotificationUIController, CharacterMasterNotificationQueue.NotificationInfo, GameObject, GameObject>>(
                     (notifUIControl, notifInfo, prevNotifPrefab) =>
                     {
-                        Debug.Log(notifInfo?.transformation?.transformationType);
                         if (notifInfo?.transformation?.transformationType != (CharacterMasterNotificationQueue.TransformationType)(QuestBehaviorBase.notificationEnum)) return prevNotifPrefab;
                         
-                        Debug.Log($"transform type was same as enu m! {notifInfo?.transformation?.transformationType}");
+                        //Debug.Log($"transform type was same as enu m! {notifInfo?.transformation?.transformationType}");
                         notifUIControl.LowerPricedChestsRegenTransformationNotificationPrefab = notifPrefab;
                         return notifPrefab;
 
@@ -89,7 +88,6 @@ namespace questshrine
                     
                     //go after the instantiating
                     c.Index += 4;
-                    Log.Debug(c);
                     c.Emit(OpCodes.Ldarg_0); // NotificationUIController
                     c.Emit(OpCodes.Ldarg_1); // NotificationInfo
                     c.Emit(OpCodes.Ldarg_0); // NotificationUIController
@@ -98,7 +96,7 @@ namespace questshrine
                         (notifUIControl, notifInfo, genericNotif) =>
                         {
                             if (notifInfo?.transformation?.transformationType != (CharacterMasterNotificationQueue.TransformationType)(QuestBehaviorBase.notificationEnum)) return;
-                            Debug.Log($"transform type was same as enu m! {notifInfo?.transformation?.transformationType}");
+                            //Debug.Log($"transform type was same as enu m! {notifInfo?.transformation?.transformationType}");
                             QuestBase questBase = notifInfo.data as QuestBase;
                             genericNotif.titleText.token = Language.GetString(questBase.QuestTitle);
                             genericNotif.descriptionText.token = Language.GetString(questBase.QuestDesc);

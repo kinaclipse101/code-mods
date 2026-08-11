@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using BepInEx.Configuration;
 using questshrine.bases;
 using RoR2;
@@ -36,39 +34,41 @@ public class Scrap : QuestBase<Scrap>
         On.RoR2.ScrapperController.BeginScrapping_UniquePickup += QuestScrapper;
     }
 
-    private void QuestScrapper(On.RoR2.ScrapperController.orig_BeginScrapping_UniquePickup orig, RoR2.ScrapperController self, UniquePickup pickuptotake)
+    private void QuestScrapper(On.RoR2.ScrapperController.orig_BeginScrapping_UniquePickup orig, ScrapperController self, UniquePickup pickuptotake)
     {
-        if (!self.interactor.gameObject.TryGetComponent(out ScrapItemBehaviorBase scrapQuest))
+        ScrapItemBehaviorBase[] scrapQuests = self.interactor?.gameObject.GetComponent<CharacterBody>()?.master?.gameObject.GetComponents<ScrapItemBehaviorBase>();
+        if (scrapQuests == null || scrapQuests.Length == 0)
         {
             orig(self, pickuptotake);
             return;
-        };
-
-        if (specificItem.Value && scrapQuest.targetIndex != ItemIndex.None)
-        {
-            if (scrapQuest.targetIndex != PickupCatalog.GetPickupDef(pickuptotake.pickupIndex)!.itemIndex)
-            {
-                orig(self, pickuptotake);
-                return;
-            };
-        }
-        else
-        {
-            if (scrapQuest.targetTier != PickupCatalog.GetPickupDef(pickuptotake.pickupIndex)!.itemTier)
-            {
-                orig(self, pickuptotake);
-                return;
-            };
         }
 
-        GiveReward(scrapQuest.body);
-        scrapQuest.gaveReward = true;
-        Object.Destroy(scrapQuest);
+        foreach (ScrapItemBehaviorBase scrapQuest in scrapQuests)
+        {
+            if (specificItem.Value && scrapQuest.targetIndex != ItemIndex.None)
+            {
+                if (scrapQuest.targetIndex != PickupCatalog.GetPickupDef(pickuptotake.pickupIndex)!.itemIndex)
+                    continue;
+                
+            }
+            else
+            {
+                if (scrapQuest.targetTier != PickupCatalog.GetPickupDef(pickuptotake.pickupIndex)!.itemTier)
+                    continue;
+            }
 
-        int prevMaxScraps = self.maxItemsToScrapAtATime;
-        self.maxItemsToScrapAtATime = 1;
+            GiveReward(scrapQuest.body);
+            scrapQuest.gaveReward = true;
+            Object.Destroy(scrapQuest);
+
+            int prevMaxScraps = self.maxItemsToScrapAtATime;
+            self.maxItemsToScrapAtATime = 1;
+            orig(self, pickuptotake);
+            self.maxItemsToScrapAtATime = prevMaxScraps;
+            return;
+        }
+        
         orig(self, pickuptotake);
-        self.maxItemsToScrapAtATime = prevMaxScraps;
     }
 
     public class ScrapItemBehaviorBase : QuestBehaviorBase
@@ -84,13 +84,16 @@ public class Scrap : QuestBase<Scrap>
         public override void OnEnable()
         {
             BasicPickupDropTable dropTable = ScriptableObject.CreateInstance<BasicPickupDropTable>();
-            
+            dropTable.tier1Weight = 0f;
+            dropTable.tier2Weight = 0f;
+            dropTable.tier3Weight = 0f;
+
             ReadOnlySpan<ItemIndex> spanStacks = body.inventory.effectiveItemStacks.GetNonZeroIndicesSpan();
             foreach (ItemIndex index in spanStacks)
             {
                 ItemDef itemDef = ItemCatalog.GetItemDef(index);
                 ItemTier tier = ItemCatalog.GetItemDef(index).tier;
-                if (!itemDef.canRemove || itemDef.hidden || !itemDef.DoesNotContainTag(ItemTag.Scrap) || !itemDef.DoesNotContainTag(ItemTag.CannotCopy)) continue;
+                if (!itemDef.canRemove || itemDef.hidden || itemDef.ContainsTag(ItemTag.Scrap) || itemDef.ContainsTag(ItemTag.CannotCopy)) continue;
                 switch (tier)
                 {
                     case Tier1:
@@ -107,6 +110,7 @@ public class Scrap : QuestBase<Scrap>
                         break;
                 }
             }
+            Log.Debug($"weights {dropTable.tier1Weight} {dropTable.tier2Weight} {dropTable.tier3Weight}");
 
             if (dropTable.tier1Weight == 0 && dropTable.tier2Weight == 0 && dropTable.tier3Weight == 0)
             {

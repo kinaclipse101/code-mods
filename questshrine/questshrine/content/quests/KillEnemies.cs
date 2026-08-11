@@ -14,13 +14,14 @@ public class KillEnemies : QuestBase<KillEnemies>
     public override string QuestTitle => "<style=cWorldEvent>the planet's malice grows .,,..</style>";
     public override string QuestDesc => "defeat {0} {1},.,.";
     public override Sprite QuestIcon => questshrine.bundle.LoadAsset<Sprite>("killenemies");
+    public override bool useListeners => true;
     public override Type Behavior => typeof(KillEnemiesBehaviorBase);
 
     public override void CreateConfig(ConfigFile config)
     {
     }
 
-    public class KillEnemiesBehaviorBase : QuestBehaviorBase, IOnKilledOtherServerReceiver
+    public class KillEnemiesBehaviorBase : QuestBehaviorBase
     {
         public override QuestBase QuestBase => instance;
         public override Type ObjectiveType => typeof(KillEnemiesObjective);
@@ -30,6 +31,8 @@ public class KillEnemies : QuestBase<KillEnemies>
         
         public override void OnEnable()
         {
+            KilledOtherServer += OnKilledOtherServer;
+
             ClassicStageInfo classicStageInfo = GameObject.Find("SceneInfo").GetComponent<ClassicStageInfo>();
             List<WeightedSelection<DirectorCard>.ChoiceInfo> availableChoices = [];
             List<CharacterMaster> availableMasters = [];
@@ -85,11 +88,17 @@ public class KillEnemies : QuestBase<KillEnemies>
             instance.GiveReward(body);
             Destroy(this);
         }
+
+        public override void OnDisable()
+        {
+            KilledOtherServer += OnKilledOtherServer;
+            base.OnDisable();
+        }
     }
-    
-    public class KillEnemiesObjective : ObjectivePanelController.ObjectiveTracker
+
+    private class KillEnemiesObjective : ObjectivePanelController.ObjectiveTracker
     {
-        KillEnemiesBehaviorBase _killEnemiesBehaviorBase;
+        private KillEnemiesBehaviorBase _killEnemiesBehaviorBase;
         private int localKillAmount;
         private string name;
         

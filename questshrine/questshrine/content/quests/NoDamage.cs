@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using BepInEx.Configuration;
 using questshrine.bases;
 using RoR2;
@@ -14,6 +13,7 @@ public class NoDamage : QuestBase<NoDamage>
     public override string QuestTitle => "<style=cWorldEvent>the planet seeks entertainment .,,..</style>";
     public override string QuestDesc => "take no damage for {0} seconds,.,.";
     public override Sprite QuestIcon => questshrine.bundle.LoadAsset<Sprite>("nodamage");
+    public override bool useListeners => true;
     public override string[] Tags => ["noStack"];
     public override Type Behavior => typeof(NoDamageBehaviorBase);
 
@@ -28,7 +28,7 @@ public class NoDamage : QuestBase<NoDamage>
         ss1Behavior = Utils.CheckboxConfig(ConfigHelper("starstorm 1 behavior", true, "should use starstorm 1 behavior (reset timer on hit),., disabling will cause the quest to fail upon taking damage with no reward,.,."));
     }
 
-    public class NoDamageBehaviorBase : QuestBehaviorBase, IOnTakeDamageServerReceiver
+    public class NoDamageBehaviorBase : QuestBehaviorBase
     {
         public override QuestBase QuestBase => instance;
         public override Type ObjectiveType => typeof(NoDamageObjective);
@@ -38,9 +38,10 @@ public class NoDamage : QuestBase<NoDamage>
         
         public override void OnEnable()
         {
+            TakeDamageServer += OnTakeDamageServer;
+            
             startingTime = Run.instance.runRNG.RangeFloat(minTimer.Value, maxTimer.Value) - 0.5f;
             timer = startingTime + 2;
-            HG.ArrayUtils.ArrayAppend(ref body.healthComponent.onTakeDamageReceivers, this);
             QuestDescInternal = string.Format(instance.QuestDesc, startingTime.ToString("0"));
             base.OnEnable();
         }
@@ -66,13 +67,18 @@ public class NoDamage : QuestBase<NoDamage>
                 Destroy(this);
             }
         }
+
+        public override void OnDisable()
+        {
+            TakeDamageServer -= OnTakeDamageServer;
+            base.OnDisable();
+        }
     }
-    
-    public class NoDamageObjective : ObjectivePanelController.ObjectiveTracker
+
+    private class NoDamageObjective : ObjectivePanelController.ObjectiveTracker
     {
         NoDamageBehaviorBase noDamageQuest;
         private float localTimer;
-        private string name;
         
         public override string GenerateString()
         {

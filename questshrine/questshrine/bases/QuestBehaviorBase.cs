@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using RoR2;
 using RoR2.UI;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace questshrine.bases;
 
@@ -12,11 +13,16 @@ public abstract class QuestBehaviorBase : MonoBehaviour
     public abstract Type ObjectiveType { get; }
     public static int notificationEnum = 1225;
     public string QuestDescInternal;
-    public CharacterBody body;
+    public CharacterBody body => charMaster.GetBody();
+    public CharacterMaster charMaster;
+    public QuestInterfaceListener listener;
+
+    private int startingStage;
     
     private void Awake()
     {
-        body = GetComponent<CharacterBody>();
+        startingStage = RoR2.Run.instance.stageClearCount;
+        charMaster = GetComponent<CharacterMaster>();
     }
 
     public virtual void OnEnable()
@@ -44,11 +50,72 @@ public abstract class QuestBehaviorBase : MonoBehaviour
         {
             notificationQueueForMaster.PushNotification(info, 3f);
         }
+        
+        charMaster.onBodyStart += AddListenersNewStageCheck;
+        AddListenersNewStageCheck(body);
+    }
+    
+    private void AddListenersNewStageCheck(CharacterBody body)
+    {
+        if (startingStage != RoR2.Run.instance.stageClearCount)
+        {
+            Destroy(this);
+            return;
+        }
+        
+        if (!QuestBase.useListeners) return;
+        
+        if (body.gameObject.TryGetComponent(out listener))
+        {
+            listener.questListeners.Add(this);
+            return;
+        }
+        
+        listener = body.gameObject.AddComponent<QuestInterfaceListener>();
+        listener.questListeners.Add(this);
+    }
+
+    protected Action<DamageReport> KilledOtherServer;
+    protected Action<DamageReport> TakeDamageServer;
+
+    public class QuestInterfaceListener : MonoBehaviour, IOnKilledOtherServerReceiver, IOnTakeDamageServerReceiver
+    {
+        public List<QuestBehaviorBase> questListeners = [];
+
+        public void OnEnable()
+        {
+            HG.ArrayUtils.ArrayAppend(ref gameObject.GetComponent<CharacterBody>().healthComponent.onTakeDamageReceivers, this);
+        }
+
+        public void OnKilledOtherServer(DamageReport damageReport)
+        {
+            foreach (QuestBehaviorBase questBehaviorBase in questListeners)
+            {
+                questBehaviorBase?.KilledOtherServer(damageReport);
+            }
+        }
+
+        public void OnTakeDamageServer(DamageReport damageReport)
+        {
+            foreach (QuestBehaviorBase questBehaviorBase in questListeners)
+            {
+                questBehaviorBase?.TakeDamageServer(damageReport);
+            }
+        }
     }
 
     public virtual void OnDisable()
     {
         ObjectivePanelController.collectObjectiveSources -= OnCollectObjectiveSources;
+        if (QuestBase.useListeners)
+        {
+            listener.questListeners.Remove(this);
+            if (listener.questListeners.Count == 0)
+            {
+                Destroy(listener);
+            }
+        }
+        charMaster.onBodyStart -= AddListenersNewStageCheck;
     }
 
     public virtual void OnCollectObjectiveSources(CharacterMaster master, List<ObjectivePanelController.ObjectiveSourceDescriptor> objectiveSourcesList)
