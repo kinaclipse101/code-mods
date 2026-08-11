@@ -8,31 +8,35 @@ using UnityEngine;
 
 namespace questshrine.content.quests;
 
-public class DisableSkills : QuestItemBase<DisableSkills>
-{
-    public override string ItemName => "Disable Skills";
-    public override string ItemLangTokenName => "DISABLESKILLS";
-    public override Type BehaviorType => typeof(DisableSkillsBehaviorBase);
-    public override Sprite ItemIcon => questshrine.bundle.LoadAsset<Sprite>("default");
+public class DisableSkills : QuestBase<DisableSkills>
+{ 
+    public override string QuestName => "Disable Skills";
+    public override string QuestTitle => "<style=cWorldEvent>the planet sent out a freakings emp .,,..</style>";
+    public override string QuestDesc => "skills disabled for {0} seconds,.,.";
+    public override Sprite QuestIcon => questshrine.bundle.LoadAsset<Sprite>("noskills");
+    public override string[] Tags => ["noStack"];
+    public override Type Behavior => typeof(DisableSkillsBehaviorBase);
 
+    private static ConfigEntry<int> minTimer;
+    private static ConfigEntry<int> maxTimer;
+    
     public override void CreateConfig(ConfigFile config)
     {
+        minTimer = Utils.SliderConfig(ConfigHelper("min timer value", 15, "minimum timer value for skills being disabled .,,."));
+        maxTimer = Utils.SliderConfig(ConfigHelper("max timer value", 45, "max timer value for skills being disabled .,,."));
     }
 
     public class DisableSkillsBehaviorBase : QuestBehaviorBase
     {
-        public override ItemDef ItemDef => instance.ItemDef;
-        public override Type objectiveType => typeof(NoDamageObjective);
-        public override string titleText => "<style=cWorldEvent>the planet sent out a freakings emp .,,..</style>";
-        public string descText = "skills disabled for {0} seconds,.,.";
-        public static string tags => "noStack";
+        public override QuestBase QuestBase => instance;
+        public override Type ObjectiveType => typeof(NoDamageObjective);
 
         public float timer;
         public float startingTime;
         
         public override void OnEnable()
         {
-            startingTime = Run.instance.runRNG.RangeFloat(15, 45) - 0.5f;
+            startingTime = Run.instance.runRNG.RangeFloat(minTimer.Value, maxTimer.Value) - 0.5f;
             timer = startingTime + 2;
        
             if (body.skillLocator)
@@ -50,7 +54,7 @@ public class DisableSkills : QuestItemBase<DisableSkills>
                     body.skillLocator.special.SetSkillOverride(this, CharacterBody.CommonAssets.disabledSkill, GenericSkill.SkillOverridePriority.Contextual);
             }
             
-            internalDesc = string.Format(descText, startingTime.ToString("0"));
+            QuestDescInternal = string.Format(instance.QuestDesc, startingTime.ToString("0"));
             base.OnEnable();
         }
 
@@ -79,8 +83,7 @@ public class DisableSkills : QuestItemBase<DisableSkills>
             timer -= Time.fixedDeltaTime;
             if (timer < 0.5)
             {
-                GiveReward(body);
-                gaveReward = true;
+                instance.GiveReward(body);
                 Destroy(this);
             }
         }
@@ -90,7 +93,6 @@ public class DisableSkills : QuestItemBase<DisableSkills>
     {
         DisableSkillsBehaviorBase _disableSkillsQuest;
         private float localTimer;
-        private string name;
         
         public override string GenerateString()
         {
@@ -100,7 +102,7 @@ public class DisableSkills : QuestItemBase<DisableSkills>
             }
 
             localTimer = _disableSkillsQuest.timer;
-            string text = string.Format(_disableSkillsQuest.descText, localTimer.ToString("0"));
+            string text = string.Format(instance.QuestDesc, localTimer.ToString("0"));
             return text;
         }
 

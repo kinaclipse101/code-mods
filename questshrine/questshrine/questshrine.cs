@@ -4,10 +4,14 @@ using System.Linq;
 using System.Reflection;
 using BepInEx;
 using BepInEx.Bootstrap;
+using Mono.Cecil.Cil;
+using MonoMod.Cil;
 using questshrine.bases;
 using questshrine.content.componentns;
 using R2API;
+using R2API.Utils;
 using RoR2;
+using RoR2.UI;
 using ShaderSwapper;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
@@ -27,8 +31,8 @@ namespace questshrine
 
         public static questshrine instance;
         public static AssetBundle bundle;
-        private static Material shrineMat = Addressables.LoadAssetAsync<Material>(RoR2BepInExPack.GameAssetPaths.Version_1_35_0.RoR2_Base_ShrineBlood.matShrineBlood_mat).WaitForCompletion(); 
-
+        private static Material shrineMat = Addressables.LoadAssetAsync<Material>(RoR2BepInExPack.GameAssetPaths.Version_1_35_0.RoR2_Base_ShrineBlood.matShrineBlood_mat).WaitForCompletion();
+        private static GameObject notifPrefab;
         public void Awake()
         {
             Log.Init(Logger);
@@ -38,7 +42,100 @@ namespace questshrine
             StartCoroutine(bundle.UpgradeStubbedShadersAsync());
 
             LoadBases();
+            LoadShrine();
+
+            notifPrefab = bundle.LoadAsset<GameObject>("NotificationPanel2");
+            IL.RoR2.UI.NotificationUIController.SetUpNotification += AddCustomNotificationIL;
+        }
+
+        public void AddCustomNotificationIL(ILContext il)
+        {
+            ILCursor c = new ILCursor(il);
             
+            try
+            { 
+                /*
+                 * // currentNotification = Object.Instantiate(lowerPricedChestsRegenTransformationNotificationPrefab).GetComponent<GenericNotification>();
+                   IL_00eb: ldarg.0
+                   IL_00ec: ldloc.0
+                   IL_00ed: call !!0 [UnityEngine.CoreModule]UnityEngine.Object::Instantiate<class [UnityEngine.CoreModule]UnityEngine.GameObject>(!!0)
+                   IL_00f2: callvirt instance !!0 [UnityEngine.CoreModule]UnityEngine.GameObject::GetComponent<class RoR2.UI.GenericNotification>()
+                   IL_00f7: stfld class RoR2.UI.GenericNotification RoR2.UI.NotificationUIController::currentNotification
+                 */
+
+                if (c.TryGotoNext(x => x.MatchLdarg(0),
+                        x => x.MatchLdloc(0),
+                        x => x.MatchCallOrCallvirt<UnityEngine.Object>("Instantiate"),
+                        x => x.MatchCallOrCallvirt<GameObject>("GetComponent"),
+                        x => x.MatchStfld<NotificationUIController>("currentNotification")))
+                {
+                    Log.Debug("matched !! yayy");
+                    c.Index++; // stupid and dumb but previously would add the il right before the spot where all the switch statements jumped to so TT ,.,.
+                    c.Emit(OpCodes.Ldarg_0); // NotificationUIController
+                    c.Emit(OpCodes.Ldarg_1); // NotificationInfo
+                    c.Emit(OpCodes.Ldloc_S, (byte)0); //current transofrm prefab
+                    c.EmitDelegate<Func<NotificationUIController, CharacterMasterNotificationQueue.NotificationInfo, GameObject, GameObject>>(
+                    (notifUIControl, notifInfo, prevNotifPrefab) =>
+                    {
+                        Debug.Log(notifInfo?.transformation?.transformationType);
+                        if (notifInfo?.transformation?.transformationType != (CharacterMasterNotificationQueue.TransformationType)(QuestBehaviorBase.notificationEnum)) return prevNotifPrefab;
+                        
+                        Debug.Log($"transform type was same as enu m! {notifInfo?.transformation?.transformationType}");
+                        notifUIControl.LowerPricedChestsRegenTransformationNotificationPrefab = notifPrefab;
+                        return notifPrefab;
+
+                    });
+                    c.Emit(OpCodes.Stloc_0);
+                    
+                    //go after the instantiating
+                    c.Index += 4;
+                    Log.Debug(c);
+                    c.Emit(OpCodes.Ldarg_0); // NotificationUIController
+                    c.Emit(OpCodes.Ldarg_1); // NotificationInfo
+                    c.Emit(OpCodes.Ldarg_0); // NotificationUIController
+                    c.Emit(OpCodes.Ldfld, typeof(NotificationUIController).GetField("currentNotification", BindingFlags.Instance | BindingFlags.Default | BindingFlags.Public | BindingFlags.GetProperty | BindingFlags.GetField | BindingFlags.NonPublic)); //GenericNotification
+                    c.EmitDelegate<Action<NotificationUIController, CharacterMasterNotificationQueue.NotificationInfo, GenericNotification>>(
+                        (notifUIControl, notifInfo, genericNotif) =>
+                        {
+                            if (notifInfo?.transformation?.transformationType != (CharacterMasterNotificationQueue.TransformationType)(QuestBehaviorBase.notificationEnum)) return;
+                            Debug.Log($"transform type was same as enu m! {notifInfo?.transformation?.transformationType}");
+                            QuestBase questBase = notifInfo.data as QuestBase;
+                            genericNotif.titleText.token = Language.GetString(questBase.QuestTitle);
+                            genericNotif.descriptionText.token = Language.GetString(questBase.QuestDesc);
+                            genericNotif.iconImage.texture = questBase.QuestIcon.texture;
+                        });
+                }
+                else
+                {
+                    Log.Error("fuck !!!!!!!!!!!!!!! couldnt match notifictation il .,. dlc4 probablys idk.,,..,");
+                    QuestBehaviorBase.notificationEnum = (int)CharacterMasterNotificationQueue.TransformationType.Default;
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Error("error while il patching notifiction ! dlc4 probably killed me,.,.");
+                Log.Error(e);
+                QuestBehaviorBase.notificationEnum = (int)CharacterMasterNotificationQueue.TransformationType.Default;
+            }
+        }
+
+        public readonly List<QuestBase> questComponents = [];
+        private void LoadBases()
+        {
+            IEnumerable<Type> quests = Assembly.GetExecutingAssembly().GetTypes().Where(type => !type.IsAbstract && type.IsSubclassOf(typeof(QuestBase)));
+            foreach (Type questItem in quests)
+            {
+                QuestBase quest = (QuestBase)Activator.CreateInstance(questItem);
+                quest.Init(Config);
+                if (quest.enabled)
+                {
+                    questComponents.Add(quest);
+                }
+            }
+        }
+
+        private void LoadShrine()
+        {
             GameObject questshrine = bundle.LoadAsset<GameObject>("questshrineprefab");
             questshrine.transform.Find("chanceshrine").Find("shrine").GetComponent<MeshRenderer>().material = shrineMat;
             
@@ -59,19 +156,35 @@ namespace questshrine
                 InteractableCategory = DirectorAPI.InteractableCategory.Shrines
             };
             
-            // Registers the interactable on every stage
             DirectorAPI.Helpers.AddNewInteractable(directorCardHolder);
-            // Or create your stage list and register it on each of those stages
-            List<DirectorAPI.Stage> stageList =
+            /*List<DirectorAPI.Stage> stageList =
             [
                 DirectorAPI.Stage.DistantRoost,
-                DirectorAPI.Stage.AbyssalDepthsSimulacrum
+                DirectorAPI.Stage.TitanicPlains,
+                DirectorAPI.Stage.TitanicPlainsSimulacrum,
+                DirectorAPI.Stage.AbandonedAqueduct, 
+                DirectorAPI.Stage.AbandonedAqueductSimulacrum, 
+                DirectorAPI.Stage.AbyssalDepths,
+                DirectorAPI.Stage.AbyssalDepthsSimulacrum, 
+                DirectorAPI.Stage.AphelianSanctuary, 
+                DirectorAPI.Stage.AphelianSanctuarySimulacrum,
+                DirectorAPI.Stage.CommencementSimulacrum, 
+                DirectorAPI.Stage.RallypointDelta,
+                DirectorAPI.Stage.RallypointDeltaSimulacrum, 
+                DirectorAPI.Stage.ScorchedAcres, 
+                DirectorAPI.Stage.SiphonedForest,
+                DirectorAPI.Stage.SirensCall, 
+                DirectorAPI.Stage.SkyMeadow, 
+                DirectorAPI.Stage.SkyMeadowSimulacrum, 
+                DirectorAPI.Stage.SulfurPools,
+                DirectorAPI.Stage.SunderedGrove, 
+                DirectorAPI.Stage.WetlandAspect,
             ];
 
             foreach (DirectorAPI.Stage stage in stageList)
             {
                 DirectorAPI.Helpers.AddNewInteractableToStage(directorCardHolder, stage);
-            }
+            }*/
         }
         
         private void Update()
@@ -90,28 +203,6 @@ namespace questshrine
                 }
             }
 #endif  
-        }
-
-        public readonly List<Type> questComponents = [];
-        private void LoadBases()
-        {
-            IEnumerable<Type> itemTiers = Assembly.GetExecutingAssembly().GetTypes().Where(type => !type.IsAbstract && type.IsSubclassOf(typeof(ItemTierBase)));
-            foreach (Type itemTierType in itemTiers)
-            {
-                ItemTierBase itemTier = (ItemTierBase)Activator.CreateInstance(itemTierType);
-                itemTier.Create();
-            }
-            
-            IEnumerable<Type> itemTypes = Assembly.GetExecutingAssembly().GetTypes().Where(type => !type.IsAbstract && type.IsSubclassOf(typeof(QuestItemBase)));
-            foreach (Type questItem in itemTypes)
-            {
-                QuestItemBase item = (QuestItemBase)Activator.CreateInstance(questItem);
-                item.Init(Config);
-                if (item.enabled)
-                {
-                    questComponents.Add(item.BehaviorType);
-                }
-            }
         }
     }
 }

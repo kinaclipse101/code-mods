@@ -8,12 +8,13 @@ using UnityEngine;
 
 namespace questshrine.content.quests;
 
-public class KillEnemies : QuestItemBase<KillEnemies>
-{
-    public override string ItemName => "Kill Enemies";
-    public override string ItemLangTokenName => "KILLENEMIES";
-    public override Type BehaviorType => typeof(KillEnemiesBehaviorBase);
-    public override Sprite ItemIcon => questshrine.bundle.LoadAsset<Sprite>("killenemies");
+public class KillEnemies : QuestBase<KillEnemies>
+{ 
+    public override string QuestName => "Kill Enemies";
+    public override string QuestTitle => "<style=cWorldEvent>the planet's malice grows .,,..</style>";
+    public override string QuestDesc => "defeat {0} {1},.,.";
+    public override Sprite QuestIcon => questshrine.bundle.LoadAsset<Sprite>("killenemies");
+    public override Type Behavior => typeof(KillEnemiesBehaviorBase);
 
     public override void CreateConfig(ConfigFile config)
     {
@@ -21,10 +22,8 @@ public class KillEnemies : QuestItemBase<KillEnemies>
 
     public class KillEnemiesBehaviorBase : QuestBehaviorBase, IOnKilledOtherServerReceiver
     {
-        public override ItemDef ItemDef => instance.ItemDef;
-        public override Type objectiveType => typeof(KillEnemiesObjective);
-        public override string titleText => "<style=cWorldEvent>the planet's malice grows .,,..</style>";
-        public string descText => "defeat {0} {1},.,.";
+        public override QuestBase QuestBase => instance;
+        public override Type ObjectiveType => typeof(KillEnemiesObjective);
 
         public BodyIndex targetIndex;
         public int killAmount;
@@ -69,8 +68,10 @@ public class KillEnemies : QuestItemBase<KillEnemies>
 
             targetIndex = BodyCatalog.FindBodyIndex(chosenMaster.bodyPrefab);
             killAmount = (int)((50f/availableChoices[availableMasters.IndexOf(chosenMaster)].value.cost) * Run.instance.runRNG.RangeFloat(1, 2));
+            if (killAmount <= 3)
+                killAmount += 2;
             
-            internalDesc = string.Format(descText, killAmount, Language.GetString(BodyCatalog.GetBodyPrefab(targetIndex).GetComponent<CharacterBody>().baseNameToken) + (killAmount > 1 ? "s" : ""));
+            QuestDescInternal = string.Format(instance.QuestDesc, killAmount, Language.GetString(BodyCatalog.GetBodyPrefab(targetIndex).GetComponent<CharacterBody>().baseNameToken) + (killAmount > 1 ? "s" : ""));
             base.OnEnable();
         }
 
@@ -81,8 +82,7 @@ public class KillEnemies : QuestItemBase<KillEnemies>
             killAmount--;
             if (killAmount != 0) return;
             
-            GiveReward(body);
-            gaveReward = true;
+            instance.GiveReward(body);
             Destroy(this);
         }
     }

@@ -12,8 +12,8 @@ namespace questshrine.content.componentns;
 
 public class QuestShrineComponent : NetworkBehaviour
 {
+    private static readonly GameObject shrineUseEffect = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Common/VFX/ShrineUseEffect.prefab").WaitForCompletion();
     public PurchaseInteraction purchaseInteraction;
-    private GameObject shrineUseEffect = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Common/VFX/ShrineUseEffect.prefab").WaitForCompletion();
 
     public void Start()
     {
@@ -30,7 +30,7 @@ public class QuestShrineComponent : NetworkBehaviour
     {
         if (!NetworkServer.active)
         {
-            Log.Warning("[Server] function 'BeebleMemorialManager::OnPurchase(RoR2.Interactor)' called on client");
+            Log.Warning("on purchase server called on client .,.");
             return;
         }
 
@@ -44,56 +44,52 @@ public class QuestShrineComponent : NetworkBehaviour
         Chat.SendBroadcastChat(new Chat.SimpleChatMessage() { baseToken = "<style=cEvent><color=#674DAA>quest shrine activated .,.,.,</color></style>" });
 
         ActivateQuest(context);
+        
+        purchaseInteraction.SetAvailable(false);
+        gameObject.GetComponent<ChildLocator>().FindChild("Symbol").gameObject.SetActive(false);
     }
 
     public void ActivateQuest(CostTypeDef.PayCostContext context)
     {
-        WeightedSelection<Type> weightedSelection = new WeightedSelection<Type>();
-        foreach (Type itemTypeCombo in questshrine.instance.questComponents)
+        WeightedSelection<QuestBase> weightedSelection = new WeightedSelection<QuestBase>();
+        foreach (QuestBase questBase in questshrine.instance.questComponents)
         {
             float weight = 10;
             
-            int questCount = context.activatorBody.gameObject.GetComponents(itemTypeCombo).Length;
+            int questCount = context.activatorBody.gameObject.GetComponents(questBase.Behavior).Length;
             for (int i = 0; i < questCount; i++)
             {
                 weight /= 2;
             }
-            
-            PropertyInfo tagsProperty = itemTypeCombo.GetProperty("tags");
-            if (tagsProperty != null)
+
+            if (questBase.Tags != null)
             {
-                string tags = (string)tagsProperty.GetValue(null);
-                if (tags != null)
+                foreach (string tagType in questBase.Tags)
                 {
-                    if (tags.Split(",").Contains("noStack") && questCount > 0)
+                    switch (tagType)
                     {
-                        weight = 0;
-                    }
-                    if (tags.Split(",").Contains("requireScrapper"))
-                    {
-                        GameObject scrapper = GameObject.Find("Scrapper(Clone)");
-                        if (!scrapper)
-                        {
-                            weight = 0;
-                        }
+                        case "noStack":
+                            if (questCount > 0)
+                            {
+                                weight = 0;
+                            }
+                            break;
+                        case "requireScrapper":
+                            GameObject scrapper = GameObject.Find("Scrapper(Clone)");
+                            if (!scrapper)
+                            {
+                                weight = 0;
+                            }
+                            break;
                     }
                 }
             }
             
             
-            //string tags = propertyInfo.GetValue(itemTypeCombo).ToString();
-            //Log.Debug($"{itemTypeCombo} test {tags}");
-
-            weightedSelection.AddChoice(itemTypeCombo, weight);
+            weightedSelection.AddChoice(questBase, weight);
         }
 
-        Type component = weightedSelection.Evaluate(Run.instance.runRNG.nextNormalizedFloat);
+        Type component = weightedSelection.Evaluate(Run.instance.runRNG.nextNormalizedFloat).Behavior;
         context.activatorBody.gameObject.AddComponent(component);
     }
-
-    //public Type FindValid(WeightedSelection<Type> weightedSelection)
-    //{
-    //    QuestBehaviorBase component = (QuestBehaviorBase)weightedSelection.Evaluate(Run.instance.runRNG.nextNormalizedFloat);
-    //
-    //}
 }

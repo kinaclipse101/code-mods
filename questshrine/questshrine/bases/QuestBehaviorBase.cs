@@ -8,14 +8,12 @@ namespace questshrine.bases;
 
 public abstract class QuestBehaviorBase : MonoBehaviour
 {
+    public abstract QuestBase QuestBase { get; }
+    public abstract Type ObjectiveType { get; }
+    public static int notificationEnum = 1225;
+    public string QuestDescInternal;
     public CharacterBody body;
-    public abstract ItemDef ItemDef { get; }
-    public virtual bool gaveReward { get; set; }
-    public abstract Type objectiveType { get; }
-    public abstract string titleText { get; }
     
-    public string internalDesc;
-
     private void Awake()
     {
         body = GetComponent<CharacterBody>();
@@ -26,10 +24,10 @@ public abstract class QuestBehaviorBase : MonoBehaviour
         ObjectivePanelController.collectObjectiveSources += OnCollectObjectiveSources;
             
         CharacterMasterNotificationQueue notificationQueueForMaster = CharacterMasterNotificationQueue.GetNotificationQueueForMaster(body.master);
-        var info = new CharacterMasterNotificationQueue.NotificationInfo(ItemDef, null, new CharacterMasterNotificationQueue.CustomOverrideInfo()
+        var info = new CharacterMasterNotificationQueue.NotificationInfo(QuestBase, new CharacterMasterNotificationQueue.TransformationInfo((CharacterMasterNotificationQueue.TransformationType)notificationEnum, null), new CharacterMasterNotificationQueue.CustomOverrideInfo()
         {
-            titleText = titleText,
-            descriptionText = internalDesc,
+            titleText = QuestBase.QuestTitle,
+            descriptionText = QuestDescInternal,
             iconColor = new Color(1f, 1f, 1f, 1f)
         }, showExtra: false);
 
@@ -58,7 +56,7 @@ public abstract class QuestBehaviorBase : MonoBehaviour
         var newObjective = new ObjectivePanelController.ObjectiveSourceDescriptor
         {
             master = master,
-            objectiveType = objectiveType,
+            objectiveType = ObjectiveType,
             source = this
         };
 

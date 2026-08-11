@@ -21,8 +21,22 @@ public static class Utils
         ModSettingsManager.AddOption(stepSliderOption);
     }
 
-    public static void SliderConfig(int min, int max, ConfigEntry<int> config)
+    public static ConfigEntry<int> SliderConfig(ConfigEntry<int> config, int min = -1, int max = -1)
     {
+        if (addedConfigs.Contains(config.Definition.Key))
+        {
+            return config;
+        }
+        addedConfigs.Add(config.Definition.Key);
+
+        if (min == -1)
+        {
+            min = ((int)(config.DefaultValue))/2;
+        }
+        if (max == -1)
+        {
+            max = ((int)(config.DefaultValue)) * 2;
+        }
         IntSliderConfig intSliderConfig = new IntSliderConfig
         {
             max = max,
@@ -31,6 +45,8 @@ public static class Utils
         };
         IntSliderOption intSliderOption = new IntSliderOption(config, intSliderConfig);
         ModSettingsManager.AddOption(intSliderOption);
+        
+        return config;
     }
 
     public static ConfigEntry<bool> CheckboxConfig(ConfigEntry<bool> config, bool restartRequired = false)
