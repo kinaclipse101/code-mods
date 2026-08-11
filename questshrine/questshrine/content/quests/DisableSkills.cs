@@ -1,3 +1,5 @@
+//NETWORKING TODO
+//uses Run.instance.runRNG, send r2api networking to clients  
 using System;
 using BepInEx.Configuration;
 using questshrine.bases;

@@ -1,3 +1,5 @@
+//NETWORKING TODO
+//Run.instance.runRNG isnt available on clients; make sure 
 using System;
 using BepInEx.Configuration;
 using questshrine.bases;

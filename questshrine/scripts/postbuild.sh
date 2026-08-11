@@ -10,7 +10,7 @@ runBuild () {
   fi
     
   if [[ "$4" == "Weaver" ]]; then 
-      wine "$weaverDir"/Unity.UNetWeaver.exe  "$weaverDir"/libs/UnityEngine.CoreModule.dll "$weaverDir"/libs/com.unity.multiplayer-hlapi.Runtime.dll "$1" "$1""$3.dll" "$weaverDir"/libs/
+      wine "$weaverDir"/Unity.UNetWeaver.exe  "$weaverDir"/libs/UnityEngine.CoreModule.dll "$weaverDir"/libs/com.unity.multiplayer-hlapi.Runtime.dll "$buildDir" "$buildDir""$3.dll" "$weaverDir"/libs/
   fi
     
   cp "$buildDir""$3.dll" "$1$3/""$3.dll"

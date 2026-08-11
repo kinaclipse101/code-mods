@@ -45,7 +45,6 @@ public class QuestShrineComponent : NetworkBehaviour
         ActivateQuest(context);
         
         purchaseInteraction.SetAvailable(false);
-        gameObject.GetComponent<ChildLocator>().FindChild("Symbol").gameObject.SetActive(false);
     }
 
     public void ActivateQuest(CostTypeDef.PayCostContext context)
@@ -87,7 +86,15 @@ public class QuestShrineComponent : NetworkBehaviour
             weightedSelection.AddChoice(questBase, weight);
         }
 
-        Type component = weightedSelection.Evaluate(Run.instance.runRNG.nextNormalizedFloat).Behavior;
-        context.activatorMaster.gameObject.AddComponent(component);
+        QuestBase selectedQuest = weightedSelection.Evaluate(Run.instance.runRNG.nextNormalizedFloat);
+        //context.activatorMaster.gameObject.AddComponent(selectedQuest.Behavior);
+        RpcActivateQuest(context.activatorMaster.gameObject, questshrine.instance.questComponents.IndexOf(selectedQuest));
+    }
+
+    [ClientRpc]
+    public void RpcActivateQuest(GameObject master, int questIndex)
+    {
+        Log.Debug("ran clientrpc !");
+        master.gameObject.AddComponent(questshrine.instance.questComponents[questIndex].Behavior);
     }
 }

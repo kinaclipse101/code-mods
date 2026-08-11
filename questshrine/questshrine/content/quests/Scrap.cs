@@ -1,3 +1,5 @@
+//NETWORKING TODO
+//sync scrapped state (send a packet when the component is done 
 using System;
 using BepInEx.Configuration;
 using questshrine.bases;

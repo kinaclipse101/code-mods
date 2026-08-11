@@ -155,27 +155,28 @@ namespace questshrine
             };
             
             DirectorAPI.Helpers.AddNewInteractable(directorCardHolder);
+            ContentAddition.AddNetworkedObject(questshrine);
             /*List<DirectorAPI.Stage> stageList =
             [
                 DirectorAPI.Stage.DistantRoost,
                 DirectorAPI.Stage.TitanicPlains,
                 DirectorAPI.Stage.TitanicPlainsSimulacrum,
-                DirectorAPI.Stage.AbandonedAqueduct, 
-                DirectorAPI.Stage.AbandonedAqueductSimulacrum, 
+                DirectorAPI.Stage.AbandonedAqueduct,
+                DirectorAPI.Stage.AbandonedAqueductSimulacrum,
                 DirectorAPI.Stage.AbyssalDepths,
-                DirectorAPI.Stage.AbyssalDepthsSimulacrum, 
-                DirectorAPI.Stage.AphelianSanctuary, 
+                DirectorAPI.Stage.AbyssalDepthsSimulacrum,
+                DirectorAPI.Stage.AphelianSanctuary,
                 DirectorAPI.Stage.AphelianSanctuarySimulacrum,
-                DirectorAPI.Stage.CommencementSimulacrum, 
+                DirectorAPI.Stage.CommencementSimulacrum,
                 DirectorAPI.Stage.RallypointDelta,
-                DirectorAPI.Stage.RallypointDeltaSimulacrum, 
-                DirectorAPI.Stage.ScorchedAcres, 
+                DirectorAPI.Stage.RallypointDeltaSimulacrum,
+                DirectorAPI.Stage.ScorchedAcres,
                 DirectorAPI.Stage.SiphonedForest,
-                DirectorAPI.Stage.SirensCall, 
-                DirectorAPI.Stage.SkyMeadow, 
-                DirectorAPI.Stage.SkyMeadowSimulacrum, 
+                DirectorAPI.Stage.SirensCall,
+                DirectorAPI.Stage.SkyMeadow,
+                DirectorAPI.Stage.SkyMeadowSimulacrum,
                 DirectorAPI.Stage.SulfurPools,
-                DirectorAPI.Stage.SunderedGrove, 
+                DirectorAPI.Stage.SunderedGrove,
                 DirectorAPI.Stage.WetlandAspect,
             ];
 

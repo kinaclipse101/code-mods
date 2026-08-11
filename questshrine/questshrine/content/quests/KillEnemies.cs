@@ -1,3 +1,5 @@
+//NETWORKING TODO
+//Run.instance.runRNG isnt available on clients; send a r2api networking packet to them .,
 using System;
 using System.Collections.Generic;
 using BepInEx.Configuration;
