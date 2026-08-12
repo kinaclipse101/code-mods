@@ -30,7 +30,7 @@ public class drifter : PatchBase<drifter>
 
     public void applyHooks()
     {
-        if (enabled.Value)
+        if (enabled.Value && clientSide.Value)
         {
             /*EmptyBag.ModifyProjectile += EmptyBagOnModifyProjectile;
             ProjectileStickOnImpact.TrySticking += ProjectileStickOnImpactOnTrySticking;

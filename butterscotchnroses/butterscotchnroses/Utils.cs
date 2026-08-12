@@ -53,10 +53,11 @@ public class Utils
         ModSettingsManager.AddOption(intSliderOption);
     }
     
-    public static void CheckboxConfig(ConfigEntry<bool> config)
+    public static void CheckboxConfig(ConfigEntry<bool> config, bool restartRequired = false)
     {
-        CheckBoxConfig checkBoxConfig = new();
-        CheckBoxOption checkBoxOption = new(config, checkBoxConfig);
+        CheckBoxConfig checkBoxConfig = new CheckBoxConfig();
+        checkBoxConfig.restartRequired = restartRequired;
+        CheckBoxOption checkBoxOption = new CheckBoxOption(config, checkBoxConfig);
         ModSettingsManager.AddOption(checkBoxOption);
     }
 
@@ -101,27 +102,17 @@ public class Utils
         return myTexture2D;
     }
 
-    public static Texture2D hsvModifyTexture(Texture2D texture, float hueShift = 0, float saturation = 0, float value = 0, bool dontExport = false)
+    public static Texture2D hsvModifyTexture(Texture2D texture, float hueShift = 0, float saturation = 0, float value = 0, bool dontExport = false, bool multiplySaturation = false)
     {
         Texture2D returnTexture;
-        
-        string testPath = $"{skinrecolors.textureDirs}\\{texture.name}_RecolorH{hueShift}S{saturation}V{value}.png";
-        //Log.Debug($"specificdir: {specificDir} | test path: {testPath} | config path : {Paths.ConfigPath} | dir name : {Path.GetDirectoryName(Paths.ConfigPath)}");
-        if (skinrecolors.recoloredTextures.TryGetValue($"{texture.name}_RecolorH{hueShift}S{saturation}V{value}.png", out Texture2D texture2D))
+
+        string fileType = Enum.GetName(typeof(skinrecolors.fileTypes), skinrecolors.fileType.Value);
+        string testFileName = $"{texture.name}_RecolorH{hueShift}S{saturation}V{value}.{fileType}";
+        string testPath = $"{skinrecolors.textureDirs}\\{testFileName}";
+        if (skinrecolors.recoloredTextures.TryGetValue($"{testFileName}", out Texture2D texture2D))
         {
-            Log.Debug($"found {texture.name}_RecolorH{hueShift}S{saturation}V{value}.png in recolored texture dict !!");
+            Log.Debug($"found {testFileName} in recolored texture dict !!");
             returnTexture = texture2D;
-        }
-        else if (File.Exists(testPath))
-        {
-            Stopwatch stopwatch = new();
-            stopwatch.Start();
-            
-            byte[] bytes = File.ReadAllBytes(testPath);
-            returnTexture = new Texture2D(2, 2);
-            returnTexture.LoadImage(bytes);
-            
-            Log.Debug($"loaded return texture in {stopwatch.ElapsedMilliseconds}ms !!! {texture.name}");
         }
         else
         {
@@ -131,15 +122,21 @@ public class Utils
             for (int i = 0; i < texPixels.Length; i++)
             {
                 Color pixelColor = texPixels[i];
-                Color.RGBToHSV(pixelColor, out float h, out float s, out float v);
-                
+                UnityEngine.Color.RGBToHSV(pixelColor, out float h, out float s, out float v);
             
                 h = (h + hueShift / 360f) % 1f;
                 if (h < 0f) h += 1f;
                 v += value/100f;
-                s += saturation/100f;
+                if (multiplySaturation)
+                {
+                    s *= saturation;
+                }
+                else
+                {
+                    s += saturation/100f;
+                }
                 
-                Color newColor = Color.HSVToRGB(h, s, v);
+                Color newColor = UnityEngine.Color.HSVToRGB(h, s, v);
                 newColor.a = pixelColor.a;
                 texPixels[i] = newColor;
             }
@@ -165,70 +162,68 @@ public class Utils
         return returnTexture;
     }
     
-    public static Material RecolorMaterial(Material mat, float hue, float saturation, float value, bool dontAdd = false)
+    public static Material RecolorMaterial(Material mat, float hue, float saturation, float value, bool dontAdd = false, bool multiplySaturation = false)
     {
         if (mat.HasTexture(MainTex) && mat.GetTexture(MainTex) != null)
-        {
-            mat.SetTexture(MainTex, hsvModifyTexture(mat.GetTexture(MainTex) as Texture2D, hue, saturation/100f, value/100f, dontAdd));
-        }
+            mat.SetTexture(MainTex, hsvModifyTexture(mat.GetTexture(MainTex) as Texture2D, hue, saturation/100f, value/100f, dontAdd, multiplySaturation));
+        
         if (mat.HasTexture(EmTex) && mat.GetTexture(EmTex) != null)
-        {
-            mat.SetTexture(EmTex, hsvModifyTexture(mat.GetTexture(EmTex) as Texture2D, hue, saturation/100f, value/100f, dontAdd));
-        }
+            mat.SetTexture(EmTex, hsvModifyTexture(mat.GetTexture(EmTex) as Texture2D, hue, saturation/100f, value/100f, dontAdd, multiplySaturation));
+        
         if (mat.HasTexture(RemapTex) && mat.GetTexture(RemapTex) != null)
-        {
-            mat.SetTexture(RemapTex, hsvModifyTexture(mat.GetTexture(RemapTex) as Texture2D, hue, saturation/100f, value/100f, dontAdd));
-        }
+            mat.SetTexture(RemapTex, hsvModifyTexture(mat.GetTexture(RemapTex) as Texture2D, hue, saturation/100f, value/100f, dontAdd, multiplySaturation));
+        
+        if (mat.HasTexture(FresnelRamp) && mat.GetTexture(FresnelRamp) != null)
+            mat.SetTexture(FresnelRamp, hsvModifyTexture(mat.GetTexture(FresnelRamp) as Texture2D, hue, saturation/100f, value/100f, dontAdd, multiplySaturation));
 
-        if (mat.HasColor(EmColor))
-        {
-            Color.RGBToHSV(mat.GetColor(EmColor), out float colorHue, out float colorSaturation, out float colorValue);
-                        
-            colorHue = (colorHue + hue / 360f) % 1f;
-            if (colorHue < 0f) colorHue += 1f;
-            colorSaturation += saturation/100f;
-            colorValue += value/100f;
-            Color newColor = Color.HSVToRGB(colorHue, colorSaturation, colorValue);
-            newColor.a = mat.GetColor(EmColor).a;
-                
-            mat.SetColor(EmColor, newColor);
-        }
-        if (mat.HasColor(_Color))
-        {
-            Color.RGBToHSV(mat.GetColor(_Color), out float colorHue, out float colorSaturation, out float colorValue);
-                        
-            colorHue = (colorHue + hue / 360f) % 1f;
-            if (colorHue < 0f) colorHue += 1f;
-            colorSaturation += saturation/100f;
-            colorValue += value/100f;
-            Color newColor = Color.HSVToRGB(colorHue, colorSaturation, colorValue);
-            newColor.a = mat.GetColor(_Color).a;
-            
-            mat.SetColor(_Color, newColor);
-        }
-        if (mat.HasColor(TintColor))
-        {
-            Color.RGBToHSV(mat.GetColor(TintColor), out float colorHue, out float colorSaturation, out float colorValue);
-                        
-            colorHue = (colorHue + hue / 360f) % 1f;
-            if (colorHue < 0f) colorHue += 1f;
-            colorSaturation += saturation/100f;
-            colorValue += value/100f;
-            Color newColor = Color.HSVToRGB(colorHue, colorSaturation, colorValue);
-            newColor.a = mat.GetColor(TintColor).a;
-
-            mat.SetColor(TintColor, newColor);
-        }
+        TryRecolorMat(mat, Color, hue, saturation, value, multiplySaturation);
+        TryRecolorMat(mat, EmColor, hue, saturation, value, multiplySaturation);
+        TryRecolorMat(mat, TintColor, hue, saturation, value, multiplySaturation);
+        TryRecolorMat(mat, WireframeColor, hue, saturation, value, multiplySaturation);
+        TryRecolorMat(mat, VertColor, hue, saturation, value, multiplySaturation);
 
         return mat;
+    }
+
+    private static void TryRecolorMat(Material mat, int nameID, float hue, float sat, float value, bool multiplySat = false)
+    {
+        if (!mat.HasColor(nameID)) return;
+        
+        //Log.Debug($"asdasdasd {mat}");
+        
+        Color origColor = mat.GetColor(nameID);
+        UnityEngine.Color.RGBToHSV(origColor, out float colorHue, out float colorSaturation, out float colorValue);
+                        
+        colorHue = (colorHue + hue / 360f) % 1f;
+        if (colorHue < 0f)
+        {
+            colorHue += 1f;
+        }
+        if (multiplySat)
+        {
+            colorSaturation *= sat / 100f;
+        }
+        else
+        {
+            colorSaturation += sat / 100f;
+        }
+        colorValue += value/100f;
+        
+        Color newColor = UnityEngine.Color.HSVToRGB(colorHue, colorSaturation, colorValue);
+        newColor.a = origColor.a;
+            
+        mat.SetColor(nameID, newColor);
     }
     
     private static readonly int MainTex = Shader.PropertyToID("_MainTex");
     private static readonly int RemapTex = Shader.PropertyToID("_RemapTex");
     private static readonly int EmTex = Shader.PropertyToID("_EmTex");
+    private static readonly int FresnelRamp = Shader.PropertyToID("_FresnelRamp");
     private static readonly int EmColor = Shader.PropertyToID("_EmColor");
-    private static readonly int _Color = Shader.PropertyToID("_Color");
+    private static readonly int Color = Shader.PropertyToID("_Color");
     private static readonly int TintColor = Shader.PropertyToID("_TintColor");
+    private static readonly int WireframeColor = Shader.PropertyToID("WireframeColor");
+    private static readonly int VertColor = Shader.PropertyToID("_VertColor");
 
     public static ModelSkinController GetModelLocator(GameObject characterbody)
     {

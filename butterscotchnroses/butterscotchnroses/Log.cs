@@ -1,4 +1,5 @@
-﻿using BepInEx.Logging;
+﻿using System.Runtime.CompilerServices;
+using BepInEx.Logging;
 
 namespace BNR
 {
@@ -11,7 +12,7 @@ namespace BNR
             _logSource = logSource;
         }
 
-        internal static void Debug(object data)
+        internal static void Debug(object data,[CallerLineNumber] int line = -1)
         { 
             #if DEBUG
                 _logSource.LogDebug(data);

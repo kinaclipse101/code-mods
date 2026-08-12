@@ -44,5 +44,6 @@ namespace BNR.patches
         public virtual void Hooks() { }
         
         public virtual void FixedUpdate() { }
+        public virtual void Update() { }
     }
 }

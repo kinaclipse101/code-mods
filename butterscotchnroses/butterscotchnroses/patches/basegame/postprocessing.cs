@@ -108,12 +108,8 @@ public class postprocessing : PatchBase<postprocessing>
                 //maybe a custom class as a datatype ? 
             };
         }
-        
 
-        public static Dictionary<string, Type> typeStringMatcher = new Dictionary<string, Type>()
-        {
-            //{ "AmbientOcclusion", typeof(AmbientOcclusion) },
-        };
+        public static Dictionary<string, Type> typeStringMatcher = new Dictionary<string, Type>();
         
         private void ApplyEdits()
         {

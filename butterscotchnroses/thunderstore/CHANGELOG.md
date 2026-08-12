@@ -1,3 +1,9 @@
+## 0.2.1
+- now is a release build so shouldnt need unityhotreload to stop constant log spam TT .,,.
+- added a try catch to skin recolors so an empty config for it wont cause the game to hang .,,.,
+- made skin_clear run on new runs/stages so if you were trying recolor_skin with one skin then went over to another in a different run it wouldnt swap you back .,,.,. 
+- fixed an nre when starstorm patches were enabled while indev config was false ,.,. .
+
 ## 0.2.0 
 - sorrys for such a long wait ,..,.,,. was busy ,..,.,.,
 - this update moved a couple configs from "BNR - " to "Mods - " ,.,. check your configs in case you edited anys of those !!

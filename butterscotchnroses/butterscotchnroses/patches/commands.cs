@@ -25,8 +25,8 @@ public class commands
         }
         
         string skinName = !skinrecolors.newSkinName.IsNullOrWhiteSpace() ? skinrecolors.newSkinName : "Generated Skin";
-        skinrecolors.skinRecolors.Value += $";;{skinrecolors.baseSkinName.name},{skinrecolors.currentBody.name[..^7]},{skinrecolors.hsv[0]},{skinrecolors.hsv[1]},{skinrecolors.hsv[2]},{skinName}";
-        Debug.Log($"added ;;{skinrecolors.baseSkinName.name},{skinrecolors.currentBody.name[..^7]},{skinrecolors.hsv[0]},{skinrecolors.hsv[1]},{skinrecolors.hsv[2]},{skinName} to the config !!! restart your game to see it in lobby .,,.");
+        skinrecolors.skinRecolors.Value += $";;{skinrecolors.baseSkinName.name},{skinrecolors.currentBody.name[..^7]},{skinrecolors.hsv[0]},{skinrecolors.hsv[1]},{skinrecolors.hsv[2]},{skinName},{skinrecolors.multiplySat}";
+        Debug.Log($"added ;;{skinrecolors.baseSkinName.name},{skinrecolors.currentBody.name[..^7]},{skinrecolors.hsv[0]},{skinrecolors.hsv[1]},{skinrecolors.hsv[2]},{skinName},{skinrecolors.multiplySat} to the config !!! restart your game to see it in lobby .,,.");
     }
     
     [ConCommand(commandName = "skin_list", flags = ConVarFlags.None, helpText = "list internal skins.,,.")]
@@ -66,8 +66,8 @@ public class commands
     {
         bodyNameToPrev.Clear();
     }
-    
-    private static Dictionary<string, int> bodyNameToPrev = [];
+
+    public static Dictionary<string, int> bodyNameToPrev = [];
     [ConCommand(commandName = "skin_recolor", flags = ConVarFlags.None, helpText = "recolor current skins.,,.")]
     public static void recolorSkin(ConCommandArgs args)
     {
@@ -86,6 +86,7 @@ public class commands
 
         float HSVsat = 0;
         float HSVvalue = 0;
+        bool multiplySaturation = false;
         if (float.TryParse(args[0], out float HSVhue))
         {
             if (args.Count >= 2)
@@ -96,6 +97,11 @@ public class commands
             if (args.Count >= 3)
             {
                 HSVvalue = float.Parse(args[2]);
+            }
+
+            if (args.Count >= 4)
+            {
+                multiplySaturation = bool.Parse(args[3]);
             }
         }
         else
@@ -116,83 +122,36 @@ public class commands
             {
                 HSVvalue = float.Parse(args[3]);
             }
+            
+            if (args.Count >= 5)
+            {
+                multiplySaturation = bool.Parse(args[4]);
+            }
         }
+        Log.Debug($"multipl sat ? {multiplySaturation}");
         
-        
-        SkinDef replacementSkin = skinrecolors.skinRecolor(baseSkin.name, args.senderBody.name, HSVhue, HSVsat, HSVvalue, "temp", "", true);
+        SkinDef replacementSkin = skinrecolors.skinRecolor(baseSkin.name, args.senderBody.name, HSVhue, HSVsat, HSVvalue, "temp", "", true, multiplySaturation);
 
         Array.Resize(ref skinController.skins, skinController.skins.Length + 1);
         skinController.skins[^1] = replacementSkin;
         skinController.currentSkinIndex = skinController.skins.Length - 1;
         args.senderBody.skinIndex = (uint)(skinController.skins.Length - 1);
+        
 #pragma warning disable CS0618 // Type or member is obsolete
         skinController.ApplySkin(skinController.currentSkinIndex);
 #pragma warning restore CS0618 // Type or member is obsolete
+        
+        Array.Resize(ref skinController.skins, skinController.skins.Length - 1);
+        //skinController.skins[^1] = replacementSkin;
         
         skinrecolors.baseSkinName = baseSkin;
         skinrecolors.hsv[0] = HSVhue;
         skinrecolors.hsv[1] = HSVsat;
         skinrecolors.hsv[2] = HSVvalue;
         skinrecolors.currentBody = args.senderBody;
-        
+        skinrecolors.multiplySat = multiplySaturation;
+
         //Log.Debug("bwaa");
     }
     #endregion
-    
-    private static List<uint> sounds = [];
-    [ConCommand(commandName = "play_sound", flags = ConVarFlags.None, helpText = "https://risk-of-thunder.github.io/R2Wiki/Mod-Creation/Developer-Reference/Sound-%E2%80%90-Wwise-Events/")]
-    public static void akplaysound(ConCommandArgs args)
-    {
-        Debug.Log("args = " + args[0]);
-        Debug.Log($"sender body = {args.senderBody}");
-        uint soundid = AkSoundEngine.PostEvent(args[0], ((Component)(object)args.senderBody).gameObject);
-        Debug.Log($"sound id = {soundid}");
-        sounds.Add(soundid);
-    }
-
-    [ConCommand(commandName = "stop_sound", flags = ConVarFlags.None, helpText = "stop looping sounds from playsound !!!!!")]
-    public static void akstopsound(ConCommandArgs args)
-    {
-        Debug.Log($"sender body = {args.senderBody}");
-        foreach (uint sound in sounds.ToList())
-        {
-            AkSoundEngine.StopPlayingID(sound);
-            Debug.Log($"stopped sound {sound} !!!");
-            sounds.Remove(sound);
-        }
-    }
-    
-    [ConCommand(commandName = "play_effect", flags = ConVarFlags.None, helpText = "play an effect !!!!!")]
-    [ConCommand(commandName = "spawn_effect", flags = ConVarFlags.None, helpText = "play an effect !!!!!")]
-    public static void spawnEffect(ConCommandArgs args)
-    {
-        float scale = 1;
-        if (args.Count > 1)
-        {
-            scale = Convert.ToSingle(args[1]);
-        }
-        Debug.Log("args = " + args[0] + " " + scale);
-        
-        EffectDef effect = null;
-        foreach (EffectDef effectDef in EffectCatalog.entries)
-        {
-            if (!effectDef.prefabName.Contains(args[0])) continue;
-            
-            effect = effectDef;
-            break;
-        }
-
-        if (effect == null)
-        {
-            Log.Warning($"couldnt find effect {args[0]} !!!");
-            return;
-        }
-        
-        EffectManager.SpawnEffect(effect.index, new EffectData
-        {
-            origin = args.senderBody.transform.position,
-            scale = scale,
-            rotation = Util.QuaternionSafeLookRotation(Vector3.up)
-        }, true);
-    }
 }

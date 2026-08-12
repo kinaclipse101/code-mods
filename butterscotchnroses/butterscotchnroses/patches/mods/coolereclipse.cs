@@ -336,7 +336,7 @@ class EclipseNetworkBehavior() : NetworkBehaviour
 
     private void Awake()
     {
-        Log.Debug("asdas343d");
+        //Log.Debug("asdas343d");
         Object.DontDestroyOnLoad(this);
     }
 
@@ -355,7 +355,7 @@ class EclipseNetworkBehavior() : NetworkBehaviour
     {
         base.OnStartClient();
         
-        Log.Debug($"rng null {eclipseRNGs == null}");
+        //Log.Debug($"rng null {eclipseRNGs == null}");
         
         if (NetworkServer.active)
         {
@@ -365,15 +365,15 @@ class EclipseNetworkBehavior() : NetworkBehaviour
                 pinkEclipses.Add(Random.RandomRangeInt(0, 100) > coolereclipse.pinkEclipseChance.Value);
             }
         }
-        Log.Debug($"rng count {eclipseRNGs.Count}");
-        Log.Debug($"rng count {eclipseRNGs[0]}");
-        Log.Debug($"rng null {eclipseRNGs == null}");
+        //Log.Debug($"rng count {eclipseRNGs.Count}");
+        //Log.Debug($"rng count {eclipseRNGs[0]}");
+        //Log.Debug($"rng null {eclipseRNGs == null}");
     }
 
 
     private void OnEnable()
     {
-        Log.Debug("asdasd");
+        //Log.Debug("asdasd");
         On.RoR2.Stage.Start += StageOnStart;
     }
     

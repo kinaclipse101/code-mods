@@ -17,7 +17,7 @@ public class malachite : PatchBase<malachite>
         
     private void applyHooks()
     {
-        if (enabled.Value)
+        if (enabled.Value && clientSide.Value)
         {
             On.RoR2.CharacterBody.OnBuffFirstStackGained += CharacterBodyOnOnBuffFirstStackGained;
         }

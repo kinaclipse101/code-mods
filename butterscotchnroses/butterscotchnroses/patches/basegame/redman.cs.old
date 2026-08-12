@@ -1,0 +1,37 @@
+using System.Collections;
+using BNR.patches;
+using BepInEx.Configuration;
+using HarmonyLib;
+using KinematicCharacterController;
+using On.RoR2.UI;
+using R2API;
+using RiskOfOptions;
+using RiskOfOptions.Options;
+using RoR2;
+using ShaderSwapper;
+using Unity.Baselib.LowLevel;
+using UnityEngine;
+
+namespace BNR;
+
+public class redman : PatchBase<redman>
+{
+    private static AssetBundle redmanBundle;
+    private static GameObject redmanBody => butterscotchnroses.redmanBundle.LoadAsset<GameObject>("redmanBody.prefab");
+    public override void Init()
+    {
+        redmanBundle = AssetBundle.LoadFromFile(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(butterscotchnroses.instance.Info.Location)!, "redmanbundle"));
+        IEnumerator upgradeStubbedShadersAsync = redmanBundle.UpgradeStubbedShadersAsync();
+        applyHooks();
+    }
+
+    private void applyHooks()
+    {
+        //redmanBody.GetComponent<KinematicCharacterMotor>().enabled = false; do this on spawn
+        ContentAddition.AddBody(redmanBody);
+    }
+
+    public override void Config(ConfigFile config)
+    {
+    }
+}

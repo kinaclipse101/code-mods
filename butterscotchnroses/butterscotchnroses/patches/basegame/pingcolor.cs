@@ -7,6 +7,7 @@ using RiskOfOptions.Options;
 using RoR2;
 using Unity.Baselib.LowLevel;
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace BNR;
 
@@ -89,6 +90,7 @@ public class pingrecolor : PatchBase<pingrecolor>
         pingIndicator.positionIndicator.alwaysVisibleObject.transform.GetChild(0).GetComponent<SpriteRenderer>().color = pingIndicatorDefault.Value;
         pingIndicator.positionIndicator.alwaysVisibleObject.transform.GetChild(1).GetComponent<SpriteRenderer>().color = pingIndicatorEnemy.Value;
         pingIndicator.positionIndicator.alwaysVisibleObject.transform.GetChild(2).GetComponent<SpriteRenderer>().color = pingIndicatorInteractable.Value;
+        //pingIndicator.gameObject.GetComponent<NetworkIdentity>().isPingable = true; //why did i add this ,. 
         //Log.Debug(pingIndicator.positionIndicator.alwaysVisibleObject.transform.GetChild(0).GetComponent<SpriteRenderer>().color + " bwaa2 ");
     }
 

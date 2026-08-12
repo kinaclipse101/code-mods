@@ -1,0 +1,138 @@
+using System;
+using System.Collections.Generic;
+using BNR;
+using EntityStates;
+using EntityStates.Toolbot;
+using HG;
+using KinematicCharacterController;
+using RoR2;
+using RoR2.Projectile;
+using UnityEngine;
+using UnityEngine.AddressableAssets;
+using UnityEngine.Networking;
+
+namespace butterscotchnroses.skills.huntress.teleportarrow.entitystates;
+
+public class teleportarrow : BaseSkillState
+{
+    public Vector3 impactInfoEstimatedPointOfImpact;
+    private HurtBoxGroup hurtBoxGroup;
+    private float stopwatch;
+    private float duration = 0.1f;
+    private float startDistance;
+    public List<Collider> myColliders = [];
+    private Transform modelTransform;
+    private CharacterModel characterModel;
+    private int oldLayer;
+    private KinematicCharacterMotor kcm;
+    private Rigidbody rigid;
+    private CharacterMotor motor;
+    
+    public override void OnEnter()
+    {
+        //Log.Debug($"impactInfoEstimatedPointOfImpact {impactInfoEstimatedPointOfImpact}");
+        hurtBoxGroup = base.characterBody.hurtBoxGroup;
+        hurtBoxGroup.hurtBoxesDeactivatorCounter++;
+        startDistance = Vector3.Distance(impactInfoEstimatedPointOfImpact, gameObject.transform.position);
+        modelTransform = GetModelTransform();
+        if (modelTransform)
+        {
+            characterModel = modelTransform.GetComponent<CharacterModel>();
+        }
+        
+        kcm = characterBody.GetComponent<KinematicCharacterMotor>();
+        rigid = characterBody.GetComponent<Rigidbody>();
+        motor = characterBody.characterMotor;
+        
+        
+        
+        if (kcm)
+        {
+            kcm.CollidableLayers = 0;
+        }
+        else if (rigid)
+        {
+            var collider = rigid.GetComponent<Collider>();
+            if (collider)
+            {
+                collider.isTrigger = false;
+            }
+        }
+        
+        if (modelTransform)
+        {
+            TemporaryOverlayInstance temporaryOverlay = TemporaryOverlayManager.AddOverlay(modelTransform.gameObject);
+            temporaryOverlay.duration = 0.6f;
+            temporaryOverlay.animateShaderAlpha = true;
+            temporaryOverlay.alphaCurve = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
+            temporaryOverlay.destroyComponentOnEnd = true;
+            temporaryOverlay.originalMaterial = LegacyResourcesAPI.Load<Material>("Materials/matHuntressFlashBright");
+            temporaryOverlay.AddToCharacterModel(modelTransform.GetComponent<CharacterModel>());
+
+            TemporaryOverlayInstance temporaryOverlay2 = TemporaryOverlayManager.AddOverlay(modelTransform.gameObject);
+            temporaryOverlay2.duration = 0.7f;
+            temporaryOverlay2.animateShaderAlpha = true;
+            temporaryOverlay2.alphaCurve = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
+            temporaryOverlay2.destroyComponentOnEnd = true;
+            temporaryOverlay2.originalMaterial = LegacyResourcesAPI.Load<Material>("Materials/matHuntressFlashExpanded");
+            temporaryOverlay2.AddToCharacterModel(modelTransform.GetComponent<CharacterModel>());
+        }   
+        
+        
+        
+        base.OnEnter();
+    }
+    
+    public override void OnExit()
+    {
+        hurtBoxGroup.hurtBoxesDeactivatorCounter--;
+        
+        if (kcm)
+        {
+            kcm.RebuildCollidableLayers();
+        }
+        else if (rigid)
+        {
+            var collider = rigid.GetComponent<Collider>();
+            if (collider)
+            {
+                collider.isTrigger = true;
+            }
+        }
+        
+        base.OnExit();
+    }
+        
+    public override void FixedUpdate()
+    {
+        base.FixedUpdate();
+        stopwatch += GetDeltaTime();
+        if ((bool)base.characterMotor && (bool)base.characterDirection)
+        {
+            //base.characterMotor.rootMotion += impactInfoEstimatedPointOfImpact * (moveSpeedStat * 5 * GetDeltaTime());
+            base.characterMotor.velocity = Vector3.zero;
+            //float currentDistance = Vector3.Distance(impactInfoEstimatedPointOfImpact, gameObject.transform.position);
+            base.characterMotor.rootMotion += (impactInfoEstimatedPointOfImpact - gameObject.transform.position).normalized * GetDeltaTime() * startDistance/duration;
+            //characterBody.transform.position = impactInfoEstimatedPointOfImpact; //Vector3.Lerp(gameObject.transform.position, impactInfoEstimatedPointOfImpact, GetDeltaTime() * startDistance/duration);
+        }
+        if (stopwatch >= duration && base.isAuthority)
+        {
+            outer.SetNextStateToMain();
+        }
+    }
+
+    public override InterruptPriority GetMinimumInterruptPriority()
+    {
+        return InterruptPriority.PrioritySkill;
+    }
+    
+    public override void OnSerialize(NetworkWriter writer)
+    {
+        writer.Write(impactInfoEstimatedPointOfImpact);
+    }
+
+    public override void OnDeserialize(NetworkReader reader)
+    {
+        impactInfoEstimatedPointOfImpact = reader.ReadVector3();
+    }
+}

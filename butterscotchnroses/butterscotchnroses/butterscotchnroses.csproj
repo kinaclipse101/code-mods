@@ -70,7 +70,11 @@
 	  </Reference>
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="content\" />
+	</ItemGroup>
+
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-	  <Exec Command="$(SolutionDir)butterscotchnroses/postbuild.sh $(SolutionDir)"/>
+	  <Exec Command="$(SolutionDir)butterscotchnroses/postbuild.sh $(SolutionDir) $(ConfigurationName)"/>
 	</Target>
 </Project>

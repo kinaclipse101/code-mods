@@ -1,0 +1,74 @@
+using BNR;
+using butterscotchnroses.skills.huntress.teleportarrow.entitystates;
+using EntityStates;
+using Inferno;
+using R2API;
+using RoR2;
+using RoR2.Projectile;
+using UnityEngine;
+using UnityEngine.AddressableAssets;
+using UnityEngine.Networking;
+
+namespace butterscotchnroses.skills.huntress;
+
+public class teleportarrowdef : SkillBase<teleportarrowdef> {
+    public override SerializableEntityStateType ActivationState => ContentAddition.AddEntityState<throwarrow>(out bool _);
+    public override float Cooldown => 3f;
+    public override bool DelayCooldown => true;
+    public override string Description => "Bwehhh. Bwah!";
+    public override bool Agile => true;
+    public override bool AgileAddKeyword => true;
+    public override bool IsCombat => false;
+    public override string LangToken => "teleportarrow";
+    public override int StockToConsume => 1;
+    public override int MaxStock => 1;
+    public override UnlockableDef Unlock => null;
+    public override string Machine => "Weapon";
+    public override Sprite SkillIcon => BNR.butterscotchnroses.bnrBundle.LoadAsset<Sprite>("umauma");//Main.Assets.LoadAsset<Sprite>("Assets/Icons/Acrid/Pathosis.png");
+    public override SkillSlot Slot => SkillSlot.Utility;
+    public override string Survivor => RoR2BepInExPack.GameAssetPaths.Version_1_39_0.RoR2_Base_Huntress.HuntressBody_prefab;//Utils.Paths.GameObject.CrocoBody;
+    public override bool MustKeyPress => false;
+    public override string Name => "Teleport Arrow";
+    
+    public static GameObject ArrowPrefab;
+    public static GameObject Visualizer;
+    public static GameObject ArrowRainIndicator;
+    public override void PostCreation()
+    {
+        base.PostCreation();
+
+        Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Common/VFX/BasicThrowableVisualizer.prefab").Completed += handle => { Visualizer = handle.Result; };
+        Addressables.LoadAssetAsync<GameObject>(RoR2BepInExPack.GameAssetPathsBetter.RoR2_Base_Huntress.HuntressArrowRainIndicator_prefab).Completed += handle => { ArrowRainIndicator = handle.Result; };
+        //Addressables.LoadAssetAsync<GameObject>(RoR2BepInExPack.GameAssetPaths.Version_1_39_0.RoR2_Base_Toolbot.CryoCanisterProjectile_prefab).Completed += handle => { BeamPrefab = handle.Result; };
+
+        ArrowPrefab = BNR.butterscotchnroses.bnrBundle.LoadAsset<GameObject>("ArrowPrefab");
+
+        GameObject ghostPrefab = Addressables.LoadAssetAsync<GameObject>(RoR2BepInExPack.GameAssetPaths.Version_1_39_0.RoR2_Base_Commando.CommandoGrenadeGhost_prefab).WaitForCompletion().InstantiateClone("ArrowPrefabGhost");
+        ghostPrefab.transform.Find("mdlCommandoGrenade").gameObject.SetActive(false);
+
+        GameObject pivot = new GameObject("Pivot");
+        pivot.transform.parent = ghostPrefab.transform;
+        
+        GameObject arrowPrefab = Object.Instantiate(Addressables.LoadAssetAsync<GameObject>(RoR2BepInExPack.GameAssetPaths.Version_1_39_0.RoR2_Base_Huntress.ArrowDisplay_prefab).WaitForCompletion(), pivot.transform);
+        arrowPrefab.transform.position = new Vector3(0, 0, -2);
+        arrowPrefab.transform.rotation = Quaternion.Euler(0, 0, 0);
+        arrowPrefab.transform.localScale = new Vector3(5, 5, 5);
+        
+        ghostPrefab.transform.Find("Helix").transform.position = new Vector3(0, 0, -2);
+        ghostPrefab.transform.Find("Point Light").GetComponent<Light>().color = new Color32(60, 217, 221, 255);
+
+        ProjectileController arrowProjectileController = ArrowPrefab.GetComponent<ProjectileController>();
+        arrowProjectileController.ghostPrefab = ghostPrefab;
+        
+        ProjectileStickOnImpact projectileStickOnImpact = ArrowPrefab.GetComponent<ProjectileStickOnImpact>();
+        //projectileStickOnImpact.invertNormal = false;
+        //arrowProjectileController.allowPrediction = true;
+        ArrowPrefab.AddComponent<teleportarrowland>();
+        
+        
+        ContentAddition.AddProjectile(ArrowPrefab);
+        ContentAddition.AddEntityState<teleportarrow.entitystates.teleportarrow>(out bool _);
+        
+        //On.RoR2.Projectile.ProjectileImpactEvent
+    }
+}

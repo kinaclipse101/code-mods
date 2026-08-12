@@ -1,0 +1,135 @@
+using System;
+using System.Collections.Generic;
+using BNR;
+using RoR2;
+using RoR2.Navigation;
+using RoR2.Projectile;
+using UnityEngine;
+using UnityEngine.AddressableAssets;
+using UnityEngine.Networking;
+using Object = UnityEngine.Object;
+
+namespace butterscotchnroses.skills.huntress;
+
+public class teleportarrowland : MonoBehaviour
+{
+    private ProjectileController projectileController;
+    private ProjectileImpactEventCaller projectileImpactEvent;
+    private Rigidbody rigidbody;
+    private List<MapZone> overlappedMapZones = [];
+    private bool stuck;
+    private Vector3 direction;
+
+    private void OnEnable()
+    {
+        List<MapZone> instancesList = InstanceTracker.GetInstancesList<MapZone>();
+        int count = instancesList.Count;
+        for (int i = 0; i < count; i++)
+        {
+            if (instancesList[i].IsPointInsideMapZone(gameObject.transform.position))
+            {
+                overlappedMapZones.Add(instancesList[i]);
+            }
+        }
+
+        projectileController = GetComponent<ProjectileController>();
+        projectileImpactEvent = GetComponent<ProjectileImpactEventCaller>();
+        rigidbody = GetComponent<Rigidbody>();
+        
+        projectileImpactEvent.onImpactWithWorld.AddListener(onStuck);
+        projectileImpactEvent.onImpactWithCharacter.AddListener(onStuck);
+        
+        direction = base.transform.forward;
+    }
+
+    private void FixedUpdate()
+    {
+        transform.forward = direction;
+        
+        if (stuck) return;
+        
+        if ((bool)rigidbody && rigidbody.velocity.sqrMagnitude >= 1)
+        {
+            direction = rigidbody.velocity.normalized;
+        }
+        
+        foreach (MapZone mapZone in overlappedMapZones)
+        {
+            if (!mapZone) continue;
+            
+            bool insizeZone = mapZone.IsPointInsideMapZone(gameObject.transform.position);
+            if (!insizeZone)
+            {
+                Log.Debug($"arrow exited from {mapZone.gameObject.name} !! killing .,,.");
+                Destroy(gameObject);
+            }
+        }
+    }
+
+    private void onStuck(ProjectileImpactInfo arg0)
+    {
+        EffectData effectData = new EffectData
+        {
+            rotation = Quaternion.LookRotation(arg0.estimatedPointOfImpact - projectileController.owner.transform.position, Vector3.up),
+            origin = projectileController.owner.transform.position
+        };
+        EffectManager.SpawnEffect(Addressables.LoadAssetAsync<GameObject>(RoR2BepInExPack.GameAssetPaths.Version_1_39_0.RoR2_Base_Huntress.HuntressBlinkEffect_prefab).WaitForCompletion(), effectData, transmit: false);
+        
+        teleportarrow.entitystates.teleportarrow newState = new teleportarrow.entitystates.teleportarrow
+        {
+            impactInfoEstimatedPointOfImpact = arg0.estimatedPointOfImpact
+        };
+        
+        if (NetworkServer.active && projectileController.owner && projectileController.owner.TryGetComponent(out CharacterBody characterBody))
+        {
+            NodeGraph nodeGraph = SceneInfo.instance.GetNodeGraph(MapNodeGroup.GraphType.Ground);
+
+            List<NodeGraph.NodeIndex> list = nodeGraph.FindNodesInRangeWithFlagConditions(arg0.estimatedPointOfImpact, 0f, 8f, HullMask.Human, NodeFlags.NoCeiling, NodeFlags.None, preventOverhead: true);
+            Log.Debug(list.Count);
+            if (list.Count != 0)
+            {
+                NodeGraph.NodeIndex closest = list[0];
+
+                if (nodeGraph.GetNodePosition(closest, out Vector3 blinkDestination))
+                {
+                    blinkDestination = arg0.estimatedPointOfImpact + projectileController.owner.transform.position - characterBody.footPosition;
+                }
+                
+                foreach (NodeGraph.NodeIndex nodeIndex in list)
+                {
+                    if (!nodeGraph.GetNodePosition(nodeIndex, out Vector3 positionIterate)) continue;
+                    if (!nodeGraph.GetNodePosition(closest, out Vector3 closestPosition))
+                    {
+                        closest = nodeIndex;
+                        continue;
+                    }
+
+                    if (Vector3.Distance(arg0.estimatedPointOfImpact, positionIterate) <= Vector3.Distance(closestPosition, positionIterate))
+                    {
+                        closest = nodeIndex;
+                        if (nodeGraph.GetNodePosition(nodeIndex, out blinkDestination))
+                        {
+                            blinkDestination = arg0.estimatedPointOfImpact + projectileController.owner.transform.position - characterBody.footPosition;
+                            Log.Debug($"new position at {blinkDestination}");
+                        }
+                    }
+                }
+                
+                newState.impactInfoEstimatedPointOfImpact = blinkDestination;
+            }
+            
+            characterBody.GetComponent<EntityStateMachine>()?.SetNextState(newState);
+        }
+        
+        projectileController.ghost.transform.Find("Pivot").transform.rotation = Quaternion.Euler(0, 180, 180);
+        projectileController.ghost.transform.Find("Helix").transform.rotation = Quaternion.Euler(0, 180, 180);
+        
+        stuck = true;
+        
+        projectileController.ghost.transform.Find("Pulse").gameObject.SetActive(false);
+        FlickerLight flickerLight = projectileController.ghost.transform.Find("Point Light").gameObject.GetComponent<FlickerLight>();
+        flickerLight.enabled = false;
+        Light light = projectileController.ghost.transform.Find("Point Light").gameObject.GetComponent<Light>();
+        light.intensity = 20f;
+    }
+}

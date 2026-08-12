@@ -1,0 +1,67 @@
+using BNR;
+using EntityStates;
+using EntityStates.Toolbot;
+using RoR2;
+using RoR2.Projectile;
+using UnityEngine;
+using UnityEngine.AddressableAssets;
+using TeamFilter = On.RoR2.TeamFilter;
+
+namespace butterscotchnroses.skills.huntress.teleportarrow.entitystates;
+
+public class throwarrow : AimThrowableBase {
+    private float damagePerSecond = 3.4f;
+    private float radius = 1.5f;
+    private int tickRate = 9;
+    private float damagePerTick => damagePerSecond / tickRate;
+    private float delay => 1f / tickRate;
+    private float minDuration = 0.2f;
+    private float stopwatch = 0f;
+    private float procCoefficient = 0.7f;
+    private GameObject vfxInstance;
+    private GameObject vfxPrefab => teleportarrowdef.ArrowPrefab;
+    private float critDelay = 3f;
+    private Transform muzzle => GetModelChildLocator().FindChild("Muzzle");
+    //private AimStunDrone goodState;
+    private static int fireSeekingShotStateHash = Animator.StringToHash("FireSeekingShot");
+    private static int fireSeekingShotParamHash = Animator.StringToHash("FireSeekingShot.playbackRate");
+
+    public override void OnEnter()
+    {
+        setFuse = false;
+        maxDistance = 50;
+        rayRadius = 2f;
+        arcVisualizerPrefab = teleportarrowdef.Visualizer;
+        projectilePrefab = vfxPrefab;
+        endpointVisualizerPrefab = teleportarrowdef.ArrowRainIndicator;
+        endpointVisualizerRadiusScale = 0.3f;    
+        damageCoefficient = 0f;
+        baseMinimumDuration = 0.2f;
+        projectileBaseSpeed = 200;
+        
+        base.OnEnter();
+    }
+    
+    public override void OnExit()
+    {
+        base.OnExit();
+        
+        PlayCrossfade("Gesture, Override", fireSeekingShotStateHash, fireSeekingShotParamHash, 0.7f, 0.7f * 0.2f / attackSpeedStat);
+        PlayCrossfade("Gesture, Additive", fireSeekingShotStateHash, fireSeekingShotParamHash, 0.7f, 0.7f * 0.2f / attackSpeedStat);
+        
+        //Log.Debug($"exited ,.,");
+    }
+
+    public override InterruptPriority GetMinimumInterruptPriority()
+    {
+        return InterruptPriority.PrioritySkill;
+    }
+    
+    public override void ModifyProjectile(ref FireProjectileInfo fireProjectileInfo)
+    {
+        base.ModifyProjectile(ref fireProjectileInfo);
+        fireProjectileInfo.force = 100f;
+        //fireProjectileInfo.position = muzzle.position; //this is cool but makes the perdiction indicator wrong ,.., 
+        fireProjectileInfo.owner = characterBody.gameObject;
+    }
+}
