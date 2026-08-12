@@ -3,6 +3,7 @@ using BepInEx.Configuration;
 using RoR2;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
+using UnityEngine.Networking;
 
 namespace questshrine.bases;
 
@@ -50,6 +51,8 @@ public abstract class QuestBase
     private static BasicPickupDropTable chest1DT = Addressables.LoadAssetAsync<BasicPickupDropTable>(RoR2BepInExPack.GameAssetPaths.Version_1_35_0.RoR2_Base_Chest1.dtChest1_asset).WaitForCompletion(); 
     public virtual void GiveReward(CharacterBody body)
     {
+        if (!NetworkServer.active) return;
+        
         PickupIndex final = chest1DT.GeneratePickup(Run.instance.runRNG).pickupIndex;
         PickupDropletController.CreatePickupDroplet(new GenericPickupController.CreatePickupInfo
         {

@@ -2,7 +2,7 @@
 
 buildDir="$1""$3"/bin/"$4"/"$2"/netstandard2.1/
 pcDebugDir="/run/media/icebrah/buh/gale/riskofrain2/profiles/debug 3/BepInEx/plugins/"
-weaverDir="/run/media/icebrah/buh/github/code-mods/weaver/"
+weaverDir="/run/media/icebrah/buh/github/code-mods/weaver/NetworkWeaver"
 
 runBuild () {
   if ! [ -d "$1$3" ]; then

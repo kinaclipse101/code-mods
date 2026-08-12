@@ -7,6 +7,7 @@ using RoR2;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.Networking;
+using Object = UnityEngine.Object;
 
 namespace questshrine.content.componentns;
 
@@ -42,19 +43,19 @@ public class QuestShrineComponent : NetworkBehaviour
             color = new Color32(103, 77, 170, 255)
         }, true);
 
-        ActivateQuest(context);
-        
         purchaseInteraction.SetAvailable(false);
+        
+        ActivateQuest(context);
     }
 
     public void ActivateQuest(CostTypeDef.PayCostContext context)
     {
         WeightedSelection<QuestBase> weightedSelection = new WeightedSelection<QuestBase>();
-        foreach (QuestBase questBase in questshrine.instance.questComponents)
+        foreach (QuestBase questBase in questshrine.instance.questObjectCatalog.Keys.ToArray())
         {
             float weight = 10;
-            
-            int questCount = context.activatorMaster.gameObject.GetComponents(questBase.Behavior).Length;
+
+            int questCount = QuestBehaviorBase.activeQuests.Count(quest => quest.QuestBase == questBase && quest.charMaster == context.activatorMaster);
             for (int i = 0; i < questCount; i++)
             {
                 weight /= 2;
@@ -87,14 +88,14 @@ public class QuestShrineComponent : NetworkBehaviour
         }
 
         QuestBase selectedQuest = weightedSelection.Evaluate(Run.instance.runRNG.nextNormalizedFloat);
-        //context.activatorMaster.gameObject.AddComponent(selectedQuest.Behavior);
-        RpcActivateQuest(context.activatorMaster.gameObject, questshrine.instance.questComponents.IndexOf(selectedQuest));
-    }
-
-    [ClientRpc]
-    public void RpcActivateQuest(GameObject master, int questIndex)
-    {
-        Log.Debug("ran clientrpc !");
-        master.gameObject.AddComponent(questshrine.instance.questComponents[questIndex].Behavior);
+        if (questshrine.instance.questObjectCatalog.TryGetValue(selectedQuest, out GameObject questPrefab))
+        {
+            GameObject questObj = Instantiate(questPrefab);
+            QuestBehaviorBase questBehavior = questObj.GetComponent<QuestBehaviorBase>();
+            NetworkServer.Spawn(questObj);
+            questBehavior.targetMasterObject = context.activatorMaster.gameObject;
+            questBehavior.OnSyncTarget(context.activatorMaster.gameObject);
+            //questBehavior.RpcStartQuest();
+        }
     }
 }

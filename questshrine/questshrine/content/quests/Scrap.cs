@@ -1,11 +1,14 @@
 //NETWORKING TODO
 //sync scrapped state (send a packet when the component is done 
 using System;
+using System.Linq;
 using BepInEx.Configuration;
 using questshrine.bases;
 using RoR2;
 using RoR2.UI;
 using UnityEngine;
+using UnityEngine.Networking;
+using UnityEngine.Serialization;
 using static RoR2.ItemTier;
 using Object = UnityEngine.Object;
 
@@ -38,24 +41,32 @@ public class Scrap : QuestBase<Scrap>
 
     private void QuestScrapper(On.RoR2.ScrapperController.orig_BeginScrapping_UniquePickup orig, ScrapperController self, UniquePickup pickuptotake)
     {
-        ScrapItemBehaviorBase[] scrapQuests = self.interactor?.gameObject.GetComponent<CharacterBody>()?.master?.gameObject.GetComponents<ScrapItemBehaviorBase>();
-        if (scrapQuests == null || scrapQuests.Length == 0)
+        CharacterMaster interactorMaster = self.interactor?.gameObject.GetComponent<CharacterBody>()?.master;
+        if (!interactorMaster)
+        {
+            orig(self, pickuptotake);
+            return;
+        }
+        
+        QuestBehaviorBase[] scrapQuests = QuestBehaviorBase.activeQuests.Where(quest => quest.charMaster == interactorMaster && quest is ScrapItemBehaviorBase).ToArray();
+        if (scrapQuests.Length == 0)
         {
             orig(self, pickuptotake);
             return;
         }
 
-        foreach (ScrapItemBehaviorBase scrapQuest in scrapQuests)
+        foreach (QuestBehaviorBase questBehaviorBase in scrapQuests)
         {
-            if (specificItem.Value && scrapQuest.targetIndex != ItemIndex.None)
+            ScrapItemBehaviorBase scrapQuest = (ScrapItemBehaviorBase)questBehaviorBase;
+            if (specificItem.Value && scrapQuest.targetItemIndex != (int)ItemIndex.None)
             {
-                if (scrapQuest.targetIndex != PickupCatalog.GetPickupDef(pickuptotake.pickupIndex)!.itemIndex)
+                if ((ItemIndex)scrapQuest.targetItemIndex != PickupCatalog.GetPickupDef(pickuptotake.pickupIndex)!.itemIndex)
                     continue;
                 
             }
             else
             {
-                if (scrapQuest.targetTier != PickupCatalog.GetPickupDef(pickuptotake.pickupIndex)!.itemTier)
+                if ((ItemTier)scrapQuest.targetTier != PickupCatalog.GetPickupDef(pickuptotake.pickupIndex)!.itemTier)
                     continue;
             }
 
@@ -79,12 +90,21 @@ public class Scrap : QuestBase<Scrap>
         public override Type ObjectiveType => typeof(ScrapItemObjective);
         
         public string descTextSpecific = "scrap a {0},.,.";
-        public ItemTier targetTier;
-        public ItemIndex targetIndex = ItemIndex.None;
         public bool gaveReward;
         
-        public override void OnEnable()
+        [SyncVar]
+        public int targetTier;
+        [SyncVar]
+        public int targetItemIndex = -1;
+        
+        public override void StartQuest()
         {
+            if (!NetworkServer.active)
+            {
+                base.StartQuest();
+                return;
+            }
+            
             BasicPickupDropTable dropTable = ScriptableObject.CreateInstance<BasicPickupDropTable>();
             dropTable.tier1Weight = 0f;
             dropTable.tier2Weight = 0f;
@@ -116,11 +136,11 @@ public class Scrap : QuestBase<Scrap>
 
             if (dropTable.tier1Weight == 0 && dropTable.tier2Weight == 0 && dropTable.tier3Weight == 0)
             {
-                targetTier = Tier1;
+                targetTier = (int)Tier1;
             }
             else
             {
-                targetTier = PickupCatalog.GetPickupDef(dropTable.GeneratePickup(Run.instance.runRNG).pickupIndex)!.itemTier;
+                targetTier = (int)PickupCatalog.GetPickupDef(dropTable.GeneratePickup(Run.instance.runRNG).pickupIndex)!.itemTier;
             }
 
             if (specificItem.Value)
@@ -149,23 +169,23 @@ public class Scrap : QuestBase<Scrap>
                 Log.Debug($"choice length {indexSelection.choices.Length}");
                 if (availchoice)
                 {
-                    targetIndex = indexSelection.Evaluate(Run.instance.treasureRng.nextNormalizedFloat);
+                    targetItemIndex = (int)indexSelection.Evaluate(Run.instance.treasureRng.nextNormalizedFloat);
                 }
             }
 
             string tierName = targetTier switch
             {
-                Tier1 => "Common",
-                Tier2 => "Uncommon",
-                Tier3 => "Legendary",
+                (int)Tier1 => "Common",
+                (int)Tier2 => "Uncommon",
+                (int)Tier3 => "Legendary",
             };
             QuestDescInternal = string.Format(instance.QuestDesc, tierName);
-            if (specificItem.Value && targetIndex != ItemIndex.None)
+            if (specificItem.Value && targetItemIndex != (int)ItemIndex.None)
             {
-                QuestDescInternal = string.Format(descTextSpecific, Language.GetString(ItemCatalog.GetItemDef(targetIndex).nameToken));
+                QuestDescInternal = string.Format(descTextSpecific, Language.GetString(ItemCatalog.GetItemDef((ItemIndex)targetItemIndex).nameToken));
             }
             
-            base.OnEnable();
+            base.StartQuest();
         }
     }
     
@@ -182,15 +202,15 @@ public class Scrap : QuestBase<Scrap>
 
             string tierName = scrapQuest.targetTier switch
             {
-                Tier1 => "Common",
-                Tier2 => "Uncommon",
-                Tier3 => "Legendary",
+                (int)Tier1 => "Common",
+                (int)Tier2 => "Uncommon",
+                (int)Tier3 => "Legendary",
             };
             string text = string.Format(instance.QuestDesc, tierName);
             
-            if (specificItem.Value && scrapQuest.targetIndex != ItemIndex.None)
+            if (specificItem.Value && scrapQuest.targetItemIndex != (int)ItemIndex.None)
             {
-                text = string.Format(scrapQuest.descTextSpecific, Language.GetString(ItemCatalog.GetItemDef(scrapQuest.targetIndex).nameToken));
+                text = string.Format(scrapQuest.descTextSpecific, Language.GetString(ItemCatalog.GetItemDef((ItemIndex)scrapQuest.targetItemIndex).nameToken));
             }
 
             if (scrapQuest.gaveReward)

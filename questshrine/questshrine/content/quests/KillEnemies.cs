@@ -7,6 +7,8 @@ using questshrine.bases;
 using RoR2;
 using RoR2.UI;
 using UnityEngine;
+using UnityEngine.Networking;
+using UnityEngine.Serialization;
 
 namespace questshrine.content.quests;
 
@@ -28,11 +30,19 @@ public class KillEnemies : QuestBase<KillEnemies>
         public override QuestBase QuestBase => instance;
         public override Type ObjectiveType => typeof(KillEnemiesObjective);
 
-        public BodyIndex targetIndex;
+        [SyncVar]
+        public int bodyIndex;
+        [SyncVar]
         public int killAmount;
         
-        public override void OnEnable()
+        public override void StartQuest()
         {
+            if (!NetworkServer.active)
+            {
+                base.StartQuest();
+                return;
+            }
+            
             KilledOtherServer += OnKilledOtherServer;
 
             ClassicStageInfo classicStageInfo = GameObject.Find("SceneInfo").GetComponent<ClassicStageInfo>();
@@ -54,11 +64,6 @@ public class KillEnemies : QuestBase<KillEnemies>
                     Log.Debug($"card cost {choice.value.cost} greater than 100 skipping {choice.value.spawnCard.name}");
                     continue;
                 }
-                    
-                /*Log.Debug(master.name);
-                Log.Debug(choice.value.spawnCard.prefab);
-                Log.Debug(choice.value.cost);
-                Log.Debug(choice.weight);*/
                 
                 availableChoices.Add(choice);
                 availableMasters.Add(master);
@@ -71,18 +76,18 @@ public class KillEnemies : QuestBase<KillEnemies>
             }
             CharacterMaster chosenMaster = weightedSelection.Evaluate(Run.instance.runRNG.nextNormalizedFloat);
 
-            targetIndex = BodyCatalog.FindBodyIndex(chosenMaster.bodyPrefab);
+            bodyIndex = (int)BodyCatalog.FindBodyIndex(chosenMaster.bodyPrefab);
             killAmount = (int)((50f/availableChoices[availableMasters.IndexOf(chosenMaster)].value.cost) * Run.instance.runRNG.RangeFloat(1, 2));
             if (killAmount <= 3)
                 killAmount += 2;
             
-            QuestDescInternal = string.Format(instance.QuestDesc, killAmount, Language.GetString(BodyCatalog.GetBodyPrefab(targetIndex).GetComponent<CharacterBody>().baseNameToken) + (killAmount > 1 ? "s" : ""));
-            base.OnEnable();
+            QuestDescInternal = string.Format(instance.QuestDesc, killAmount, Language.GetString(BodyCatalog.GetBodyPrefab((BodyIndex)bodyIndex).GetComponent<CharacterBody>().baseNameToken) + (killAmount > 1 ? "s" : ""));
+            base.StartQuest();
         }
 
         public void OnKilledOtherServer(DamageReport damageReport)
         {
-            if (damageReport.victimBodyIndex != targetIndex) return;
+            if ((int)damageReport.victimBodyIndex != bodyIndex) return;
             
             killAmount--;
             if (killAmount != 0) return;
@@ -91,10 +96,10 @@ public class KillEnemies : QuestBase<KillEnemies>
             Destroy(this);
         }
 
-        public override void OnDisable()
+        public override void RpcOnDisable()
         {
             KilledOtherServer += OnKilledOtherServer;
-            base.OnDisable();
+            base.RpcOnDisable();
         }
     }
 
@@ -109,7 +114,7 @@ public class KillEnemies : QuestBase<KillEnemies>
             if (_killEnemiesBehaviorBase == null)
             {
                 _killEnemiesBehaviorBase = (KillEnemiesBehaviorBase)sourceDescriptor.source;
-                name = Language.GetString(BodyCatalog.GetBodyPrefab(_killEnemiesBehaviorBase.targetIndex).GetComponent<CharacterBody>().baseNameToken);
+                name = Language.GetString(BodyCatalog.GetBodyPrefab((BodyIndex)_killEnemiesBehaviorBase.bodyIndex).GetComponent<CharacterBody>().baseNameToken);
             }
 
             localKillAmount = _killEnemiesBehaviorBase.killAmount;

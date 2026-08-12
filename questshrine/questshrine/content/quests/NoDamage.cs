@@ -6,6 +6,7 @@ using questshrine.bases;
 using RoR2;
 using RoR2.UI;
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace questshrine.content.quests;
 
@@ -34,23 +35,34 @@ public class NoDamage : QuestBase<NoDamage>
     {
         public override QuestBase QuestBase => instance;
         public override Type ObjectiveType => typeof(NoDamageObjective);
-
+        
+        [SyncVar]
         public float timer;
         public float startingTime;
         
-        public override void OnEnable()
+        public override void StartQuest()
         {
+            if (!NetworkServer.active)
+            {
+                base.StartQuest();
+                return;
+            }
+
             TakeDamageServer += OnTakeDamageServer;
             
             startingTime = Run.instance.runRNG.RangeFloat(minTimer.Value, maxTimer.Value) - 0.5f;
             timer = startingTime + 2;
             QuestDescInternal = string.Format(instance.QuestDesc, startingTime.ToString("0"));
-            base.OnEnable();
+            base.StartQuest();
         }
 
         public void FixedUpdate()
         {
-            timer -= Time.fixedDeltaTime;
+            if (NetworkServer.active)
+            {
+                timer -= Time.fixedDeltaTime;
+            }
+            
             if (timer < 0.5)
             {
                 instance.GiveReward(body);
@@ -70,10 +82,10 @@ public class NoDamage : QuestBase<NoDamage>
             }
         }
 
-        public override void OnDisable()
+        public override void RpcOnDisable()
         {
             TakeDamageServer -= OnTakeDamageServer;
-            base.OnDisable();
+            base.RpcOnDisable();
         }
     }
 
@@ -84,7 +96,7 @@ public class NoDamage : QuestBase<NoDamage>
         
         public override string GenerateString()
         {
-            if (noDamageQuest == null)
+            if (!noDamageQuest)
             {
                 noDamageQuest = (NoDamageBehaviorBase)sourceDescriptor.source;
             }
@@ -96,7 +108,7 @@ public class NoDamage : QuestBase<NoDamage>
 
         public override bool IsDirty()
         {
-            return (noDamageQuest == null || !Mathf.Approximately(localTimer, noDamageQuest.timer));
+            return (!noDamageQuest || !Mathf.Approximately(localTimer, noDamageQuest.timer));
         }
     }
 }

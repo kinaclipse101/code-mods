@@ -117,7 +117,7 @@ namespace questshrine
             }
         }
 
-        public readonly List<QuestBase> questComponents = [];
+        public readonly Dictionary<QuestBase, GameObject> questObjectCatalog = [];
         private void LoadBases()
         {
             IEnumerable<Type> quests = Assembly.GetExecutingAssembly().GetTypes().Where(type => !type.IsAbstract && type.IsSubclassOf(typeof(QuestBase)));
@@ -127,7 +127,9 @@ namespace questshrine
                 quest.Init(Config);
                 if (quest.enabled)
                 {
-                    questComponents.Add(quest);
+                    GameObject questPrefab = PrefabAPI.CreateEmptyPrefab($"quest prefab {quest.QuestName}", true);
+                    questPrefab.AddComponent(quest.Behavior);
+                    questObjectCatalog.Add(quest, questPrefab);
                 }
             }
         }
@@ -185,7 +187,7 @@ namespace questshrine
                 DirectorAPI.Helpers.AddNewInteractableToStage(directorCardHolder, stage);
             }*/
         }
-        
+         
         private void Update()
         {
 #if DEBUG

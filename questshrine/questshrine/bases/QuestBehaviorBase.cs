@@ -3,54 +3,105 @@ using System.Collections.Generic;
 using RoR2;
 using RoR2.UI;
 using UnityEngine;
+using UnityEngine.Networking;
+using CharacterMaster = RoR2.CharacterMaster;
 using Object = UnityEngine.Object;
 
 namespace questshrine.bases;
 
-public abstract class QuestBehaviorBase : MonoBehaviour
+public abstract class QuestBehaviorBase : NetworkBehaviour
 {
+    public static List<QuestBehaviorBase> activeQuests = [];
     public abstract QuestBase QuestBase { get; }
     public abstract Type ObjectiveType { get; }
     public static int notificationEnum = 1225;
     public string QuestDescInternal;
-    public CharacterBody body => charMaster.GetBody();
+    
+    [SyncVar(hook = nameof(OnSyncTarget))]
+    public GameObject targetMasterObject;
+    public CharacterBody body
+    {
+        get
+        {
+            if(charMaster)
+                return charMaster.GetBody();
+            if(targetMasterObject)
+                charMaster = targetMasterObject.GetComponent<CharacterMaster>();
+            return charMaster?.GetBody();
+        }
+    }
+
     public CharacterMaster charMaster;
     public QuestInterfaceListener listener;
 
     private int startingStage;
+    private bool ranStart;
+    
+    public void OnSyncTarget(GameObject newTarget)
+    {
+        targetMasterObject = newTarget;
+        charMaster = newTarget ? newTarget.gameObject.GetComponent<CharacterMaster>() : null;
+        Log.Debug($"syncing target {newTarget} {charMaster}");
+        
+        if (!ranStart)
+        {
+            ranStart = true;
+            StartQuest();
+        }
+    }
     
     private void Awake()
     {
-        startingStage = RoR2.Run.instance.stageClearCount;
-        charMaster = GetComponent<CharacterMaster>();
+        activeQuests.Add(this);
+        if (targetMasterObject)
+        {
+            charMaster = targetMasterObject.GetComponent<CharacterMaster>();
+        }
+        startingStage = Run.instance.stageClearCount;
     }
 
-    public virtual void OnEnable()
+    [ClientRpc]
+    public void RpcStartQuest()
     {
-        ObjectivePanelController.collectObjectiveSources += OnCollectObjectiveSources;
-            
-        CharacterMasterNotificationQueue notificationQueueForMaster = CharacterMasterNotificationQueue.GetNotificationQueueForMaster(body.master);
-        var info = new CharacterMasterNotificationQueue.NotificationInfo(QuestBase, new CharacterMasterNotificationQueue.TransformationInfo((CharacterMasterNotificationQueue.TransformationType)notificationEnum, null), new CharacterMasterNotificationQueue.CustomOverrideInfo()
+        //StartQuest();
+        Log.Debug("rpc ran");
+    }
+    
+    public virtual void StartQuest()
+    {
+        Log.Debug(charMaster.GetBody().baseNameToken + " starting quest");
+        Log.Debug(LocalUserManager.GetFirstLocalUser().cachedMaster + " local player");
+        if (LocalUserManager.GetFirstLocalUser().cachedMaster == charMaster)
         {
-            titleText = QuestBase.QuestTitle,
-            descriptionText = QuestDescInternal,
-            iconColor = new Color(1f, 1f, 1f, 1f)
-        }, showExtra: false);
-
-        if (notificationQueueForMaster.notifications.Count != 0)
-        {
-            notificationQueueForMaster.notifications.Add(new CharacterMasterNotificationQueue.TimedNotificationInfo
-            {
-                notification = info,
-                startTime = Run.instance.fixedTime,
-                duration = 3f
-            });
-        }
-        else
-        {
-            notificationQueueForMaster.PushNotification(info, 3f);
+            ObjectivePanelController.collectObjectiveSources += OnCollectObjectiveSources;
         }
         
+        CharacterMasterNotificationQueue notificationQueueForMaster = CharacterMasterNotificationQueue.GetNotificationQueueForMaster(charMaster);
+        var info = new CharacterMasterNotificationQueue.NotificationInfo(QuestBase, new CharacterMasterNotificationQueue.TransformationInfo((CharacterMasterNotificationQueue.TransformationType)notificationEnum, null), new CharacterMasterNotificationQueue.CustomOverrideInfo()
+            {
+                titleText = QuestBase.QuestTitle,
+                descriptionText = QuestDescInternal,
+                iconColor = new Color(1f, 1f, 1f, 1f)
+            }, showExtra: false);
+
+        if (notificationQueueForMaster)
+        {
+            if (notificationQueueForMaster.notifications.Count != 0)
+            {
+                notificationQueueForMaster.notifications.Add(
+                    new CharacterMasterNotificationQueue.TimedNotificationInfo
+                    {
+                        notification = info,
+                        startTime = Run.instance.fixedTime,
+                        duration = 3f
+                    });
+            }
+            else
+            {
+                notificationQueueForMaster.PushNotification(info, 3f);
+            }
+        }
+
         charMaster.onBodyStart += AddListenersNewStageCheck;
         AddListenersNewStageCheck(body);
     }
@@ -91,7 +142,7 @@ public abstract class QuestBehaviorBase : MonoBehaviour
         {
             foreach (QuestBehaviorBase questBehaviorBase in questListeners)
             {
-                questBehaviorBase?.KilledOtherServer(damageReport);
+                questBehaviorBase?.KilledOtherServer?.Invoke(damageReport);
             }
         }
 
@@ -99,12 +150,13 @@ public abstract class QuestBehaviorBase : MonoBehaviour
         {
             foreach (QuestBehaviorBase questBehaviorBase in questListeners)
             {
-                questBehaviorBase?.TakeDamageServer(damageReport);
+                questBehaviorBase?.TakeDamageServer?.Invoke(damageReport);
             }
         }
     }
 
-    public virtual void OnDisable()
+    [ClientRpc]
+    public virtual void RpcOnDisable()
     {
         ObjectivePanelController.collectObjectiveSources -= OnCollectObjectiveSources;
         if (QuestBase.useListeners)
@@ -116,6 +168,7 @@ public abstract class QuestBehaviorBase : MonoBehaviour
             }
         }
         charMaster.onBodyStart -= AddListenersNewStageCheck;
+        activeQuests.Remove(this);
     }
 
     public virtual void OnCollectObjectiveSources(CharacterMaster master, List<ObjectivePanelController.ObjectiveSourceDescriptor> objectiveSourcesList)

@@ -6,6 +6,7 @@ using questshrine.bases;
 using RoR2;
 using RoR2.UI;
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace questshrine.content.quests;
 
@@ -35,8 +36,14 @@ public class DisableSkills : QuestBase<DisableSkills>
         public float timer;
         public float startingTime;
         
-        public override void OnEnable()
+        public override void StartQuest()
         {
+            if (!NetworkServer.active)
+            {
+                base.StartQuest();
+                return;
+            }
+            
             startingTime = Run.instance.runRNG.RangeFloat(minTimer.Value, maxTimer.Value) - 0.5f;
             timer = startingTime + 2;
 
@@ -44,7 +51,7 @@ public class DisableSkills : QuestBase<DisableSkills>
             charMaster.onBodyStart += DisableSkills;// fuck your dios <3 ,.,.
             
             QuestDescInternal = string.Format(instance.QuestDesc, startingTime.ToString("0"));
-            base.OnEnable();
+            base.StartQuest();
         }
 
         public void DisableSkills(CharacterBody characterBody)
@@ -64,7 +71,7 @@ public class DisableSkills : QuestBase<DisableSkills>
                 characterBody.skillLocator.special.SetSkillOverride(this, CharacterBody.CommonAssets.disabledSkill, GenericSkill.SkillOverridePriority.Contextual);
         }
 
-        public override void OnDisable()
+        public override void RpcOnDisable()
         {
             charMaster.onBodyStart -= DisableSkills;
 
@@ -83,7 +90,7 @@ public class DisableSkills : QuestBase<DisableSkills>
                     body.skillLocator.special.UnsetSkillOverride(this, CharacterBody.CommonAssets.disabledSkill, GenericSkill.SkillOverridePriority.Contextual);
             }
             
-            base.OnDisable();
+            base.RpcOnDisable();
         }
 
         public void FixedUpdate()
