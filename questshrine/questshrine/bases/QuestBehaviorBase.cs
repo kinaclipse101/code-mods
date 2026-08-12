@@ -15,10 +15,12 @@ public abstract class QuestBehaviorBase : NetworkBehaviour
     public abstract QuestBase QuestBase { get; }
     public abstract Type ObjectiveType { get; }
     public static int notificationEnum = 1225;
-    public string QuestDescInternal;
     
+    [SyncVar]
+    public string QuestDescInternal;
     [SyncVar(hook = nameof(OnSyncTarget))]
     public GameObject targetMasterObject;
+
     public CharacterBody body
     {
         get
@@ -30,7 +32,6 @@ public abstract class QuestBehaviorBase : NetworkBehaviour
             return charMaster?.GetBody();
         }
     }
-
     public CharacterMaster charMaster;
     public QuestInterfaceListener listener;
 
@@ -70,9 +71,10 @@ public abstract class QuestBehaviorBase : NetworkBehaviour
     public virtual void StartQuest()
     {
         Log.Debug(charMaster.GetBody().baseNameToken + " starting quest");
-        Log.Debug(LocalUserManager.GetFirstLocalUser().cachedMaster + " local player");
+        Log.Debug(LocalUserManager.GetFirstLocalUser().cachedMaster.GetBody().baseNameToken + " local player");
         if (LocalUserManager.GetFirstLocalUser().cachedMaster == charMaster)
         {
+            Log.Debug("local player was master !");
             ObjectivePanelController.collectObjectiveSources += OnCollectObjectiveSources;
         }
         
@@ -156,7 +158,12 @@ public abstract class QuestBehaviorBase : NetworkBehaviour
     }
 
     [ClientRpc]
-    public virtual void RpcOnDisable()
+    public void RpcRetire()
+    {
+        enabled = false;
+    }
+    
+    public virtual void OnDisable()
     {
         ObjectivePanelController.collectObjectiveSources -= OnCollectObjectiveSources;
         if (QuestBase.useListeners)

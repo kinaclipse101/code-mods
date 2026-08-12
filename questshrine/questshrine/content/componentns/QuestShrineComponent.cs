@@ -56,6 +56,7 @@ public class QuestShrineComponent : NetworkBehaviour
             float weight = 10;
 
             int questCount = QuestBehaviorBase.activeQuests.Count(quest => quest.QuestBase == questBase && quest.charMaster == context.activatorMaster);
+            Log.Debug(context.activatorMaster.GetBody().baseNameToken + " had " + questCount + " " + questBase.QuestName);
             for (int i = 0; i < questCount; i++)
             {
                 weight /= 2;

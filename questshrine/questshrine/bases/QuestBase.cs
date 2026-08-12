@@ -24,6 +24,7 @@ public abstract class QuestBase
     public abstract string QuestName { get; }
     public abstract string QuestTitle { get; }
     public abstract string QuestDesc { get; }
+    public virtual string QuestDescRetired => QuestDesc;
     public abstract Sprite QuestIcon { get; }
     public abstract Type Behavior { get; }
     public virtual bool useListeners { get; }
