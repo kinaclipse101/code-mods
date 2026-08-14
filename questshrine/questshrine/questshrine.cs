@@ -143,10 +143,13 @@ namespace questshrine
             PurchaseInteraction interaction = questshrine.GetComponent<PurchaseInteraction>();
             qsc.purchaseInteraction = interaction;
             
+            // mountain - 1
+            // combat - 3
+            // chance - 2
             InteractableSpawnCard questisc = bundle.LoadAsset<InteractableSpawnCard>("questshrineisc");
             DirectorCard directorCard = new DirectorCard
             {
-                selectionWeight = 100, // The higher this number the more common it'll be, for reference a normal chest is about 230
+                selectionWeight = 3, 
                 spawnCard = questisc,
             };
 

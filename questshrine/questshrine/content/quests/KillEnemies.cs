@@ -60,13 +60,13 @@ public class KillEnemiesBehaviorBase : QuestBehaviorBase
             
             if (master.bodyPrefab.GetComponent<CharacterBody>().isChampion)
             {
-                Log.Debug($"{master.name} is champion");
+                //Log.Debug($"{master.name} is champion");
                 continue;
             }
 
             if (choice.value.cost > 100)
             {
-                Log.Debug($"card cost {choice.value.cost} greater than 100 skipping {choice.value.spawnCard.name}");
+                //Log.Debug($"card cost {choice.value.cost} greater than 100 skipping {choice.value.spawnCard.name}");
                 continue;
             }
             
@@ -109,7 +109,7 @@ public class KillEnemiesBehaviorBase : QuestBehaviorBase
     }
 }
 
-public class KillEnemiesObjective : ObjectivePanelController.ObjectiveTracker
+public class KillEnemiesObjective : ObjectivePanelController.ObjectiveTracker 
 {
     private KillEnemiesBehaviorBase _killEnemiesBehaviorBase;
     private int localKillAmount;

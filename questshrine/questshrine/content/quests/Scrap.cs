@@ -1,6 +1,7 @@
 //NETWORKING TODO
 //sync scrapped state (send a packet when the component is done 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using BepInEx.Configuration;
 using questshrine.bases;
@@ -119,15 +120,15 @@ public class ScrapItemBehaviorBase : QuestBehaviorBase
             switch (tier)
             {
                 case Tier1:
-                    Log.Debug($"had item {itemDef.name} with tier {tier}");
+                    //Log.Debug($"had item {itemDef.name} with tier {tier}");
                     dropTable.tier1Weight = 0.8f;
                     break;
                 case Tier2:
-                    Log.Debug($"had item {itemDef.name} with tier {tier}");
+                    //Log.Debug($"had item {itemDef.name} with tier {tier}");
                     dropTable.tier2Weight = 0.2f;
                     break;
                 case Tier3:
-                    Log.Debug($"had item {itemDef.name} with tier {tier}");
+                    //Log.Debug($"had item {itemDef.name} with tier {tier}");
                     dropTable.tier3Weight = 0.01f;
                     break;
             }
