@@ -4,11 +4,15 @@ using BepInEx.Configuration;
 using HarmonyLib;
 using On.RoR2.UI.SkinControllers;
 using RiskOfOptions;
+using RiskOfOptions.Components.Options;
 using RiskOfOptions.Options;
 using RoR2;
 using RoR2.UI;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
 using UnityEngine.UI;
+using CustomScrollbar = On.RoR2.UI.CustomScrollbar;
+using MPDropdown = On.RoR2.UI.MPDropdown;
 
 namespace BNR;
 
@@ -23,6 +27,66 @@ public class buttonrecolors : PatchBase<buttonrecolors>
         
         On.RoR2.UI.SkinControllers.ButtonSkinController.Awake += ButtonSkinControllerOnAwake;
         On.RoR2.UI.SkinControllers.PanelSkinController.Awake += PanelSkinControllerOnAwake;
+        On.RoR2.UI.MPDropdown.Awake += MPDropdownOnAwake;
+        On.RoR2.UI.CustomScrollbar.Awake += CustomScrollbarOnAwake;
+        
+        if (!colorButtons.Value) return;
+        Addressables.LoadAssetAsync<UISkinData>(RoR2BepInExPack.GameAssetPaths.Version_1_39_0.RoR2_Base_UI.skinCleanButton_asset).Completed += (handle) =>
+            {
+                ColorBlock colorVar = handle.Result.buttonStyle.colors;
+                colorVar.normalColor = buttonNorm.Value;
+                colorVar.highlightedColor = buttonHigh.Value;
+                colorVar.pressedColor = buttonPress.Value;
+                colorVar.selectedColor = buttonSelect.Value;
+                colorVar.disabledColor = buttonDisabled.Value;
+                handle.Result.buttonStyle.colors = colorVar;
+            };
+        harmony.CreateClassProcessor(typeof(RooDropdownPatch)).Patch();
+    }
+    
+    [HarmonyPatch]
+    public class RooDropdownPatch
+    {
+        [HarmonyPatch(typeof(RiskOfOptions.Components.Options.RooDropdown), "Awake")]
+        [HarmonyPostfix]
+        public static void CoolerEclipseAddSkyboxPreFix(RooDropdown __instance)
+        {
+            ColorBlock colorVar = __instance.colors;
+            colorVar.normalColor = buttonNorm.Value;
+            colorVar.highlightedColor = buttonHigh.Value;
+            colorVar.pressedColor = buttonPress.Value;
+            colorVar.selectedColor = buttonSelect.Value;
+            colorVar.disabledColor = buttonDisabled.Value;
+            __instance.colors = colorVar;
+        }
+    }
+
+    private void MPDropdownOnAwake(MPDropdown.orig_Awake orig, RoR2.UI.MPDropdown self)
+    {
+        orig(self);
+        if (!colorButtons.Value) return;
+        
+        ColorBlock colorVar = self.colors;
+        colorVar.normalColor = buttonNorm.Value;
+        colorVar.highlightedColor = buttonHigh.Value;
+        colorVar.pressedColor = buttonPress.Value;
+        colorVar.selectedColor = buttonSelect.Value;
+        colorVar.disabledColor = buttonDisabled.Value;
+        self.colors = colorVar;
+    } 
+
+    private void CustomScrollbarOnAwake(CustomScrollbar.orig_Awake orig, RoR2.UI.CustomScrollbar self)
+    {
+        orig(self);
+        if (!colorButtons.Value) return;
+        
+        ColorBlock colorVar = self.colors;
+        colorVar.normalColor = buttonNorm.Value;
+        colorVar.highlightedColor = buttonHigh.Value;
+        colorVar.pressedColor = buttonPress.Value;
+        colorVar.selectedColor = buttonSelect.Value;
+        colorVar.disabledColor = buttonDisabled.Value;
+        self.colors = colorVar;
     }
 
     private static void PanelSkinControllerOnAwake(PanelSkinController.orig_Awake orig, RoR2.UI.SkinControllers.PanelSkinController self)
@@ -31,7 +95,7 @@ public class buttonrecolors : PatchBase<buttonrecolors>
         if (!colorButtons.Value) return;
                     
         if (self.gameObject.name.Contains("ObjectivePanel")) return;//objective panel
-        if (self.gameObject.name.Contains("NakedButton (Quit)")) return; //back button css
+        if (self.gameObject.name.Contains("NakedButton")) return; //back button css
         Image image = self.gameObject.GetComponent<Image>();
         if (image.gameObject.name.Contains("RuleBook")) return;
 
@@ -48,7 +112,8 @@ public class buttonrecolors : PatchBase<buttonrecolors>
         if (hgButton.gameObject.name.Contains("Choice")) return; //difficulty icons
         if (hgButton.gameObject.name.Contains("Loadout")) return; //css
         if (hgButton.gameObject.name.Contains("ObjectivePanel")) return; 
-        if (hgButton.gameObject.name.Contains("NakedButton (Quit)")) return;
+        if (hgButton.gameObject.name.Contains("NakedButton")) return;
+        if (hgButton.gameObject.transform.parent?.parent?.parent?.name.Contains("CommandPickerPanel(Clone)") == true) return;
                 
         if (hgButton.gameObject.name.Contains("Music&More"))
         {
@@ -60,6 +125,7 @@ public class buttonrecolors : PatchBase<buttonrecolors>
         colorVar.highlightedColor = buttonHigh.Value;
         colorVar.pressedColor = buttonPress.Value;
         colorVar.selectedColor = buttonSelect.Value;
+        colorVar.disabledColor = buttonDisabled.Value;
         hgButton.colors = colorVar;
     }
 
@@ -113,6 +179,12 @@ public class buttonrecolors : PatchBase<buttonrecolors>
             Utils.Color255(255, 177, 238),
             ""); 
         ModSettingsManager.AddOption(new ColorOption(buttonSelect));
+        
+        buttonDisabled = config.Bind("BNR - UI",
+            "disabled button color",
+            Utils.Color255(226, 197, 219),
+            ""); 
+        ModSettingsManager.AddOption(new ColorOption(buttonDisabled));
     }
 
     private ConfigEntry<bool> enabled;
@@ -121,4 +193,5 @@ public class buttonrecolors : PatchBase<buttonrecolors>
     private static ConfigEntry<Color> buttonHigh;
     private static ConfigEntry<Color> buttonPress;
     private static ConfigEntry<Color> buttonSelect;
+    private static ConfigEntry<Color> buttonDisabled;
 }

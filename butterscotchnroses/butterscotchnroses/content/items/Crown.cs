@@ -62,13 +62,11 @@ public class Crown : ItemBase<Crown>
     private void AllyCardControllerOnUpdateInfo(On.RoR2.UI.AllyCardController.orig_UpdateInfo orig, AllyCardController self)
     {
         orig(self);
+
+        if (updateOnStageStart >= 10) return;
         
-        if (updateOnStageStart < 10)
-        {
-            updateOnStageStart++;
-            Log.Debug("skdlfgjsdlkfgndkfjgnd");
-            Behavior.AddCrowns();
-        }
+        updateOnStageStart++;
+        Behavior.AddCrowns();
     }
     
 
@@ -91,9 +89,11 @@ public class Crown : ItemBase<Crown>
 
         public static void AddCrowns()
         {
+            if (Util.GetItemCountGlobal(instance.ItemDef.itemIndex, false) == 0) return;
+            
             foreach (HUD hud in HUD.instancesList)
             {
-                for (int i = 0; i < hud.scoreboardPanel.transform.Find("Container/StripContainer").childCount; i++)
+                for (int i = 0; i < hud.scoreboardPanel?.transform.Find("Container/StripContainer").childCount; i++)
                 {
                     Log.Debug("aa" + hud.scoreboardPanel.transform.Find("Container/StripContainer").GetChild(i).name);
                     

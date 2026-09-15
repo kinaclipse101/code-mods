@@ -10,11 +10,7 @@ using butterscotchnroses;
 using butterscotchnroses.artifacts;
 using butterscotchnroses.skills;
 using HarmonyLib;
-using Mono.Cecil.Cil;
-using MonoMod.Cil;
-using R2API.Networking;
-using R2API.Utils;
-using RoR2;
+using RiskOfOptions;
 using UnityEngine;
 using ShaderSwapper;
 
@@ -28,7 +24,7 @@ namespace BNR
 
         private const string PluginAuthor = "icebro";
         private const string PluginName = "BNR";
-        private const string PluginVersion = "0.3.1";
+        private const string PluginVersion = "0.3.2";
 
         public static AssetBundle carvingKitBundle;
         public static AssetBundle bnrBundle;
@@ -43,9 +39,9 @@ namespace BNR
         {
             instance = this;
             Log.Init(Logger);
-            Logger.LogDebug("loading mod !!");
             
             clientSide = Config.Bind("BNR", "client side", false, "whether the mod should run in clientside mode or not .,,. disables content/changed behavior that would otherwise cause desyncs automatically !!!");
+            Utils.CheckboxConfig(clientSide);
             logDebug = Config.Bind("BNR", "debug logs", false, "whether the mod should log debug logs.,.,");
 
             carvingKitBundle = AssetBundle.LoadFromFile(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Info.Location)!, "carvingkit_assets"));
@@ -122,6 +118,8 @@ namespace BNR
             }
             
             oldconfigs.fixOldConfigs();
+
+            ModSettingsManager.SetModIcon(bnrBundle.LoadAsset<Sprite>("icon"));
         }
         
         private void Update()

@@ -101,7 +101,7 @@ public class teamhealthcolor : PatchBase<teamhealthcolor>
     {
         enabled = config.Bind("BNR - teamhealthcolor",
             "enable patches for teamhealthcolor",
-            true,
+            false,
             "");
         Utils.CheckboxConfig(enabled);
         enabled.SettingChanged += (_, _) => { applyHooks(); };

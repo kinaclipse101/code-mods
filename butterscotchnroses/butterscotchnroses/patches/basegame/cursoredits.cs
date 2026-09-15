@@ -89,17 +89,18 @@ public class cursoredits : PatchBase<cursoredits>
             cursorTypes.defaultCursor,
             "");
         cursorType.SettingChanged += (_, _) => { applyCursorEdits(); };
+        ModSettingsManager.AddOption(new ChoiceOption(cursorType));
         
         cursorColor = config.Bind("BNR - cursoredits",
             "cursor color ,..,",
             Color.white,
             "");
-        ModSettingsManager.AddOption(new ColorOption(cursorColor));
         cursorColor.SettingChanged += (_, _) => { applyCursorEdits(); };
+        ModSettingsManager.AddOption(new ColorOption(cursorColor));
 
         enabled = config.Bind("BNR - cursoredits",
             "enable patches for cursoredits",
-            true,
+            false,
             "");
         Utils.CheckboxConfig(enabled);
         enabled.SettingChanged += (_, _) => { applyHooks(); };

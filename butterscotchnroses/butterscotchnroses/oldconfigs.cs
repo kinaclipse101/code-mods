@@ -13,7 +13,8 @@ public class oldconfigs
             "whether or not to replace/fix old default configs ,..,",
             true,
             "basically uhh replace default configs if enabled.,,.");
-
+        Utils.CheckboxConfig(replaceOldConfigs);
+        
         if (!replaceOldConfigs.Value) return;
 
 #if !HOTRELOAD

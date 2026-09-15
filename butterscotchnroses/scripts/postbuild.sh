@@ -3,7 +3,8 @@
 buildDir="$1""$3"/bin/"$4"/"$2"/netstandard2.1/
 pcDebugDir="/run/media/icebrah/buh/gale/riskofrain2/profiles/debug/BepInEx/plugins/"
 pcDebugDirClient="/run/media/icebrah/buh/gale/riskofrain2/profiles/debugclient/BepInEx/plugins/"
-weaverDir="/run/media/icebrah/buh/github/code-mods/weaver/NetworkWeaver/"
+laptopDebugDir="/home/kina/.local/share/com.kesomannen.gale/riskofrain2/profiles/debug/BepInEx/plugins/"
+weaverDir="/home/kina/Documents/github/code-mods/weaver/NetworkWeaver/"
 
 runBuild () {
   if ! [ -d "$1$3" ]; then
@@ -27,4 +28,8 @@ fi
 
 if [ -d "$pcDebugDirClient" ]; then
   runBuild "$pcDebugDirClient" "$2" "$3" "$4"
+fi
+
+if [ -d "$laptopDebugDir" ]; then
+  runBuild "$laptopDebugDir" "$2" "$3" "$4"
 fi

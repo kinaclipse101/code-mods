@@ -15,6 +15,8 @@ using JetBrains.Annotations;
 using On.RoR2.UI;
 using R2API;
 using Rewired;
+using RiskOfOptions;
+using RiskOfOptions.Options;
 using RoR2;
 using RoR2.ContentManagement;
 using TMPro;
@@ -592,11 +594,13 @@ public class skinrecolors : PatchBase<skinrecolors>
             "skin recolors",
             "",
             "follows \"string baseSkinDefName, string bodyName, float hue, float saturation, float value, string skinName, string prefix\" where prefix is optional (used for like ,., Red on wolfo qol merc.,., use list_skins to get internal names or prodz debugging mod ,., split with ;; ..,,. you can temporarily try out recolors with recolor_skin hue saturation value ,.,,.");
-        
+        Utils.StringConfig(skinRecolors);
+
         fileType = config.Bind("BNR - skinrecolors",
             "file type",
             fileTypes.png,
             "follows \"string baseSkinDefName, string bodyName, float hue, float saturation, float value, string skinName, string prefix\" where prefix is optional (used for like ,., Red on wolfo qol merc.,., use list_skins to get internal names or prodz debugging mod ,., split with ;; ..,,. you can temporarily try out recolors with recolor_skin hue saturation value ,.,,.");
+        ModSettingsManager.AddOption(new ChoiceOption(fileType));
     }
 
     public enum fileTypes
