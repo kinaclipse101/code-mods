@@ -9,13 +9,14 @@ public class oldconfigs
     
     public static void fixOldConfigs()
     {
-        replaceOldConfigs = BNR.butterscotchnroses.instance.Config.Bind("!!!Config Replacement!!!",
+        replaceOldConfigs = BNR.butterscotchnroses.instance.Config.Bind("BNR",
             "whether or not to replace/fix old default configs ,..,",
             true,
             "basically uhh replace default configs if enabled.,,.");
 
         if (!replaceOldConfigs.Value) return;
 
+#if !HOTRELOAD
         string oldCoolerEclipse = "golemplains,golemplains2";
         if (coolereclipse.whitelistStages.Value == oldCoolerEclipse)
         {
@@ -50,5 +51,6 @@ public class oldconfigs
         {
             allynames.bodyNames.Value = (string)allynames.bodyNames.DefaultValue;
         }
+#endif
     }
 }

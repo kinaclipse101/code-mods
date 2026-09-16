@@ -5,7 +5,7 @@ using HarmonyLib;
 
 namespace BNR;
 
-public class gildedcoastplus : PatchBase<gildedcoastplus>
+public class gildedcoastplus : ModdedPatchBase<gildedcoastplus>
 {
     public override string chainLoaderKey => "com.TechDebtCollector.GoldenCoastPlus";
 

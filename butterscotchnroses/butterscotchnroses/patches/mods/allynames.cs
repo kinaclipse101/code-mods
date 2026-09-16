@@ -12,7 +12,7 @@ using CharacterBody = On.RoR2.CharacterBody;
 
 namespace BNR;
 
-public class allynames : PatchBase<allynames>
+public class allynames : ModdedPatchBase<allynames>
 {
     public override string chainLoaderKey => "SwagWizards.AllyNames";
 

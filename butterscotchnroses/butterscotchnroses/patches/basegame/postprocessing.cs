@@ -64,10 +64,6 @@ public class postprocessing : PatchBase<postprocessing>
                 new stagePP(edit.Split(",")[0], edit.Split(",")[1], Regex.Match(edit, @"\[(.*?)\]").Groups[1].Value);
             }
         }
-        else
-        {
-
-        }
     }
 
     public override void Config(ConfigFile config)

@@ -5,6 +5,37 @@ everything is configurable to some degree too ,.,,. so if you dont like an edit 
 
 ### basegame edits ,.,,.
 <details>
+<summary> loading screen sprites,. .,  </summary>
+
+- changes loading screen sprites to be their returns counterparts .,., has configs for replacing each one ., 
+
+![](https://files.catbox.moe/yswl1e.png)
+
+![](https://files.catbox.moe/7e6jah.png)
+
+![](https://files.catbox.moe/qhcss8.png)
+
+![](https://files.catbox.moe/6e4sy4.png)
+
+
+</details>
+
+<details>
+<summary> cursor edits ,.,.  </summary>
+
+- lets you use random cursors i found in the files ,.,.. and lets you cahnge its color ,.. ,
+
+![](https://files.catbox.moe/wd6fce.png)
+
+![](https://files.catbox.moe/qwkgp7.png)
+
+![](https://files.catbox.moe/71dfho.png)
+
+
+</details>
+
+
+<details>
 <summary> HSV skin recolors !!!!!!!  </summary>
 
 - lets you make custom skins base off HSV values !!! just load in with the skin you want to make an edit of ,..,. run "recolor_skin (hue) (saturation) (value)" and once it looks nice do "create_skin (skin name)" then itll appear in lobby the next game start !!! 
@@ -221,6 +252,7 @@ basically tutorial on how to use ,..,
 
 - [mod link ,.,.](https://thunderstore.io/c/riskofrain2/p/Risky_Sleeps/EnemiesReturns/)
 - adds a pink variant of commandos judgement skin !!! pink halo included .,,. you can change the color in the config to whatevers you want !! 
+
 ![](https://files.catbox.moe/yx3opp.png)
 
 </details>

@@ -11,7 +11,7 @@ using WormBodyPositions2 = On.RoR2.WormBodyPositions2;
 
 namespace BNR;
 
-public class ChefBazaar : PatchBase<ChefBazaar>
+public class ChefBazaar : ModdedPatchBase<ChefBazaar>
 {
     public override void Init()
     {     

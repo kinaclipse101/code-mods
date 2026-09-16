@@ -13,10 +13,11 @@ namespace BNR
         }
 
         internal static void Debug(object data,[CallerLineNumber] int line = -1)
-        { 
-            #if DEBUG
+        {
+            if (butterscotchnroses.logDebug.Value)
+            {
                 _logSource.LogDebug(data);
-            #endif
+            }
         } 
         internal static void Error(object data) => _logSource.LogError(data);
         internal static void Fatal(object data) => _logSource.LogFatal(data);

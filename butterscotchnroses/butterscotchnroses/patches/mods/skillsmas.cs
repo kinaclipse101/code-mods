@@ -15,7 +15,7 @@ using Random = UnityEngine.Random;
 
 namespace BNR;
 
-public class skillsmas : PatchBase<skillsmas>
+public class skillsmas : ModdedPatchBase<skillsmas>
 {
 	public override string chainLoaderKey => "com.themysticsword.skillsmas";
 

@@ -14,7 +14,7 @@ using UnityEngine.Networking;
 
 namespace BNR;
 
-public class enemiesreturn : PatchBase<enemiesreturn>
+public class enemiesreturn : ModdedPatchBase<enemiesreturn>
 {
     public override string chainLoaderKey => "com.Viliger.EnemiesReturns";
 

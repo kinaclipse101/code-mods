@@ -6,7 +6,7 @@ using MonoMod.Cil;
 
 namespace BNR;
 
-public class inferno : PatchBase<inferno>
+public class inferno : ModdedPatchBase<inferno>
 {
     public override string chainLoaderKey => "HIFU.Inferno";
 

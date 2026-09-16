@@ -1,19 +1,23 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using BNR.patches;
 using BepInEx.Configuration;
 using BNR.items;
+using R2API;
 using RoR2;
 using RoR2.UI;
 using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.UI;
+using Object = UnityEngine.Object;
+using ScoreboardStrip = On.RoR2.UI.ScoreboardStrip;
 
 namespace BNR;
 
 public class whodiddamage : PatchBase<whodiddamage>
 {
-    private static Texture CrownIcon;
-    private static List<GameObject> crownImages = [];
+    public static Texture CrownIcon;
     private Dictionary<BossGroup, Dictionary<CharacterMaster, DamageCredit>> bossGroupsToDamages = [];
     private Dictionary<CharacterMaster, float> mastersTotalDamage = [];
     
@@ -30,17 +34,15 @@ public class whodiddamage : PatchBase<whodiddamage>
             BossGroup.onBossGroupStartServer += StartTracking;
             BossGroup.onBossGroupDefeatedServer += PrintDamage;
             Stage.onStageStartGlobal += StageOnonStageStartGlobal;
-            On.RoR2.UI.AllyCardController.InfoOverride += AllyCardControllerOnInfoOverride;
         }
         else
         {
             BossGroup.onBossGroupStartServer -= StartTracking;
             BossGroup.onBossGroupDefeatedServer -= PrintDamage;
             Stage.onStageStartGlobal -= StageOnonStageStartGlobal;
-            On.RoR2.UI.AllyCardController.InfoOverride -= AllyCardControllerOnInfoOverride;
         }
     }
-    
+
     public static Color GetHex(string hex)
     {
         if (!hex.StartsWith("#"))
@@ -50,61 +52,6 @@ public class whodiddamage : PatchBase<whodiddamage>
         
         ColorUtility.TryParseHtmlString(hex, out Color color);
         return color;
-    }
-    
-    private void AllyCardControllerOnInfoOverride(On.RoR2.UI.AllyCardController.orig_InfoOverride orig, RoR2.UI.AllyCardController self)
-    {
-        orig(self);
-
-        if (!useCrown.Value || butterscotchnroses.clientSide.Value) return;
-        
-        GameObject oldCrownObj = self.portraitIconImage.transform.Find("crown")?.gameObject;
-        bool hasCrownItem = self.sourceMaster.inventory.GetItemCountEffective(Crown.instance.ItemDef) > 0;
-        
-        if (oldCrownObj && !hasCrownItem)
-        {
-            Object.Destroy(oldCrownObj);
-            return;
-        }
-        if (!hasCrownItem) return;
-        
-        GameObject crownObj = new GameObject("crown");
-        crownObj.transform.parent = self.portraitIconImage.transform;
-        crownObj.transform.localPosition = Vector3.zero;
-        
-        RawImage rawImage = crownObj.AddComponent<RawImage>();
-        rawImage.texture = CrownIcon;//LocalUserManager.GetFirstLocalUser().userProfile.portraitTexture;
-        if (crownColorBasedOffBody.Value)
-        {
-            rawImage.color = self.sourceMaster.bodyPrefab.GetComponent<CharacterBody>().bodyColor;
-        }
-        if (crownColorOverrides.Value != "")
-        {
-            string? steamID = self.sourceMaster?.playerCharacterMasterController?.networkUser?.id.steamId.ToSteamID();
-            if (steamID != null)
-            {
-                Log.Debug($"target steamID: {steamID.Split(':')[^1]}");
-                string[] values = crownColorOverrides.Value.Split(',');
-                foreach (var value in values)
-                {
-                    Log.Debug($"config: {value.Split(':')[^1]}");
-                }
-                for (int i = 0; i < values.Length; i += 2)
-                {
-                    values[i] = values[i].Trim();
-                    if (values[i].Split(':')[^1] == steamID.Split(':')[^1])
-                    {
-                        rawImage.color = GetHex(values[i + 1]);
-                    }
-                }
-            }
-        }
-        
-        RectTransform rectTransform = crownObj.GetComponent<RectTransform>();
-        rectTransform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
-        rectTransform.pivot = new Vector2(0.5f, -0.5f);
-            
-        crownImages.Add(crownObj);
     }
 
     //catch strays .,
@@ -130,10 +77,6 @@ public class whodiddamage : PatchBase<whodiddamage>
             foreach (CharacterMaster master in CharacterMaster.readOnlyInstancesList)
             {
                 master?.inventory?.RemoveItemPermanent(Crown.instance.ItemDef, 999);
-            }
-            foreach (GameObject crownObj in crownImages)
-            {
-                Object.DestroyImmediate(crownObj);
             }
         }
         
@@ -165,14 +108,6 @@ public class whodiddamage : PatchBase<whodiddamage>
         {
             test[0].Key.inventory.GiveItemPermanent(Crown.instance.ItemDef);
         }
-
-        foreach (HUD hud in HUD.instancesList)
-        {
-            foreach (AllyCardController cardController in hud.allyCardManager.cardAllocator.elements)
-            {
-                cardController.InfoOverride();
-            }
-        }
         
         if (!printmvp) return;
         Chat.SendBroadcastChat(new Chat.SimpleChatMessage() { baseToken = $"<color=#e5eefc><style=cIsUtility>{TryGetName(test[0].Key)}</style> is the highest stage damage dealer with <style=cIsDamage>{(test[0].Value):0} damage</style>!</color>"});
@@ -186,11 +121,8 @@ public class whodiddamage : PatchBase<whodiddamage>
         }
         
         string name = characterMaster.GetBody().baseNameToken;
-
         name = Language.GetString(name ?? characterMaster.bodyPrefab.GetComponent<CharacterBody>().baseNameToken);
-
         return name;
-
     }
 
     private void StartTracking(BossGroup bossGroup)
@@ -287,9 +219,9 @@ public class whodiddamage : PatchBase<whodiddamage>
         Utils.CheckboxConfig(onlyInMultiplayer);
     }
 
-    private ConfigEntry<bool> enabled;
-    private ConfigEntry<bool> useCrown;
-    private ConfigEntry<bool> crownColorBasedOffBody;
-    private ConfigEntry<bool> onlyInMultiplayer;
-    private ConfigEntry<string> crownColorOverrides;
+    public static ConfigEntry<bool> enabled;
+    public static ConfigEntry<bool> useCrown;
+    public static ConfigEntry<bool> crownColorBasedOffBody;
+    public static ConfigEntry<bool> onlyInMultiplayer;
+    public static ConfigEntry<string> crownColorOverrides;
 }

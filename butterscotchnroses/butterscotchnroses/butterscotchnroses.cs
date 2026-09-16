@@ -14,6 +14,7 @@ using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using R2API.Networking;
 using R2API.Utils;
+using RoR2;
 using UnityEngine;
 using ShaderSwapper;
 
@@ -27,32 +28,30 @@ namespace BNR
 
         private const string PluginAuthor = "icebro";
         private const string PluginName = "BNR";
-        private const string PluginVersion = "0.3.0";
+        private const string PluginVersion = "0.3.1";
 
         public static AssetBundle carvingKitBundle;
-        public static AssetBundle redmanBundle;
         public static AssetBundle bnrBundle;
         public static butterscotchnroses instance;
         public static List<PatchBase> patchBases = [];
+        public static List<ModdedPatchBase> moddedPatchBases = [];
         public static Harmony harmony;
         public static ConfigEntry<bool> clientSide;
+        public static ConfigEntry<bool> logDebug;
+        
         public void Awake()
         {
-            //TODO add making inferno + ESBM config not give them double jumps TT 
-            //TODO add mod options button (uses something different i think idk( and highlighted text color change configfs 
-            //TODO cleanesthud color force instead of survivor color 
-            //TODO main menu pink color option like wolfo qol 
-            
             instance = this;
             Log.Init(Logger);
             Logger.LogDebug("loading mod !!");
             
             clientSide = Config.Bind("BNR", "client side", false, "whether the mod should run in clientside mode or not .,,. disables content/changed behavior that would otherwise cause desyncs automatically !!!");
+            logDebug = Config.Bind("BNR", "debug logs", false, "whether the mod should log debug logs.,.,");
 
             carvingKitBundle = AssetBundle.LoadFromFile(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Info.Location)!, "carvingkit_assets"));
             StartCoroutine(carvingKitBundle.UpgradeStubbedShadersAsync());
             bnrBundle = AssetBundle.LoadFromFile(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Info.Location)!, "bnrbundle"));
-
+            
             harmony = new Harmony(Info.Metadata.GUID);
             
             IEnumerable<Type> patches = Assembly.GetExecutingAssembly().GetTypes().Where(type => !type.IsAbstract && type.IsSubclassOf(typeof(PatchBase)));
@@ -62,7 +61,7 @@ namespace BNR
                 {
                     PatchBase patchBase = (PatchBase)Activator.CreateInstance(patch);
                     patchBase.Config(Config);
-                    patchBase.PreInit();
+                    patchBase.Init();
                     patchBases.Add(patchBase);
                 }
                 catch (Exception e)
@@ -71,6 +70,25 @@ namespace BNR
                     Log.Warning(e);
                 }
             }
+            
+#if !HOTRELOAD
+            IEnumerable<Type> moddedPatches = Assembly.GetExecutingAssembly().GetTypes().Where(type => !type.IsAbstract && type.IsSubclassOf(typeof(ModdedPatchBase)));
+            foreach (Type patch in moddedPatches)
+            {
+                try
+                {
+                    ModdedPatchBase patchBase = (ModdedPatchBase)Activator.CreateInstance(patch);
+                    patchBase.Config(Config);
+                    patchBase.PreInit();
+                    moddedPatchBases.Add(patchBase);
+                }
+                catch (Exception e)
+                {
+                    Log.Warning("failed to patch something ! probably fine if you dont have whatever mod that was attempted to be patched enabled ,..,,.");
+                    Log.Warning(e);
+                }
+            }
+#endif
 
             if (!clientSide.Value)
             {
@@ -108,9 +126,10 @@ namespace BNR
         
         private void Update()
         {
-#if DEBUG
+#if HOTRELOAD
             if (Input.GetKeyUp(KeyCode.F5))
             {
+                Log.Debug("hjotreloaing!");
                 UnityHotReloadNS.UnityHotReload.LoadNewAssemblyVersion(typeof(butterscotchnroses).Assembly, System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Info.Location)!, "butterscotchnroses.dll"));
             }
 #endif  
@@ -120,7 +139,6 @@ namespace BNR
             }
         }
 
-        
         private void FixedUpdate()
         {
             foreach (PatchBase patch in patchBases)

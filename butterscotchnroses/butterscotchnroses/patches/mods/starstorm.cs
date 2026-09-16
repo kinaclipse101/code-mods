@@ -16,7 +16,7 @@ using MonoMod.Cil;
 using RoR2;
 using UnityEngine;
 using FieldAttributes = Mono.Cecil.FieldAttributes;
-public class starstorm : PatchBase<starstorm>
+public class starstorm : ModdedPatchBase<starstorm>
 {
     public override string chainLoaderKey => "com.TeamMoonstorm";
     

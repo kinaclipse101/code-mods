@@ -4,15 +4,18 @@ using BepInEx.Configuration;
 using HarmonyLib;
 using RoR2;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
 using UnityEngine.Networking;
 
 namespace BNR;
 
 public class malachite : PatchBase<malachite>
-    {
+{
+    public static GameObject urchinMaster;
     public override void Init()
     {     
         applyHooks();
+        urchinMaster = Addressables.LoadAssetAsync<GameObject>(RoR2BepInExPack.GameAssetPaths.Version_1_39_0.RoR2_Base_ElitePoison.UrchinTurretMaster_prefab).WaitForCompletion();
     }
         
     private void applyHooks()
@@ -85,21 +88,13 @@ public class EvilUrchinSpawner : MonoBehaviour
             Destroy(this);
             return;
         }
-
-        Vector3 position2 = transform.position;
-        var ray = (_characterBody.inputBank
-            ? _characterBody.inputBank.GetAimRay()
-            : new Ray(transform.position, transform.rotation * Vector3.forward));
-        Quaternion rotation = Quaternion.LookRotation(ray.direction);
-        GameObject gameObject3 = Instantiate(
-            LegacyResourcesAPI.Load<GameObject>("Prefabs/CharacterMasters/UrchinTurretMaster"), position2,
-            rotation);
-        CharacterMaster component3 = gameObject3.GetComponent<CharacterMaster>();
-        if ((bool)component3)
-        {
-            component3.teamIndex = _characterBody.teamComponent.teamIndex;
-            NetworkServer.Spawn(gameObject3);
-            component3.SpawnBodyHere();
-        }
+        
+        GameObject instantiatedMaster = Instantiate(malachite.urchinMaster, new Vector3(transform.position.x, transform.position.y + 5, transform.position.z), Quaternion.LookRotation(Vector3.up));
+        CharacterMaster master = instantiatedMaster.GetComponent<CharacterMaster>();
+        if (!master) return;
+        
+        master.teamIndex = _characterBody.teamComponent.teamIndex;
+        NetworkServer.Spawn(instantiatedMaster);
+        master.SpawnBodyHere();
     }
 }

@@ -20,7 +20,7 @@ using Stage = On.RoR2.Stage;
 
 namespace BNR;
 
-public class coolereclipse : PatchBase<coolereclipse>
+public class coolereclipse : ModdedPatchBase<coolereclipse>
 {
     public override string chainLoaderKey => "com.Nuxlar.CoolerEclipse";
     private static int eclipseRNG;

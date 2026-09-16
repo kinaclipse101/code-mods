@@ -24,19 +24,6 @@ namespace BNR.patches
     }
     public abstract class PatchBase
     {
-        public virtual string chainLoaderKey => "";
-
-        public void PreInit()
-        {
-            if (chainLoaderKey.IsNullOrWhiteSpace() || Chainloader.PluginInfos.ContainsKey(chainLoaderKey))
-            {
-                Init();
-            }
-            else
-            {
-                Log.Debug($"didnt finds {chainLoaderKey} loaded !!! not applyings patches ,.,,.");
-            }
-        }
         public abstract void Init();
 
         public abstract void Config(ConfigFile config);

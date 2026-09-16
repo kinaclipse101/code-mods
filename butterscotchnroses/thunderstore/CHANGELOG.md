@@ -1,3 +1,10 @@
+## 0.3.1
+- added cursor edits ,.,. 
+- added loading screen sprite replacements .,., 
+- hopefully fixed malachite edit on allied enemies keeping the little x after they died ,. 
+- also hopefully fixed crown on who did damage not working right and displaying sometimes on wrong player,. ,. 
+- moved old config fixer config into the main bnr section ,.,.
+
 ## 0.3.0
 - added who did damage (prints damage count for each player after a boss is killed in multiplayer).,,. 
 - added color catalog editor .,,. 
