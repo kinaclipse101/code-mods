@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.1</TargetFramework>
+		<LangVersion>preview</LangVersion>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<Platforms>Weaver;Non-Weaver</Platforms>
+		<Configurations>Debug;Release</Configurations>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="BepInEx.Analyzers" Version="1.0.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+
+		<PackageReference Include="BepInEx.Core" Version="5.4.21" />
+
+		<PackageReference Include="UnityEngine.Modules" Version="2021.3.33" IncludeAssets="compile" />
+		<PackageReference Include="xiaoxiao921-UnityHotReload" Version="1.0.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Reference Include="com.unity.multiplayer-hlapi.Runtime">
+	    <HintPath>..\libs\com.unity.multiplayer-hlapi.Runtime.dll</HintPath>
+	  </Reference>
+	  <Reference Include="RoR2">
+	    <HintPath>..\libs\RoR2-nstrip.dll</HintPath>
+	  </Reference>
+	</ItemGroup>
+
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<Exec Command="$(SolutionDir)scripts/postbuild.sh '$(SolutionDir)' '$(ConfigurationName)' '$(ProjectName)' '$(PlatformName)'"/>
+	</Target>
+</Project>
