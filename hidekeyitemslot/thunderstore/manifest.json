@@ -1,6 +1,6 @@
 ﻿{
 	"name": "HideKeyItemSlot",
-	"version_number": "1.0.0",
+	"version_number": "1.0.1",
 	"website_url": "https://github.com/kinaclipse101/code-mods/tree/main/hidekeyitemslot",
 	"description": "hides key item slot (n'tormat( when no key items are held ,.. ,..,. ",
 	"dependencies": [

@@ -11,7 +11,7 @@ namespace HideKeyItemSlot
         private const string PluginGUID = PluginAuthor + "." + PluginName;
         private const string PluginAuthor = "kina";
         private const string PluginName = "HideKeyItemSlot";
-        private const string PluginVersion = "1.0.0";
+        private const string PluginVersion = "1.0.1";
         
         public void Awake()
         {
