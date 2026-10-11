@@ -1,0 +1,9 @@
+﻿{
+	"name": "ensurekeyitemslot",
+	"version_number": "1.0.1",
+	"website_url": "https://github.com/kinaclipse101/code-mods/tree/main/ensurekeyitemslot",
+	"description": "fixes ntormat not working on modded survivors that dont have keyitemslot component on their bodies by adding it to their body prefab .,,. if youre reading this a month past dlc4 release you dont need it anymore ,.,.,.",
+	"dependencies": [
+		"bbepis-BepInExPack-5.4.2122"
+	]
+}

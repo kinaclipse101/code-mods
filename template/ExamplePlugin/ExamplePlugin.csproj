@@ -16,14 +16,85 @@
 
 		<PackageReference Include="BepInEx.Core" Version="5.4.21" />
 
-		<PackageReference Include="R2API" Version="5.0.5" />
+		<PackageReference Include="R2API.Addressables" Version="1.1.3" />
 
-		<PackageReference Include="Rune580.Mods.RiskOfRain2.RiskOfOptions" Version="2.8.5" />
+		<PackageReference Include="R2API.Animations" Version="1.2.4" />
 
-		<PackageReference Include="UnityEngine.Modules" Version="2021.3.33" IncludeAssets="compile" />
-		<PackageReference Include="RiskOfRain2.GameLibs" Version="1.4.0-r.0" />
-		<PackageReference Include="MMHOOK.RoR2" Version="2025.11.19" NoWarn="NU1701" />
-		<PackageReference Include="RoR2BepInExPack" Version="1.36.0" />
+		<PackageReference Include="R2API.ArtifactCode" Version="1.0.1" />
+
+		<PackageReference Include="R2API.Buffs" Version="1.0.0" />
+
+		<PackageReference Include="R2API.CharacterBody" Version="1.4.1" />
+
+		<PackageReference Include="R2API.Colors" Version="1.0.3" />
+
+		<PackageReference Include="R2API.CommandHelper" Version="1.0.2" />
+
+		<PackageReference Include="R2API.ContentManagement" Version="1.0.11" />
+
+		<PackageReference Include="R2API.Core" Version="5.3.0" />
+
+		<PackageReference Include="R2API.DamageType" Version="1.1.7" />
+
+		<PackageReference Include="R2API.Deployable" Version="1.0.1" />
+
+		<PackageReference Include="R2API.Difficulty" Version="1.1.2" />
+
+		<PackageReference Include="R2API.Director" Version="3.1.1" />
+
+		<PackageReference Include="R2API.Dot" Version="1.1.2" />
+
+		<PackageReference Include="R2API.Elites" Version="1.1.2" />
+
+		<PackageReference Include="R2API.Execute" Version="1.1.3" />
+
+		<PackageReference Include="R2API.Items" Version="1.0.8" />
+
+		<PackageReference Include="R2API.Language" Version="1.1.0" />
+
+		<PackageReference Include="R2API.Loadout" Version="1.0.2" />
+
+		<PackageReference Include="R2API.LobbyConfig" Version="1.0.1" />
+
+		<PackageReference Include="R2API.Networking" Version="1.0.4" />
+
+		<PackageReference Include="R2API.Orb" Version="1.0.1" />
+
+		<PackageReference Include="R2API.Prefab" Version="1.1.1" />
+
+		<PackageReference Include="R2API.ProcType" Version="1.0.2" />
+
+		<PackageReference Include="R2API.RecalculateStats" Version="1.6.6" />
+
+		<PackageReference Include="R2API.Rules" Version="1.0.1" />
+
+		<PackageReference Include="R2API.SceneAsset" Version="1.1.2" />
+
+		<PackageReference Include="R2API.Skills" Version="1.0.5" />
+
+		<PackageReference Include="R2API.Skins" Version="1.4.8" />
+
+		<PackageReference Include="R2API.Sound" Version="1.0.3" />
+
+		<PackageReference Include="R2API.Stages" Version="1.0.3" />
+
+		<PackageReference Include="R2API.StringSerializerExtensions" Version="1.0.0" />
+
+		<PackageReference Include="R2API.Teams" Version="1.0.3" />
+
+		<PackageReference Include="R2API.TempVisualEffect" Version="1.0.3" />
+
+		<PackageReference Include="R2API.Unlockable" Version="1.0.2" />
+
+		<PackageReference Include="RoR2.BepInEx.Analyzers" Version="1.0.8">
+		  <PrivateAssets>all</PrivateAssets>
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+
+		<PackageReference Include="RoR2BepInExPack" Version="1.44.0" />
+
+		<PackageReference Include="Rune580.Mods.RiskOfRain2.RiskOfOptions" Version="2.8.6" />
+
 		<PackageReference Include="xiaoxiao921-UnityHotReload" Version="1.0.1" />
 	</ItemGroup>
 

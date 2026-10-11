@@ -6,13 +6,11 @@ using UnityEngine;
 namespace ExamplePlugin
 {
     [BepInDependency("iDeathHD.UnityHotReload", BepInDependency.DependencyFlags.SoftDependency)]
-    [BepInDependency(ItemAPI.PluginGUID)]
-    [BepInDependency(LanguageAPI.PluginGUID)]
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
     public class ExamplePlugin : BaseUnityPlugin
     {
         private const string PluginGUID = PluginAuthor + "." + PluginName;
-        private const string PluginAuthor = "icebro";
+        private const string PluginAuthor = "kina";
         private const string PluginName = "ExamplePlugin";
         private const string PluginVersion = "1.0.0";
 
