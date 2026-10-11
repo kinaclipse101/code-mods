@@ -1,0 +1,9 @@
+﻿{
+	"name": "didyouseethat",
+	"version_number": "1.0.0",
+	"website_url": "https://github.com/kinaclipse101/code-mods/tree/main/didyouseethat",
+	"description": "what was that ,.., that was scary ,.., .,..,",
+	"dependencies": [
+		"RiskofThunder-R2API_Prefab-1.1.1"
+	]
+}
