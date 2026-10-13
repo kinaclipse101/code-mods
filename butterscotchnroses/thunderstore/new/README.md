@@ -34,6 +34,16 @@ everything is configurable to some degree too ,.,,. so if you dont like an edit 
 
 </details>
 
+<details>
+<summary> acolyte gree nsoul ,.,.  </summary>
+
+- makes acolyte soul green ,.., undyne ,.., 
+
+![](https://files.catbox.moe/0aulsg.png)
+
+
+</details>
+
 
 <details>
 <summary> HSV skin recolors !!!!!!!  </summary>

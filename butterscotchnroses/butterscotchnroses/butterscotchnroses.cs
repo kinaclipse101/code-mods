@@ -11,26 +11,24 @@ using butterscotchnroses.artifacts;
 using butterscotchnroses.skills;
 using HarmonyLib;
 using RiskOfOptions;
+using RoR2;
 using UnityEngine;
 using ShaderSwapper;
 
 namespace BNR
 {
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
-    [BepInDependency("com.Viliger.EnemiesReturns", BepInDependency.DependencyFlags.SoftDependency)]
     public class butterscotchnroses : BaseUnityPlugin
     {
-        private const string PluginGUID = "zzz" + PluginAuthor + "." + PluginName;
+        private const string PluginGUID = "zzz." + PluginAuthor + "." + PluginName;
 
-        private const string PluginAuthor = "icebro";
+        private const string PluginAuthor = "kina";
         private const string PluginName = "BNR";
-        private const string PluginVersion = "0.3.2";
+        private const string PluginVersion = "0.3.3";
 
+        public static butterscotchnroses instance;
         public static AssetBundle carvingKitBundle;
         public static AssetBundle bnrBundle;
-        public static butterscotchnroses instance;
-        public static List<PatchBase> patchBases = [];
-        public static List<ModdedPatchBase> moddedPatchBases = [];
         public static Harmony harmony;
         public static ConfigEntry<bool> clientSide;
         public static ConfigEntry<bool> logDebug;
@@ -58,7 +56,6 @@ namespace BNR
                     PatchBase patchBase = (PatchBase)Activator.CreateInstance(patch);
                     patchBase.Config(Config);
                     patchBase.Init();
-                    patchBases.Add(patchBase);
                 }
                 catch (Exception e)
                 {
@@ -76,7 +73,6 @@ namespace BNR
                     ModdedPatchBase patchBase = (ModdedPatchBase)Activator.CreateInstance(patch);
                     patchBase.Config(Config);
                     patchBase.PreInit();
-                    moddedPatchBases.Add(patchBase);
                 }
                 catch (Exception e)
                 {
@@ -122,27 +118,15 @@ namespace BNR
             ModSettingsManager.SetModIcon(bnrBundle.LoadAsset<Sprite>("icon"));
         }
         
+#if HOTRELOAD
         private void Update()
         {
-#if HOTRELOAD
             if (Input.GetKeyUp(KeyCode.F5))
             {
                 Log.Debug("hjotreloaing!");
                 UnityHotReloadNS.UnityHotReload.LoadNewAssemblyVersion(typeof(butterscotchnroses).Assembly, System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Info.Location)!, "butterscotchnroses.dll"));
             }
+        }
 #endif  
-            foreach (PatchBase patch in patchBases)
-            {
-                patch.Update();
-            }
-        }
-
-        private void FixedUpdate()
-        {
-            foreach (PatchBase patch in patchBases)
-            {
-                patch.FixedUpdate();
-            }
-        }
     }
 }

@@ -27,6 +27,7 @@ public class ukulelepronouns : PatchBase<ukulelepronouns>
         {
             On.RoR2.UI.GenericNotification.SetItem -= GenericNotificationOnSetItem; 
             On.RoR2.UI.ItemIcon.SetItemIndex_ItemIndex_int_float -= ItemIconOnSetItemIndex_ItemIndex_int_float;
+            On.RoR2.UI.HUD.ActivateScoreboard -= HUDOnActivateScoreboard;
         }
     }
 

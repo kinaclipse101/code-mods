@@ -102,12 +102,14 @@ public class skinrecolors : PatchBase<skinrecolors>
             On.RoR2.SkinCatalog.Init += SkinCatalogOnInit;
             RoR2.Run.onRunStartGlobal += RunOnonRunStartGlobal;
             On.RoR2.Stage.Start += StageOnStart;
+            RoR2Application.onUpdate += Update;
         }
         else
         {
             On.RoR2.SkinCatalog.Init -= SkinCatalogOnInit;
             RoR2.Run.onRunStartGlobal -= RunOnonRunStartGlobal;
             On.RoR2.Stage.Start -= StageOnStart;
+            RoR2Application.onUpdate -= Update;
         }
     }
     
@@ -258,7 +260,7 @@ public class skinrecolors : PatchBase<skinrecolors>
         return recoloredSkinDef;
     }
 
-    public override void Update()
+    public void Update()
     {
         CheckConsoleKey();
 

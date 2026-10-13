@@ -95,7 +95,7 @@ public class buttonrecolors : PatchBase<buttonrecolors>
         if (!colorButtons.Value) return;
                     
         if (self.gameObject.name.Contains("ObjectivePanel")) return;//objective panel
-        if (self.gameObject.name.Contains("NakedButton")) return; //back button css
+        if (self.gameObject.name.Contains("Naked")) return; //back button css
         Image image = self.gameObject.GetComponent<Image>();
         if (image.gameObject.name.Contains("RuleBook")) return;
 
@@ -112,7 +112,7 @@ public class buttonrecolors : PatchBase<buttonrecolors>
         if (hgButton.gameObject.name.Contains("Choice")) return; //difficulty icons
         if (hgButton.gameObject.name.Contains("Loadout")) return; //css
         if (hgButton.gameObject.name.Contains("ObjectivePanel")) return; 
-        if (hgButton.gameObject.name.Contains("NakedButton")) return;
+        if (hgButton.gameObject.name.Contains("Naked")) return;
         if (hgButton.gameObject.transform.parent?.parent?.parent?.name.Contains("CommandPickerPanel(Clone)") == true) return;
                 
         if (hgButton.gameObject.name.Contains("Music&More"))

@@ -1,3 +1,18 @@
+## 0.3.3
+- added acolyte green soul patch ,., makes her m2 soul ,.., green .,., 
+- removed halcyon shrine speed edits as it made issue .,, other mods do same thing so dont feel like fixing :soyheart: , .,
+- moved mod to other team,.. ,
+- (hopefully) better button recolor blacklist ,.,. ill have to go through and get them properly some time ,.,.
+- temporarily changed mod icon .,., its like 4 and i need to sleep but want to change it to be better ,., 
+
+## 0.3.2
+- hopefully fixed an issue with whodiddamage causing an nre (couldnt replicate sorry lordryn,. ,.
+- added textmeshpro colors to coloredits tab .,, like ones used in logs/ingame/etc ([ror2helper lets you see them well i think,.](https://icebro.party/ror2helper))
+- set teamhealthcolor to be disabled by default since it wouldnt do anything if you didnt change any of the configs for it,..,,.
+- added cursoredits dropdown menu to select cursor (usually used optiongenerator and forgot to add this one to roo oops .,. thanks lordryn .,.)
+- made button recolors recolor more ui elements and have a slightly better blacklist for buttons it shouldnt .,., 
+- finally gave it an icon in roo and fixed some other configs not having roo settings ,.., 
+
 ## 0.3.1
 - added cursor edits ,.,. 
 - added loading screen sprite replacements .,., 

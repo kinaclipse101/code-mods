@@ -1,0 +1,11 @@
+﻿{
+	"name": "butterscotchandroses",
+	"version_number": "0.3.3",
+	"website_url": "https://github.com/kinaclipse101/code-mods/tree/main/butterscotchnroses",
+	"description": "misc edits mod ,.., has some nice goodies !!! ,.,. i pinky promise ,.., check your configs btw they got reset this update from guid change ,..,",
+	"dependencies": [
+		"Rune580-Risk_Of_Options-2.8.5",
+		"tristanmcpherson-R2API-5.0.5",
+		"Smooth_Salad-ShaderSwapper-1.0.1"
+	]
+}

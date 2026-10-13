@@ -26,7 +26,7 @@ public class malachite : PatchBase<malachite>
         }
         else
         {
-            On.RoR2.CharacterBody.OnBuffFirstStackGained += CharacterBodyOnOnBuffFirstStackGained;
+            On.RoR2.CharacterBody.OnBuffFirstStackGained -= CharacterBodyOnOnBuffFirstStackGained;
         }
     }
 
