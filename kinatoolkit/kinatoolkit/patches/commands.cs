@@ -6,6 +6,7 @@ using kinatoolkit.patches.basegame;
 using RoR2;
 using UnityEngine;
 using DebugToolkit;
+using LOP;
 using Newtonsoft.Json.Utilities;
 using R2API;
 using RiskOfOptions.Lib;
@@ -250,18 +251,29 @@ public static class commands
 
             foreach (debugplainsJSON.Interactables interactable in jsonEdits.interactables)
             {
+                if (interactable.interactableCard == "ArtifactPortal")
+                {
+                    GameObject portal = Object.Instantiate(kinatoolkit.instance.artifactPortalPrefab, new Vector3(interactable.position.x, interactable.position.y, interactable.position.z), Quaternion.Euler(new Vector3(interactable.rotation.x, interactable.rotation.y, interactable.rotation.z)));
+                    JSONObjects.Add(portal);
+                }
                 InteractableSpawnCard spawnCard = Addressables.LoadAssetAsync<InteractableSpawnCard>(interactable.interactableCard).WaitForCompletion();
                 if (!spawnCard)
                 {
                     Log.Warning($"Couldn't load interactable card {interactable.interactableCard}.");
                     break;
                 }
-
+                
                 SpawnCard.SpawnResult spawned = spawnCard.DoSpawn(
                     new Vector3(interactable.position.x, interactable.position.y, interactable.position.z),
                     Quaternion.Euler(interactable.rotation.x, interactable.rotation.y, interactable.rotation.z),
-                    new DirectorSpawnRequest(spawnCard, null, RoR2Application.rng));
-                spawned.spawnedInstance?.transform.rotation = Quaternion.Euler(interactable.rotation.x,
+                    new DirectorSpawnRequest(spawnCard, new DirectorPlacementRule()
+                    {
+                        IgnoreSwarmsArtifact = true,
+                        maxDistance = 99999999,
+                        minDistance = 0,
+                        placementMode = DirectorPlacementRule.PlacementMode.Direct
+                    }, RoR2Application.rng));
+                spawned.spawnedInstance.transform.rotation = Quaternion.Euler(interactable.rotation.x,
                     interactable.rotation.y, interactable.rotation.z);
                 JSONObjects.Add(spawned.spawnedInstance);
             }

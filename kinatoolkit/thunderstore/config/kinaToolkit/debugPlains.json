@@ -417,6 +417,97 @@
         "y": -320,
         "z": 0
       }
+    },
+    {
+      "interactableCard": "RoR2/DLC4/iscBetterHallowedShrine.asset",
+      "position": {
+        "x": 333.3168,
+        "y": -51.73523,
+        "z": -251.2833
+      },
+      "rotation": {
+        "x": 0,
+        "y": -320,
+        "z": 0
+      }
+    },
+    {
+      "interactableCard": "RoR2/DLC4/ShrineCompulsion/iscShrineCompulsion.asset",
+      "position": {
+        "x": 335.9266,
+        "y": -51.81701,
+        "z": -255.784
+      },
+      "rotation": {
+        "x": 0,
+        "y": -320,
+        "z": 0
+      }
+    },
+    {
+      "interactableCard": "RoR2/DLC4/ShrineCompulsion/iscShrineCompulsionRare.asset",
+      "position": {
+        "x": 337.5031,
+        "y": -51.81701,
+        "z": -259.2352
+      },
+      "rotation": {
+        "x": 0,
+        "y": -320,
+        "z": 0
+      }
+    },
+    {
+      "interactableCard": "RoR2/DLC4/ShrineCatastrophe/iscShrineCatastrophe.asset",
+      "position": {
+        "x": 339.7901,
+        "y": -51.81701,
+        "z": -261.8038
+      },
+      "rotation": {
+        "x": 0,
+        "y": -320,
+        "z": 0
+      }
+    },
+    {
+      "interactableCard": "RoR2/DLC4/HollowChest/iscHollowChest.asset",
+      "position": {
+        "x": 341.8874,
+        "y": -51.81701,
+        "z": -264.7896
+      },
+      "rotation": {
+        "x": 0,
+        "y": -320,
+        "z": 0
+      }
+    },
+    {
+      "interactableCard": "RoR2/DLC4/Mimic/iscTrialMimicSpawner.asset",
+      "position": {
+        "x": 343.459,
+        "y": -51.81701,
+        "z": -267.1606
+      },
+      "rotation": {
+        "x": 0,
+        "y": -320,
+        "z": 0
+      }
+    },
+    {
+      "interactableCard": "ArtifactPortal",
+      "position": {
+        "x": 362.262,
+        "y": -33.61381,
+        "z": -197.2354
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
     }
   ],
   "commandPickups": [
