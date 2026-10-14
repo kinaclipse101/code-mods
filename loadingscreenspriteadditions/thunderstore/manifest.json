@@ -1,0 +1,9 @@
+﻿{
+	"name": "LoadingSpriteAdditions",
+	"version_number": "1.0.0",
+	"website_url": "https://github.com/kinaclipse101/code-mods/tree/main/loadingscreenspriteadditions",
+	"description": "adds all the rorr/ssr cast as loading screen sprites!! replaces old loading screen sprites to use returns versions as well !! and makes the sprite reflect your current survivor!!!!",
+	"dependencies": [
+		"Nebby-LoadingScreenSpriteFix-3.0.1"
+	]
+}
