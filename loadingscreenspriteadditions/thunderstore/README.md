@@ -14,4 +14,6 @@ credits ,..,
 - ssr mule walk by [beebo](https://bsky.app/profile/beebogreebo.bsky.social) !!!
 - ssr technician walk by [beebo ](https://bsky.app/profile/beebogreebo.bsky.social) too !!
 - ssr exe walk by neik and [redacted](https://bsky.app/profile/redactedinlight.bsky.social) i think idk ,.., 
+- rex walk by [syntax evasion](https://bsky.app/profile/aka-syntax.bsky.social) .,. check out their [cool mod ](https://thunderstore.io/c/risk-of-rain-returns/p/syntaxevasion/RiskOfRexReturns/)!!
+- captain walk by [digbug ](https://bsky.app/profile/digbugreal.bsky.social),., check out her [cool mod ](https://thunderstore.io/c/risk-of-rain-returns/p/CoolLoaders_Inc/CaptainReturns/)!! 
 - all rorr sprites by hogpo game, s,.,.,.

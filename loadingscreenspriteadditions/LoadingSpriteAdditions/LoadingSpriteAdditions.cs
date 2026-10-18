@@ -23,7 +23,7 @@ namespace LoadingSpriteAdditions
         private const string PluginGUID = PluginAuthor + "." + PluginName;
         private const string PluginAuthor = "kina";
         private const string PluginName = "LoadingSpriteAdditions";
-        private const string PluginVersion = "1.0.0";
+        private const string PluginVersion = "1.1.0";
         
         private static bool ROOInstalled => Chainloader.PluginInfos.ContainsKey("com.rune580.riskofoptions");
 
@@ -41,7 +41,6 @@ namespace LoadingSpriteAdditions
             "Miner",
             "Acrid",
             "Merc",
-            "Loader",
             "CHEF",
             "Pilot",
             "Arti",
@@ -51,11 +50,18 @@ namespace LoadingSpriteAdditions
             "Sniper",
             "Robomando",
             
+            "AcolyteTribeScout",
+            "AcolyteTribeArcher",
+            "AcolyteTribeHunter",
+            
             "Nemmando",
             "NemmandoGun",
             "Nemmerc",
             "Technician",
             "MULE",
+            
+            "Captain",
+            "REX"
         ];
 
         private string[] disabledByDefault =
@@ -75,6 +81,7 @@ namespace LoadingSpriteAdditions
         private Dictionary<string, string> configBodyMatch = new();
         private ConfigEntry<string> blacklistBodies;
         private List<string> blacklistBodiesList = [];
+        private ConfigEntry<float> ponchoChance;
 
         public void Awake()
         {
@@ -105,6 +112,16 @@ namespace LoadingSpriteAdditions
                 Log.Warning(e);
             }
             
+            ponchoChance = Config.Bind("LSA - Misc", 
+                "poncho chance,..,", 
+                1f, 
+                "addition of .,,. poncho chance .,, .,. 1 = 1% ,..,,.,.,..,");
+            if(ROOInstalled)
+                ROOSupport.AddConfig(ponchoChance);
+            if (UnityEngine.Random.Range(0, 100) <= ponchoChance.Value)
+            {
+                LoadingScreenFix.LoadingScreenFix.AddSpriteAnimation(loadingSpritesBundle.LoadAsset<SimpleSpriteAnimation>($"ssaFalseSonPoncho"));
+            }
 
             onlyCurrentSurv = Config.Bind("LSA - Misc", 
                 "only pick currently playing survivor,..,", 
@@ -236,7 +253,7 @@ namespace LoadingSpriteAdditions
         {
             orig(self);
 
-            if (!Run.instance) return;
+            if (!onlyCurrentSurv.Value || !Run.instance) return;
 
             CharacterMaster master = LocalUserManager.GetFirstLocalUser().cachedMaster;
             CharacterBody body = master.GetBody();
@@ -303,6 +320,7 @@ namespace LoadingSpriteAdditions
             { "NemCommando", "Nemmando" },
             { "HANDOverclocked", "Hand" },
             { "SniperClassic", "Sniper" },
+            { "Treebot", "REX" },
         };
         
         public string NameCorrector(string survName)
