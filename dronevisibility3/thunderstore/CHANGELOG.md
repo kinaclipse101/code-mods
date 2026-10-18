@@ -1,3 +1,6 @@
+## 1.0.4
+- hopefully ??? fixed upward position being local rather than global (i stil ldont know why this happened but .,,. doesnt seem to anymore so .,(
+
 ## 1.0.3
 - okay this time for real i pinky promise !!!!!!!!!!
 

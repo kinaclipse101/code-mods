@@ -30,7 +30,7 @@ namespace DroneRepairBeacon
         private const string PluginGUID = PluginAuthor + "." + PluginName;
         private const string PluginAuthor = "icebro";
         private const string PluginName = "DroneRepairBeacon";
-        private const string PluginVersion = "1.0.3";
+        private const string PluginVersion = "1.0.4";
 
         private static bool UHRInstalled => Chainloader.PluginInfos.ContainsKey("iDeathHD.UnityHotReload");
         private static bool SS2Installed => Chainloader.PluginInfos.ContainsKey("com.TeamMoonstorm");
@@ -239,8 +239,7 @@ namespace DroneRepairBeacon
             {
                 c.Emit(OpCodes.Ldarg_0); // drone death state (name otken .,,. 
                 c.Emit(OpCodes.Ldloc_S, (byte)4); // load dead drone
-                c.EmitDelegate<Action<EntityStates.Drone.DeathState, GameObject>>(
-                    (deathState, deadDrone) =>
+                c.EmitDelegate<Action<EntityStates.Drone.DeathState, GameObject>>((deathState, deadDrone) =>
                     {
                         int rng = -1;
                         bool usingSpecificSprite = false;
@@ -256,7 +255,7 @@ namespace DroneRepairBeacon
                                 Log.Debug($"adding {specificDroneIndicatorSprites[i].name}");
                                 specificSpriteIndexes.Add(i);
                             }
-                            //Log.Debug(specificSpriteIndexes.Count);
+
                             if (droneIndicatorSprites.Count != 0 || specificSpriteIndexes.Count != 0)
                             {
                                 rng = Run.instance.runRNG.RangeInt(0, droneIndicatorSprites.Count + specificSpriteIndexes.Count);
@@ -265,13 +264,6 @@ namespace DroneRepairBeacon
                                     rng = specificSpriteIndexes[Run.instance.runRNG.RangeInt(0, specificSpriteIndexes.Count)];
                                     usingSpecificSprite = true;
                                 }
-                            
-                                //Log.Debug(rng);
-                                //Log.Debug(usingSpecificSprite);
-                                //if (!usingSpecificSprite)
-                                //{
-                                //    Log.Debug(droneIndicatorSprites[rng]);
-                                //}
                             }
                         }
                         

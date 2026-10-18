@@ -18,7 +18,7 @@ public class deadDroneTracker : NetworkBehaviour, IHologramContentProvider
     [SyncVar]
     public Vector3 serverPosition;
 
-    public void Awake()
+    public void Start()
     {
         if (!NetworkServer.active) return;
         gameObject.transform.localScale = new Vector3(DroneRepairBeacon.helpScale.Value, DroneRepairBeacon.helpScale.Value, DroneRepairBeacon.helpScale.Value);
