@@ -1,0 +1,9 @@
+﻿{
+	"name": "RedEchoesTextures",
+	"version_number": "1.0.0",
+	"website_url": "https://github.com/kinaclipse101/code-mods/tree/main/redechoestextures",
+	"description": "gives a certain secret boss his color back ,.., from unused textures,. .,.,",
+	"dependencies": [
+		"bbepis-BepInExPack-5.4.2122"
+	]
+}
