@@ -1,3 +1,13 @@
+## 0.3.5
+- fixed cooler eclipse pink eclipse chance not working properly ,.., 
+- added cooler eclipse only on whitelist stages and disable on hidden realms config ,.,.
+- fixed an index out of bounds with who did damage if you killed a boss without dealing damage linked to you (eg tricorn without [equipmentdamagesource](https://thunderstore.io/c/riskofrain2/p/Lordryn/DamageSourceForEquipment/) ,.. thank you for reporting this one gemo :plead: ,.,. 
+- fixed zandatsu skillsmas edit causing a type load error ,..
+
+## 0.3.4
+- added multipliers for incoming gold and xp and interactable card costs ,., 
+- removed loading screen sprite replacements (its in loadingspriteadditions !!!(
+
 ## 0.3.3
 - added acolyte green soul patch ,., makes her m2 soul ,.., green .,., 
 - removed halcyon shrine speed edits as it made issue .,, other mods do same thing so dont feel like fixing :soyheart: , .,

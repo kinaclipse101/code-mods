@@ -54,7 +54,7 @@ public class ukulelepronouns : PatchBase<ukulelepronouns>
         if (initialParent.name is not ("ItemInventoryDisplay" or "ItemsBackground")) return; // inventory display 
         
         CharacterBody localBody = initialParent.GetComponent<RoR2.UI.ItemInventoryDisplay>()?._characterBody;
-        if (localBody == null) return;
+        if (!localBody) return;
             
         self.tooltipProvider.bodyToken = Genderify(localBody, Language.GetString(ItemCatalog.GetItemDef(newitemindex).pickupToken));
         

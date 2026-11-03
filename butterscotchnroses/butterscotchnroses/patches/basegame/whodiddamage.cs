@@ -103,14 +103,17 @@ public class whodiddamage : PatchBase<whodiddamage>
 
         List<KeyValuePair<CharacterMaster, float>> test = mastersTotalDamage.ToList();
         test.Sort((kvp, kvp2) => (kvp2.Value).CompareTo(kvp.Value));
-        
-        if (useCrown.Value && !butterscotchnroses.clientSide.Value)
+
+        if (test.Count > 0)
         {
-            test[0].Key.inventory.GiveItemPermanent(Crown.instance.ItemDef);
-        }
+            if (useCrown.Value && !butterscotchnroses.clientSide.Value)
+            {
+                test[0].Key.inventory.GiveItemPermanent(Crown.instance.ItemDef);
+            }
         
-        if (!printmvp) return;
-        Chat.SendBroadcastChat(new Chat.SimpleChatMessage() { baseToken = $"<color=#e5eefc><style=cIsUtility>{TryGetName(test[0].Key)}</style> is the highest stage damage dealer with <style=cIsDamage>{(test[0].Value):0} damage</style>!</color>"});
+            if (!printmvp) return;
+            Chat.SendBroadcastChat(new Chat.SimpleChatMessage() { baseToken = $"<color=#e5eefc><style=cIsUtility>{TryGetName(test[0].Key)}</style> is the highest stage damage dealer with <style=cIsDamage>{(test[0].Value):0} damage</style>!</color>"});
+        }
     }
 
     private static string TryGetName(CharacterMaster characterMaster)

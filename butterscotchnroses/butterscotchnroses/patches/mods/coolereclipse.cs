@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using BepInEx;
 using BepInEx.Configuration;
 using BNR.patches;
@@ -34,6 +35,7 @@ public class coolereclipse : ModdedPatchBase<coolereclipse>
     private static Material eclipseMat;
     private static Material moonMat;
     private static ColorGrading colorGrading;
+    private static List<string> hiddenRealmInternalNames = [];
     
     [HarmonyPatch]
     public class CoolerEclipseChanges
@@ -45,12 +47,11 @@ public class coolereclipse : ModdedPatchBase<coolereclipse>
             CoolerEclipse.CoolerEclipse.shouldBeChance.Value = false;
             
             int eclipseRNG;
-            bool pinkEclipse;
             if (GameObject.Find("eclipse handler(Clone)")?.TryGetComponent(out EclipseNetworkBehavior eclipseNetworkBehavior) == true)
             {
                 eclipseRNG = eclipseNetworkBehavior.eclipseRNGs[Run.instance ? Run.instance.stageClearCount : 0];
-                pinkEclipse = eclipseNetworkBehavior.pinkEclipses[Run.instance ? Run.instance.stageClearCount : 0];
-                Log.Debug($"rng {eclipseRNG} pink {pinkEclipse} run null {Run.instance == null}");
+                bool pinkEclipse = eclipseNetworkBehavior.pinkEclipses[Run.instance ? Run.instance.stageClearCount : 0];
+                Log.Debug($"rng {eclipseRNG} pink {pinkEclipse} run null {!Run.instance}");
             }
             else
             {
@@ -60,7 +61,6 @@ public class coolereclipse : ModdedPatchBase<coolereclipse>
             }
             
             string sceneName = SceneManager.GetActiveScene().name;
-           // int rng = Run.instance.runRNG.RangeInt(0, 100);
 
             if (!whitelistStages.Value.IsNullOrWhiteSpace())
             {
@@ -71,6 +71,15 @@ public class coolereclipse : ModdedPatchBase<coolereclipse>
                     Log.Debug($"{stage} is in whitelist !! forcing !!");
                     return true;
                 }
+            }
+
+            if (onlyOnWhitelistedStages.Value)
+                return false;
+            
+            if (hiddenRealmBlacklist.Value)
+            {
+                if (hiddenRealmInternalNames.Contains(sceneName))
+                    return false;
             }
             
             if (!blacklistStages.Value.IsNullOrWhiteSpace())
@@ -100,12 +109,11 @@ public class coolereclipse : ModdedPatchBase<coolereclipse>
         public static void CoolerEclipseAddSkyboxPostFix(On.RoR2.SceneDirector.orig_Start orig, SceneDirector self)
         {
             if (!GameObject.Find("Eclipse")) return;
-            
-            int eclipseRNG;
+
             bool pinkEclipse;
             if (GameObject.Find("eclipse handler(Clone)")?.TryGetComponent(out EclipseNetworkBehavior eclipseNetworkBehavior) == true)
             {
-                eclipseRNG = eclipseNetworkBehavior.eclipseRNGs[Run.instance ? Run.instance.stageClearCount : 0];
+                int eclipseRNG = eclipseNetworkBehavior.eclipseRNGs[Run.instance ? Run.instance.stageClearCount : 0];
                 pinkEclipse = eclipseNetworkBehavior.pinkEclipses[Run.instance ? Run.instance.stageClearCount : 0];
                 Log.Debug($"rng {eclipseRNG} pink {pinkEclipse} run null {Run.instance == null}");
             }
@@ -138,7 +146,6 @@ public class coolereclipse : ModdedPatchBase<coolereclipse>
             
             if (pp.TryGetComponent(out SetAmbientLight amb))
             {
-                
                 amb.ambientSkyColor = Utils.Color255(207, 97, 182);
                 amb.ambientEquatorColor = Utils.Color255(207, 97, 165);
                 amb.ambientGroundColor = Utils.Color255(146, 32, 93);
@@ -267,6 +274,19 @@ public class coolereclipse : ModdedPatchBase<coolereclipse>
         Addressables.LoadAssetAsync<Texture2D>(RoR2BepInExPack.GameAssetPathsBetter.RoR2_Base_Common_ColorRamps.texRampArchWisp_png).Completed += handle => { moonRamp = handle.Result; };
         Addressables.LoadAssetAsync<Texture2D>(RoR2BepInExPack.GameAssetPathsBetter.RoR2_Base_Common_ColorRamps.texRampDiamondLaser_png).Completed += handle => { particleSystemRamp = handle.Result; };
     }
+    
+    [SystemInitializer([typeof(SceneCatalog)])]
+    public static void OnSceneCatalog()
+    {
+        foreach (var sceneDef in SceneCatalog.allSceneDefs)
+        {
+            if (Language.GetString(sceneDef.nameToken, "en").StartsWith("Hidden Realm"))
+            {
+                hiddenRealmInternalNames.Add(sceneDef.baseSceneName);
+                Log.Debug($"added {sceneDef.nameToken} to hidden realm");
+            }
+        }
+    }
 
     private void RunOnonRunStartGlobal(Run obj)
     {
@@ -281,7 +301,6 @@ public class coolereclipse : ModdedPatchBase<coolereclipse>
             eclipseHandler = Object.Instantiate(coolereclipse.eclipseHandler);
             NetworkServer.Spawn(eclipseHandler);
         }
-        
     }
 
     public override void Config(ConfigFile config)
@@ -304,19 +323,29 @@ public class coolereclipse : ModdedPatchBase<coolereclipse>
             "bwaa,  (0-100 !!! if regular eclipse is rolled rolls this percent chance on top .,,. set to 0 to disable !!");
         Utils.SliderConfig(0, 100, pinkEclipseChance);
         
-        
         blacklistStages = config.Bind("Mods - CoolerEclipse", 
             "stage blacklist", 
             "goldshores,bazaar,solutionalhaunt,ss2_voidshop,testscene,voidraid,arena", 
             "eclipse stage blacklist (seperate by , !! (eg golemplains,blackbeach!!");
         Utils.StringConfig(blacklistStages);
         
-        
         whitelistStages = config.Bind("Mods - CoolerEclipse", 
             "stage whitelist", 
             "", 
             "what stages to force eclipses on (seperate by , !! (eg golemplains,blackbeach!! will not work with moon2, ,..");
         Utils.StringConfig(whitelistStages);
+        
+        onlyOnWhitelistedStages = config.Bind("Mods - CoolerEclipse", 
+            "only have eclipses on whitelist stages", 
+            false, 
+            "force only whiteslisted stages to have eclipses ,..,");
+        Utils.CheckboxConfig(onlyOnWhitelistedStages);
+        
+        hiddenRealmBlacklist = config.Bind("Mods - CoolerEclipse", 
+            "blacklist hidden realms", 
+            true, 
+            "makes eclipses not happen on hidden realms ever ,..,");
+        Utils.CheckboxConfig(hiddenRealmBlacklist);
     }
 
     private static ConfigEntry<bool> applyCE;
@@ -324,6 +353,8 @@ public class coolereclipse : ModdedPatchBase<coolereclipse>
     public static ConfigEntry<float> pinkEclipseChance;
     public static ConfigEntry<string> blacklistStages;
     public static ConfigEntry<string> whitelistStages;
+    public static ConfigEntry<bool> onlyOnWhitelistedStages;
+    public static ConfigEntry<bool> hiddenRealmBlacklist;
     private static readonly int RemapTex = Shader.PropertyToID("_RemapTex");
     private static readonly int TintColor = Shader.PropertyToID("_TintColor");
     private static readonly int SpecColor = Shader.PropertyToID("_SpecColor");
@@ -331,67 +362,35 @@ public class coolereclipse : ModdedPatchBase<coolereclipse>
 
 class EclipseNetworkBehavior() : NetworkBehaviour
 {
-    public SyncListInt eclipseRNGs = new SyncListInt();
-    public SyncListBool pinkEclipses = new SyncListBool();
+    public SyncListInt eclipseRNGs = [];
+    public SyncListBool pinkEclipses = [];
 
     private void Awake()
     {
-        //Log.Debug("asdas343d");
-        Object.DontDestroyOnLoad(this);
+        DontDestroyOnLoad(this);
     }
-
-    private void Start()
-    {
-        
-
-    }
-
-    private void OnServerInitialized()
-    {
-        
-    }
-
+    
     public override void OnStartClient()
     {
         base.OnStartClient();
+
+        if (!NetworkServer.active) return;
         
-        //Log.Debug($"rng null {eclipseRNGs == null}");
-        
-        if (NetworkServer.active)
+        for (int i = 0; i < 10; i++)
         {
-            for (int i = 0; i < 10; i++)
-            {
-                eclipseRNGs.Add(Random.RandomRangeInt(0, 100));
-                pinkEclipses.Add(Random.RandomRangeInt(0, 100) > coolereclipse.pinkEclipseChance.Value);
-            }
+            eclipseRNGs.Add(Random.RandomRangeInt(0, 100));
+            int pinkRNG = Run.instance.runRNG.RangeInt(0, 99);
+            Log.Debug($"pink rng = {pinkRNG} {pinkRNG < coolereclipse.pinkEclipseChance.Value}");
+            pinkEclipses.Add(pinkRNG < coolereclipse.pinkEclipseChance.Value);
         }
-        //Log.Debug($"rng count {eclipseRNGs.Count}");
-        //Log.Debug($"rng count {eclipseRNGs[0]}");
-        //Log.Debug($"rng null {eclipseRNGs == null}");
     }
 
 
     private void OnEnable()
     {
-        //Log.Debug("asdasd");
         On.RoR2.Stage.Start += StageOnStart;
     }
     
-    bool ranFixedUpdate = false;
-
-    private void FixedUpdate()
-    {
-        if (!ranFixedUpdate)
-        {
-            
-            ranFixedUpdate = true;
-        }
-    }
-
-    private void start()
-    {
-        
-    }
     private void OnDisable()
     {
         On.RoR2.Stage.Start -= StageOnStart;
@@ -403,13 +402,12 @@ class EclipseNetworkBehavior() : NetworkBehaviour
         {
             int rng = Run.instance.runRNG.RangeInt(0, 100);
             Log.Debug($"eclipse rng {rng}");
-            int pinkRNG = Run.instance.runRNG.RangeInt(0, 100);
-            Log.Debug($"pink rng {(pinkRNG > coolereclipse.pinkEclipseChance.Value)}");
+            int pinkRNG = Run.instance.runRNG.RangeInt(0, 99);
+            Log.Debug($"pink rng = {pinkRNG}");
+            Log.Debug($"pink rng {pinkRNG < coolereclipse.pinkEclipseChance.Value}");
             
             eclipseRNGs.Add(rng);
-            pinkEclipses.Add((pinkRNG > coolereclipse.pinkEclipseChance.Value));
-            
-            //new SyncEclipse(eclipseRNG, pinkEclipse).Send(NetworkDestination.Clients);
+            pinkEclipses.Add(pinkRNG < coolereclipse.pinkEclipseChance.Value);
         }
         
         return orig(self);

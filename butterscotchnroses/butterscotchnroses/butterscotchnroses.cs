@@ -24,7 +24,7 @@ namespace BNR
 
         private const string PluginAuthor = "kina";
         private const string PluginName = "BNR";
-        private const string PluginVersion = "0.3.3";
+        private const string PluginVersion = "0.3.5";
 
         public static butterscotchnroses instance;
         public static AssetBundle carvingKitBundle;

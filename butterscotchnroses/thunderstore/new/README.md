@@ -5,22 +5,6 @@ everything is configurable to some degree too ,.,,. so if you dont like an edit 
 
 ### basegame edits ,.,,.
 <details>
-<summary> loading screen sprites,. .,  </summary>
-
-- changes loading screen sprites to be their returns counterparts .,., has configs for replacing each one ., 
-
-![](https://files.catbox.moe/yswl1e.png)
-
-![](https://files.catbox.moe/7e6jah.png)
-
-![](https://files.catbox.moe/qhcss8.png)
-
-![](https://files.catbox.moe/6e4sy4.png)
-
-
-</details>
-
-<details>
 <summary> cursor edits ,.,.  </summary>
 
 - lets you use random cursors i found in the files ,.,.. and lets you cahnge its color ,.. ,
@@ -79,7 +63,7 @@ basically tutorial on how to use ,..,
 <details>
 <summary> ui edits !!  </summary>
 
-- (disabled by default since fairlys buggy ,.,.) customize button colors .,.,.
+- (disabled by default since some stuff is a little weird with it ,.,.) customize button colors .,.,.
 - shrink money to be how it used to pre SOTV (i miss you ,,,..,,..
 
 ![](https://files.catbox.moe/4cse35.png)
@@ -140,9 +124,6 @@ basically tutorial on how to use ,..,
 <details>
 <summary> halcyonite shrines  !!  </summary>
 
-- speed up by 2x (configurable) with a time penalty ,..,,.
-  - i have been informed bys canthi that this is actually just like [slendykrays faster charge](https://thunderstore.io/package/Slendykray/FasterCharge/) so um ,..,.,  oops !!
-- only speed up if theres less than x amount of players (configurable( ,.,,.,.
 - turn green portal into blue once the teleporter event is complete !!!! (im sorry i dont want to go on colossus' wild ride !!!
 
 </details>
@@ -193,7 +174,7 @@ basically tutorial on how to use ,..,
 - [mod link ,..,](https://thunderstore.io/package/Nuxlar/CoolerEclipse/)
  - adds config chance to eclipses rather than just 50-50 .,.,
  - adds a 'pink' variant of eclipse ,.,,,
- - adds a stage blacklist and whitelist (unsure if whitelist functions correctl y.,,.,.,
+ - adds a stage blacklist and whitelist ,,.,.,
 
 ![](https://files.catbox.moe/4b7ov1.png)
 
@@ -211,7 +192,7 @@ basically tutorial on how to use ,..,
 <summary> starstorm !!  </summary>
 
 - [mod link ,..,](https://thunderstore.io/package/TeamMoonstorm/Starstorm2/)
-- (might break if beta isnt enabled ( give icetool chance to apply a debuff on hit that decreases enemy movespeed by 5% per stack .,,. 5 stack causes the enemy to freeze (eg. artificer wall( !!! kinds of broken tbh because of the execute but its okay <33 ,.,.,.,
+- give icetool chance to apply a debuff on hit that decreases enemy movespeed by 5% per stack .,,. 5 stack causes the enemy to freeze (eg. artificer wall( !!! kinds of broken tbh because of the execute but its okay <33 ,.,.,.,
 
 </details>
 
@@ -230,23 +211,6 @@ basically tutorial on how to use ,..,
  - add custom body name config !!!! add any body names you want for thems to be renamed .,,.,. comes with oddbreads pr for allyname's alloyed collective pr by them !!! go say thank you !!!!!
 
 ![](https://files.catbox.moe/g5hbx6.png)
-</details>
-
-<details>
-<summary> debugging plains !!  </summary>
-
-- [mod link ,.,.](https://thunderstore.io/c/riskofrain2/p/Dragonyck/DebuggingPlains/)
-- rage edit .,,.,. makes it so you can exit debuggingplains without it repeatedly kicking you back in !!! unable to click buttons other than single player though .,,.,.
-
-</details>
-
-<details>
-<summary> photomode !!  </summary>
-
-- [mod link ,.,.](https://thunderstore.io/c/riskofrain2/p/Dragonyck/PhotoMode/)
-- rage edit .,,., attempts to fix an NRE on photomode exit !!
-- also makes it so the camera doesnt move around while having the console open .,,.
-
 </details>
 
 <details>
