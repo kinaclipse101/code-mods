@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using HG;
 using RoR2;
 using RoR2.UI;
+using UnityEngine;
 
 namespace DidYouSeeThat;
 
@@ -26,5 +27,10 @@ public class LookerTargetViewer : SniperTargetViewer
         }
         SetDisplayedTargets(list);
         list = CollectionPool<HurtBox, List<HurtBox>>.ReturnCollection(list);
+    }
+    
+    public void OnDestroy()
+    {
+        Time.timeScale = 1;
     }
 }

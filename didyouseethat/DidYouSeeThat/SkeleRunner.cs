@@ -19,7 +19,7 @@ public class SkeleRunner : MonoBehaviour
         if (timer < 1f) return;
         
         Instantiate(DidYouSeeThat.instance.grayscalePrefab, gameObject.transform);
-        gameObject.GetComponent<SniperTargetViewer>().enabled = true;
+        gameObject.GetComponent<LookerTargetViewer>().enabled = true;
         Destroy(skeleton);
         timer = -9999999999999;
         Time.timeScale = 0;

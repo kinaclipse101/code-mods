@@ -20,7 +20,7 @@ namespace DidYouSeeThat
         private const string PluginGUID = PluginAuthor + "." + PluginName;
         private const string PluginAuthor = "kina";
         private const string PluginName = "DidYouSeeThat";
-        private const string PluginVersion = "1.0.0";
+        private const string PluginVersion = "1.0.2";
         
         public static DidYouSeeThat instance;
         public GameObject lookerControllerPrefab;

@@ -1,7 +1,9 @@
+using System;
 using RoR2;
 using RoR2.HudOverlay;
 using UnityEngine;
 using UnityEngine.Networking;
+using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
 namespace DidYouSeeThat;
@@ -15,7 +17,6 @@ public class LookerController : NetworkBehaviour
     public void OnEnable()
     {
         Log.Debug("OnEnable");
-        RoR2.Run.onRunDestroyGlobal += _ => Destroy(gameObject);
         DontDestroyOnLoad(gameObject);
     }
 
@@ -35,6 +36,12 @@ public class LookerController : NetworkBehaviour
 
     public void FixedUpdate()
     {
+        if (!Run.instance)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        
         if (!NetworkServer.active) return;
         
         secondsTimer += Time.fixedDeltaTime;
