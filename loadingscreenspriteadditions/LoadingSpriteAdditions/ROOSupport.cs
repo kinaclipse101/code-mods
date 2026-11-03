@@ -12,6 +12,16 @@ internal static class ROOSupport
         ModSettingsManager.AddOption(new ChoiceOption(configEntry));
     }
     
+    internal static void AddConfig(ConfigEntry<LoadingSpriteAdditions.spriteTypeReplacement> configEntry)
+    {
+        ModSettingsManager.AddOption(new ChoiceOption(configEntry));
+    }
+    
+    internal static void AddConfig(ConfigEntry<LoadingSpriteAdditions.spriteTypeUnsupported> configEntry)
+    {
+        ModSettingsManager.AddOption(new ChoiceOption(configEntry));
+    }
+    
     internal static void AddConfig(ConfigEntry<bool> configEntry)
     {
         ModSettingsManager.AddOption(new CheckBoxOption(configEntry));

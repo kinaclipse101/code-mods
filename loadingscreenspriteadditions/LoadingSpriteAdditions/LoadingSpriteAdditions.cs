@@ -4,6 +4,7 @@ using System.Linq;
 using BepInEx;
 using BepInEx.Bootstrap;
 using BepInEx.Configuration;
+using Newtonsoft.Json.Utilities;
 using R2API.Utils;
 using RoR2;
 using RoR2.UI;
@@ -11,6 +12,7 @@ using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.UI;
 using Console = System.Console;
+using Object = System.Object;
 
 namespace LoadingSpriteAdditions
 {
@@ -23,7 +25,7 @@ namespace LoadingSpriteAdditions
         private const string PluginGUID = PluginAuthor + "." + PluginName;
         private const string PluginAuthor = "kina";
         private const string PluginName = "LoadingSpriteAdditions";
-        private const string PluginVersion = "1.1.0";
+        private const string PluginVersion = "1.1.2";
         
         private static bool ROOInstalled => Chainloader.PluginInfos.ContainsKey("com.rune580.riskofoptions");
 
@@ -75,13 +77,28 @@ namespace LoadingSpriteAdditions
             rorr,
             disabled
         }
+        
+        public enum spriteTypeReplacement
+        {
+            rorr,
+            ror1,
+            disabled
+        }
+        
+        public enum spriteTypeUnsupported
+        {
+            ror1,
+            disabled
+        }
 
         private ConfigEntry<bool> onlyCurrentSurv;
         private ConfigEntry<string> customBodyDict;
         private Dictionary<string, string> configBodyMatch = new();
         private ConfigEntry<string> blacklistBodies;
         private List<string> blacklistBodiesList = [];
-        private ConfigEntry<float> ponchoChance;
+        private ConfigEntry<float> ponchoOverride;
+        private ConfigEntry<bool> ponchoAddition;
+        private SimpleSpriteAnimation ponchoSSA;
 
         public void Awake()
         {
@@ -93,16 +110,27 @@ namespace LoadingSpriteAdditions
             {
                 var enableReplacement = instance.Config.Bind("LSA - Replacements",
                     "Executioner", 
-                    true, 
+                    spriteTypeReplacement.rorr, 
                     $"whether to replace Executioner on the loading screen .,,.");
                 if(ROOInstalled)
                     ROOSupport.AddConfig(enableReplacement);
-                if (enableReplacement.Value)
+                
+                if (enableReplacement.Value == spriteTypeReplacement.rorr)
                 {
                     for (int i = 0; i < LoadingScreenFix.LoadingScreenFix.instance._spriteAnimations.Count; i++)
                     {
                         if(LoadingScreenFix.LoadingScreenFix.instance._spriteAnimations[i].name != "ssaExecutionerWalk") continue;
                         LoadingScreenFix.LoadingScreenFix.instance._spriteAnimations[i] = loadingSpritesBundle.LoadAsset<SimpleSpriteAnimation>("ExecutionerWalk");
+                        break;
+                    }
+                } 
+                else if (enableReplacement.Value == spriteTypeReplacement.disabled)
+                {
+                    for (int i = 0; i < LoadingScreenFix.LoadingScreenFix.instance._spriteAnimations.Count; i++)
+                    {
+                        if(LoadingScreenFix.LoadingScreenFix.instance._spriteAnimations[i].name != "ssaExecutionerWalk") continue;
+                        LoadingScreenFix.LoadingScreenFix.instance._spriteAnimations.RemoveAt(i);
+                        break;
                     }
                 }
             }
@@ -112,30 +140,28 @@ namespace LoadingSpriteAdditions
                 Log.Warning(e);
             }
             
-            ponchoChance = Config.Bind("LSA - Misc", 
-                "poncho chance,..,", 
+            ponchoAddition = Config.Bind("LSA - Misc", 
+                "poncho addition,..,", 
+                false, 
+                "addition of .,,. poncho ,..,,.,.,..,");
+            ponchoOverride  = Config.Bind("LSA - Misc", 
+                "poncho override,..,", 
                 1f, 
-                "addition of .,,. poncho chance .,, .,. 1 = 1% ,..,,.,.,..,");
-            if(ROOInstalled)
-                ROOSupport.AddConfig(ponchoChance);
-            if (UnityEngine.Random.Range(0, 100) <= ponchoChance.Value)
-            {
-                LoadingScreenFix.LoadingScreenFix.AddSpriteAnimation(loadingSpritesBundle.LoadAsset<SimpleSpriteAnimation>($"ssaFalseSonPoncho"));
-            }
+                "chance for poncho to override any sprite .,, .,. 1 = 1% ,..,,.,.,..,");
+            ponchoSSA = loadingSpritesBundle.LoadAsset<SimpleSpriteAnimation>($"ssaFalseSonPoncho");
+            if (ponchoAddition.Value)
+                LoadingScreenFix.LoadingScreenFix.AddSpriteAnimation(ponchoSSA);
+            
 
             onlyCurrentSurv = Config.Bind("LSA - Misc", 
                 "only pick currently playing survivor,..,", 
                 true, 
                 "makes LSA only pick your current survivor sprite .,,. goes random if it cant find it,.,..,");
-            if(ROOInstalled)
-                ROOSupport.AddConfig(onlyCurrentSurv);
             
             customBodyDict = Config.Bind("LSA - Misc", 
                 "currentply playing survivor overrides,..,", 
                 "DroneTechBody,Pilot,RailgunnerBody,Sniper,ToolbotBody,HAND", 
                 "overrides for if you want a specific body to have a sprte ,.,.");
-            if(ROOInstalled)
-                ROOSupport.AddConfig(customBodyDict);
             CreateBodyMatchDict();
             customBodyDict.SettingChanged += (sender, args) => CreateBodyMatchDict();
             
@@ -143,8 +169,6 @@ namespace LoadingSpriteAdditions
                 "blacklist bodies for currently playing override,..,", 
                 "", 
                 "if you think like ,. huntress rorr sprite is chuddy or something and want random on her,.,. eg \"HuntressBody,CommandoBody\" ,.,.");
-            if(ROOInstalled)
-                ROOSupport.AddConfig(blacklistBodies);
             CreateBlacklist();
             blacklistBodies.SettingChanged += (sender, args) => CreateBlacklist();
             
@@ -193,6 +217,15 @@ namespace LoadingSpriteAdditions
             On.RoR2.UI.MainMenu.MainMenuController.Start += UnhookNewSillies;
             
             On.RoR2.PickRandomObjectOnAwake.OnEnable += PickRandomObjectOnAwakeOnOnEnable;
+
+            if (ROOInstalled)
+            {
+                ROOSupport.AddConfig(ponchoAddition);
+                ROOSupport.AddConfig(ponchoOverride);
+                ROOSupport.AddConfig(onlyCurrentSurv);
+                ROOSupport.AddConfig(customBodyDict);
+                ROOSupport.AddConfig(blacklistBodies);
+            }
         }
         
         private Dictionary<string, SimpleSpriteAnimation> spriteAnimations = new();
@@ -203,15 +236,17 @@ namespace LoadingSpriteAdditions
             string prefab = customPrefabName != "" ? customPrefabName : ssaName;
             var enableReplacement = instance.Config.Bind("LSA - Replacements",
                 $"{prefab.Replace("Walk", "").Replace("Hover", "")}", 
-                true, 
+                spriteTypeReplacement.rorr, 
                 $"whether to replace {prefab.Replace("Walk", "").Replace("Hover", "")} on the loading screen .,,.");
             if(ROOInstalled)
                 ROOSupport.AddConfig(enableReplacement);
 
-            if (enableReplacement.Value)
+            if (enableReplacement.Value == spriteTypeReplacement.rorr)
             {
                 spriteAnimations.Add(ssaName, loadingSpritesBundle.LoadAsset<SimpleSpriteAnimation>(prefab));
             }
+            
+            addedDisableConfigs.Add($"{prefab.Replace("Walk", "").Replace("Hover", "")}", enableReplacement);
         }
         
         private void UnhookNewSillies(On.RoR2.UI.MainMenu.MainMenuController.orig_Start orig, RoR2.UI.MainMenu.MainMenuController self)
@@ -237,8 +272,68 @@ namespace LoadingSpriteAdditions
             orig(self);
         }
 
+        private static Dictionary<string, ConfigEntry<spriteTypeReplacement>> addedDisableConfigs = [];
+        private static Dictionary<string, ConfigEntry<spriteTypeUnsupported>> addedUnsupportedConfigs = [];
+
         private void ReplaceSilliesOnRandom(PickRandomObjectOnAwake pickRandom)
         {
+            GameObject[] ssArray = HG.ArrayUtils.Clone(pickRandom.ObjectsToSelect);
+            int realArrayIndex = 0;
+            foreach (var loadingSprite in ssArray)
+            {
+                bool skipSprite = false;
+                foreach (string loadingSpriteName in loadingSpriteNames)
+                {
+                    if (!loadingSprite.name.Contains(loadingSpriteName)) continue; // added by us ,. .,
+                    
+                    realArrayIndex++;
+                    skipSprite = true;
+                    break;
+                }
+                if (skipSprite)
+                    continue;
+                
+                //Log.Debug("name = " + loadingSprite.name);
+
+                string configName = $"{loadingSprite.name.Replace("Walk", "").Replace("Hover", "")}";
+                if (addedDisableConfigs.TryGetValue(configName, out ConfigEntry<spriteTypeReplacement> config))
+                {
+                    if (config.Value == spriteTypeReplacement.disabled)
+                    {
+                        //Log.Debug($"killing {loadingSprite.name}");
+                        Destroy(loadingSprite);
+                        HG.ArrayUtils.ArrayRemoveAtAndResize(ref pickRandom.ObjectsToSelect, realArrayIndex);
+                        continue;
+                    }
+                }
+                else
+                {
+                    configName = configName.Replace("(Clone)", "");
+                    if (!addedUnsupportedConfigs.TryGetValue(configName, out ConfigEntry<spriteTypeUnsupported> configUnsupportedModded))
+                    {
+                        configUnsupportedModded = instance.Config.Bind("LSA - Disable",
+                            configName, 
+                            spriteTypeUnsupported.ror1, 
+                            $"whether to disable {configName} .,,.");
+                    
+                        if(ROOInstalled)
+                            ROOSupport.AddConfig(configUnsupportedModded);
+                    
+                        addedUnsupportedConfigs.Add(configName, configUnsupportedModded);
+                    }
+                
+                    if (configUnsupportedModded.Value == spriteTypeUnsupported.disabled)
+                    {
+                        //Log.Debug($"killing {loadingSprite.name}");
+                        Destroy(loadingSprite);
+                        HG.ArrayUtils.ArrayRemoveAtAndResize(ref pickRandom.ObjectsToSelect, realArrayIndex);
+                        realArrayIndex--;
+                    }
+                }
+                
+                realArrayIndex++;
+            }
+            
             foreach (GameObject randomObj in pickRandom.ObjectsToSelect)
             {
                 if (spriteAnimations.TryGetValue(randomObj.name, out SimpleSpriteAnimation spriteAnimation))
@@ -252,10 +347,33 @@ namespace LoadingSpriteAdditions
         private void PickRandomObjectOnAwakeOnOnEnable(On.RoR2.PickRandomObjectOnAwake.orig_OnEnable orig, RoR2.PickRandomObjectOnAwake self)
         {
             orig(self);
+            
+            if (UnityEngine.Random.Range(0, 100) <= ponchoOverride.Value)
+            {
+                GameObject ponchoObj = self.ObjectsToSelect[0].transform.parent?.Find("Poncho")?.gameObject;
+                if (!ponchoObj)
+                {
+                    ponchoObj = Instantiate(self.ObjectsToSelect[0], self.ObjectsToSelect[0].transform.parent);
+                    ponchoObj.name = "Poncho";
+                
+                    ponchoObj.transform.GetChild(0).gameObject.GetComponent<SimpleSpriteAnimator>().animation = ponchoSSA;
+                    ponchoObj.transform.GetChild(0).gameObject.GetComponent<Image>().sprite = ponchoSSA.frames[0].sprite;
+                }
+                ponchoObj.SetActive(true);
 
+                foreach (var obj in self.ObjectsToSelect)
+                {
+                    obj.SetActive(false);
+                }
+
+                return;
+            }
+            
             if (!onlyCurrentSurv.Value || !Run.instance) return;
 
-            CharacterMaster master = LocalUserManager.GetFirstLocalUser().cachedMaster;
+            CharacterMaster master = LocalUserManager.GetFirstLocalUser()?.cachedMaster;
+            if (!master) return;
+            
             CharacterBody body = master.GetBody();
             string currentSurv = master.bodyPrefab.name;
             if (body)
@@ -268,13 +386,12 @@ namespace LoadingSpriteAdditions
             {
                 string objName = self.ObjectsToSelect[i].name;
                 self.ObjectsToSelect[i].SetActive(false);
-                if (objName.Contains(currentSurv, StringComparison.CurrentCultureIgnoreCase))
-                {
-                    if (objName.Contains("nem", StringComparison.CurrentCultureIgnoreCase) && !currentSurv.Contains("nem", StringComparison.CurrentCultureIgnoreCase))
-                        continue;
+                if (!objName.Contains(currentSurv, StringComparison.CurrentCultureIgnoreCase)) continue;
+                
+                if (objName.Contains("nem", StringComparison.CurrentCultureIgnoreCase) && !currentSurv.Contains("nem", StringComparison.CurrentCultureIgnoreCase))
+                    continue;
                     
-                    possibleSprites.Add(i);
-                }
+                possibleSprites.Add(i);
             }
 
             if (possibleSprites.Count == 0)
@@ -322,8 +439,8 @@ namespace LoadingSpriteAdditions
             { "SniperClassic", "Sniper" },
             { "Treebot", "REX" },
         };
-        
-        public string NameCorrector(string survName)
+
+        private string NameCorrector(string survName)
         {
             string tempSurvName = survName.Replace("(Clone)", "");
             if (configBodyMatch.TryGetValue(tempSurvName, out string config))
