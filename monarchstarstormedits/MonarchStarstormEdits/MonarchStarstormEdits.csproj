@@ -17,17 +17,16 @@
 
 		<PackageReference Include="R2API" Version="5.0.5" />
 
+		<PackageReference Include="TeamMoonstorm-MoonstormSharedUtils" Version="2.6.3" />
+
 		<PackageReference Include="UnityEngine.Modules" Version="2021.3.33" IncludeAssets="compile" />
 		<PackageReference Include="MMHOOK.RoR2" Version="2025.12.9" NoWarn="NU1701" />
 		<PackageReference Include="RoR2BepInExPack" Version="1.43.0" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Reference Include="MSU.Runtime">
-	    <HintPath>..\..\MSU.Runtime-nstrip.dll</HintPath>
-	  </Reference>
 	  <Reference Include="Starstorm2">
-	    <HintPath>..\..\butterscotchnroses\lib\Starstorm2-nstrip.dll</HintPath>
+	    <HintPath>..\libs\Starstorm2-nstrip.dll</HintPath>
 	  </Reference>
 	  <Reference Include="UnityHotReload">
 	    <HintPath>..\libs\UnityHotReload.dll</HintPath>

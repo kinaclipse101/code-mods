@@ -18,6 +18,12 @@ namespace MonarchStarstormEdits.patches;
 
 public class etherealSaplingChanges : PatchBase<etherealSaplingChanges>
 {
+    public override void Init(Harmony harmony)
+    {
+        if (!etherealChanges.Value) return;
+        harmony.CreateClassProcessor(typeof(Starstorm2EtherealChanges)).Patch();
+    }
+    
     [HarmonyPatch]
     public class Starstorm2EtherealChanges
     {
@@ -43,12 +49,6 @@ public class etherealSaplingChanges : PatchBase<etherealSaplingChanges>
             
             return false;
         }
-    }
-
-    public override void Init(Harmony harmony)
-    {
-        if (!etherealChanges.Value) return;
-        harmony.CreateClassProcessor(typeof(Starstorm2EtherealChanges)).Patch();
     }
 
     public override void Config(ConfigFile config)

@@ -1,9 +1,9 @@
 {
     "name": "MonarchsStarstormEdits",
-    "version_number": "0.1.0",
-    "website_url": "https://github.com/gamrtiem/code-mods/tree/main/monarchstarstormedits",
+    "version_number": "0.1.2",
+    "website_url": "https://github.com/kinaclipse101/code-mods/tree/main/monarchstarstormedits",
     "description": "random minor starstorm 2 edits ,.,..,,. mostly to beta stuff !!!!!! configurable !!!!!!!!!",
     "dependencies": [
-        "TeamMoonstorm-Starstorm2-0.6.31"
+        "TeamMoonstorm-Starstorm2-0.6.47"
     ]
 }

@@ -1,26 +1,35 @@
-using System;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using BepInEx.Configuration;
 using HarmonyLib;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
-using MSU.Config;
-using On.EntityStates.AffixVoid;
-using RoR2;
-using RoR2BepInExPack.GameAssetPaths;
 using SS2;
-using UnityEngine;
-using UnityEngine.AddressableAssets;
-using UnityEngine.Networking;
-using UnityEngine.TextCore.Text;
-using Object = UnityEngine.Object;
-using Random = UnityEngine.Random;
 
 namespace MonarchStarstormEdits.patches;
 
 public class eliteEvents : PatchBase<eliteEvents>
 {
+    public override void Init(Harmony harmony)
+    {
+        if (!eliteEventChanges.Value) return;
+        harmony.CreateClassProcessor(typeof(Starstorm2EliteEventChanges)).Patch();
+    }
+
+    public override void Config(ConfigFile config)
+    {
+        eliteEventChanges = config.Bind("elite event change s,s,.,.", 
+            "apply any elite event changes at al l !!", 
+            true,
+            "byeah ,.,");
+        disableEliteEvents = config.Bind("elite event change s,s,.,.", 
+            "disable elite events entirely !!!!", 
+            false,
+            "byeah ,.,");
+        preventBossSpawns = config.Bind("elite event change s,s,.,.", 
+            "disable boss spawns during elite events ,..,", 
+            false,
+            "byeah ,.,");
+    }
+    
     [HarmonyPatch]
     public class Starstorm2EliteEventChanges
     {
@@ -40,7 +49,7 @@ public class eliteEvents : PatchBase<eliteEvents>
         [HarmonyILManipulator]
         public static void EventDirectorIL(ILContext il)
         {
-            if (disableEliteEvents.Value == false) return;
+            if (!disableEliteEvents.Value) return;
             
             Log.Debug("fkgndflkgdfg ,,.");
             var c = new ILCursor(il);
@@ -75,28 +84,6 @@ public class eliteEvents : PatchBase<eliteEvents>
                 Log.Warning("failed il hook elite events!!");
             }
         }
-    }
-
-    public override void Init(Harmony harmony)
-    {
-        if (!eliteEventChanges.Value) return;
-        harmony.CreateClassProcessor(typeof(Starstorm2EliteEventChanges)).Patch();
-    }
-
-    public override void Config(ConfigFile config)
-    {
-        eliteEventChanges = config.Bind("elite event change s,s,.,.", 
-            "apply any elite event changes at al l !!", 
-            true,
-            "byeah ,.,");
-        disableEliteEvents = config.Bind("elite event change s,s,.,.", 
-            "disable elite events entirely !!!!", 
-            false,
-            "byeah ,.,");
-        preventBossSpawns = config.Bind("elite event change s,s,.,.", 
-            "disable boss spawns during elite events ,..,", 
-            false,
-            "byeah ,.,");
     }
     
     private static ConfigEntry<bool> eliteEventChanges;

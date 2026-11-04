@@ -14,6 +14,11 @@ namespace MonarchStarstormEdits.patches;
 
 public class gamblerTweaks : PatchBase<gamblerTweaks>
 {
+    public override void Init(Harmony harmony)
+    {
+        harmony.CreateClassProcessor(typeof(Starstorm2GamblerTweaks)).Patch();
+    }
+    
     [HarmonyPatch]
     public class Starstorm2GamblerTweaks
     {
@@ -77,11 +82,6 @@ public class gamblerTweaks : PatchBase<gamblerTweaks>
             
             return true;
         }
-    }
-
-    public override void Init(Harmony harmony)
-    {
-        harmony.CreateClassProcessor(typeof(Starstorm2GamblerTweaks)).Patch();
     }
 
     public override void Config(ConfigFile config)

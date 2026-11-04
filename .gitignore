@@ -6,6 +6,9 @@
 **/.idea/shelf/*
 **/.idea/dictionaries
 **/.idea/httpRequests/
+*/*/.idea/
+*/.idea/
+**/Archive.zip
 
 # Sensitive or high-churn files
 **/.idea/**/dataSources/
@@ -33,8 +36,6 @@ Thumbs.db
 Desktop.ini
 .DS_Store
 
-monarchstarstormedits/MonarchStarstormEdits/obj/
-
 dronevisibility3/DroneRepairBeacon.sln.DotSettings.user
 
 silly/AssetEditor/obj/
@@ -60,3 +61,25 @@ template/.idea/
 chiptier/.idea/
 
 questshrine/.idea/
+
+hidekeyitemslot/.idea/
+
+didyouseethat/.idea/
+
+betterhexofloss/.idea/
+
+ensurekeyitemslot/.idea/
+
+loadingscreenspriteadditions/.idea/
+
+redechoestextures/.idea/
+
+weaver/NetworkWeaver/libs/
+
+weaver/bweh.sh
+
+Skillsmas.dll
+
+LoadingScreenFix.dll
+
+MMHOOK_RoR2.dll
