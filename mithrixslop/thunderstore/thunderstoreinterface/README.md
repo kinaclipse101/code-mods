@@ -1,0 +1,3 @@
+# thunderstoreinterface,.,.
+
+lets you get info about mods from thunderstore api ,.., stores it in a json in game directory so doesnt need api requests after the initial one ,.,..,,.,. has a couple of things open for other devs .,,. ``thunderstoreInfos`` list that has a list of current loaded mods thunderstore stuff (team/manifest info/guid/thunderstore api info) .,., ``finishedAllMods`` action you can subscribe to which runs after info is gotten for all mods ,.,. means ``thunderstoreInfos`` list should be properly populated .,.,., ``containsAI`` action runs when ``thunderstoreInfos`` contains an ai gen mod ,.., ``aigenMods`` is a list of mods that are ai gen ,.,.,,,..,
