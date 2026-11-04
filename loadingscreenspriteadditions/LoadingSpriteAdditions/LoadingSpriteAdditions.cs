@@ -25,7 +25,7 @@ namespace LoadingSpriteAdditions
         private const string PluginGUID = PluginAuthor + "." + PluginName;
         private const string PluginAuthor = "kina";
         private const string PluginName = "LoadingSpriteAdditions";
-        private const string PluginVersion = "1.1.2";
+        private const string PluginVersion = "1.1.3";
         
         private static bool ROOInstalled => Chainloader.PluginInfos.ContainsKey("com.rune580.riskofoptions");
 
@@ -348,9 +348,9 @@ namespace LoadingSpriteAdditions
         {
             orig(self);
             
+            GameObject ponchoObj = self.ObjectsToSelect[0].transform.parent?.Find("Poncho")?.gameObject;
             if (UnityEngine.Random.Range(0, 100) <= ponchoOverride.Value)
             {
-                GameObject ponchoObj = self.ObjectsToSelect[0].transform.parent?.Find("Poncho")?.gameObject;
                 if (!ponchoObj)
                 {
                     ponchoObj = Instantiate(self.ObjectsToSelect[0], self.ObjectsToSelect[0].transform.parent);
@@ -368,6 +368,9 @@ namespace LoadingSpriteAdditions
 
                 return;
             }
+            
+            if(ponchoObj)
+                ponchoObj.SetActive(false);
             
             if (!onlyCurrentSurv.Value || !Run.instance) return;
 

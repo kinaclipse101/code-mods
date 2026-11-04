@@ -1,3 +1,6 @@
+## 1.1.3
+- poncho no longer overstays his welcome ,..,,.., 
+
 ## 1.1.2
 - made poncho more intuitive ,..,
 - added an option to disable default/unsupported loading sprites ,,., (i remember you asked for this once fox herer you go :plead:,.., 
