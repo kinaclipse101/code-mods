@@ -1,12 +1,13 @@
 ﻿{
 	"name": "mithrixslop",
-	"version_number": "1.0.0",
+	"version_number": "1.0.1",
 	"website_url": "https://github.com/kinaclipse101/code-mods/tree/main/mithrixslop",
-	"description": "increases karma cap with additional effects if you have ai gen mods installed (or not !! config if you just want the effects.,.( ,..,. mithrix hates ai slop,..,,.",
+	"description": "karma can go past 8 mid run with new effects ,.,. forced double karma if any ai gen mods are installed ,.,.. mithrix hates ai slop .,,.,.",
 	"dependencies": [
 		"bbepis-BepInExPack-5.4.2122",
 		"RiskofThunder-R2API_ContentManagement-1.1.0",
 		"RiskofThunder-R2API_Prefab-1.1.1",
-		"RiskofThunder-R2API_Language-1.1.0"
+		"RiskofThunder-R2API_Language-1.1.0",
+		"kina-thunderstoreinterface-1.0.0"
 	]
 }

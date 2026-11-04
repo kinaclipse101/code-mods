@@ -4,6 +4,7 @@ using BepInEx;
 using BepInEx.Configuration;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
+using R2API;
 using RoR2;
 using RoR2.Projectile;
 using RoR2.UI;
@@ -17,10 +18,10 @@ namespace MithrixSlop
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
     public class MithrixSlop : BaseUnityPlugin
     {
-        private const string PluginGUID = "zzz." + PluginAuthor + "." + PluginName;
+        private const string PluginGUID = PluginAuthor + "." + PluginName;
         private const string PluginAuthor = "kina";
         private const string PluginName = "MithrixSlop";
-        private const string PluginVersion = "1.0.0";
+        private const string PluginVersion = "1.0.1";
 
         private static ConfigEntry<int> karmaMultiplier;
         private static ConfigEntry<bool> karmaMultiplierUseAICount;
@@ -40,7 +41,7 @@ namespace MithrixSlop
             
             karmaMultiplier = Config.Bind("MithrixSlop",
                 "karma multiplier .,.,",
-                2,
+                1,
                 "if aigen mods are installed ,.. ,amount to multiply karma increases by ,.,., wont go under 2 if they are .,.,.");
             karmaMultiplier.SettingChanged += KarmaMultiplierOnSettingChanged;
             void KarmaMultiplierOnSettingChanged(object sender, EventArgs e)
