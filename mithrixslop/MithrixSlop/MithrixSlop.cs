@@ -21,7 +21,7 @@ namespace MithrixSlop
         private const string PluginGUID = PluginAuthor + "." + PluginName;
         private const string PluginAuthor = "kina";
         private const string PluginName = "MithrixSlop";
-        private const string PluginVersion = "1.0.1";
+        private const string PluginVersion = "1.0.2";
 
         private static ConfigEntry<int> karmaMultiplier;
         private static ConfigEntry<bool> karmaMultiplierUseAICount;
@@ -55,7 +55,7 @@ namespace MithrixSlop
 
             karmaMultiplierUseAICount = Config.Bind("MithrixSlop",
                 "increase karma by count of aigen mods  .,.,",
-                true,
+                false,
                 "if aigen mods are installed ,.. ,karma count doesnt use multiplier and instead uses amount of aigen mods you have installed ,.,.,");
            
             useWithoutAI = Config.Bind("MithrixSlop",
