@@ -4,6 +4,7 @@ using System.Linq;
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using RoR2.UI;
 using RoR2.UI.SkinControllers;
 using Console = RoR2.Console;
@@ -192,7 +193,10 @@ public class debugplains : PatchBase<debugplains>
             string commandargs = commandArgs.Aggregate("", (current, arg) => current + (arg + " "));
             Log.Debug($"Running command: {command} with args {commandargs}");
             
-            Console.instance.RunCmd(LocalUserManager.GetFirstLocalUser(), command, commandArgs);
+            MatchCollection matchList = Regex.Matches(commandargs, "\"[^\"]*\"|\\S+");
+            var list = matchList.Select(match => match.Value.Replace("\"", "")).ToList();
+            
+            Console.instance.RunCmd(LocalUserManager.GetFirstLocalUser(), command, list);
         }
     }
 
@@ -212,7 +216,10 @@ public class debugplains : PatchBase<debugplains>
             string commandargs = commandArgs.Aggregate("", (current, arg) => current + (arg + " "));
             Log.Debug($"Running command: {command} with args {commandargs}");
             
-            Console.instance.RunCmd(LocalUserManager.GetFirstLocalUser(), command, commandArgs);
+            MatchCollection matchList = Regex.Matches(commandargs, "\"[^\"]*\"|\\S+");
+            var list = matchList.Select(match => match.Value.Replace("\"", "")).ToList();
+            
+            Console.instance.RunCmd(LocalUserManager.GetFirstLocalUser(), command, list);
         }
     }
     

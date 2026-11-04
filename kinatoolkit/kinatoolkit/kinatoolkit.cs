@@ -19,7 +19,7 @@ namespace kinatoolkit
 
         private const string PluginAuthor = "kina";
         private const string PluginName = "kinatoolkit";
-        private const string PluginVersion = "0.1.6";
+        private const string PluginVersion = "0.1.8";
         
         public static kinatoolkit instance;
         public GameObject artifactPortalPrefab;

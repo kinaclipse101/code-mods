@@ -1,3 +1,7 @@
+## 0.1.8
+- added r2api as a dep so testscene always gets added back ,.,. (thank you chinchi :plead: ,..,
+- updated parsing of run start/debug plains commands to work with arguments in quotations (eg. delay 4 \"spawn_as BrotherBody\" is now valid,.., thank you lordryn :plead: .,. ,
+
 ## 0.1.7
 - added hallowed concepts interactables .,,.
 - added artifact portal ,,,.
