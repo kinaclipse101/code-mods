@@ -21,7 +21,7 @@ namespace MithrixSlop
         private const string PluginGUID = PluginAuthor + "." + PluginName;
         private const string PluginAuthor = "kina";
         private const string PluginName = "MithrixSlop";
-        private const string PluginVersion = "1.0.2";
+        private const string PluginVersion = "1.0.3";
 
         private static ConfigEntry<int> karmaMultiplier;
         private static ConfigEntry<bool> karmaMultiplierUseAICount;
@@ -187,6 +187,7 @@ namespace MithrixSlop
                     brotherBody.transform.position = new Vector3(brotherBody.transform.position.x, brotherBody.transform.position.y - 500000, brotherBody.transform.position.z);
                     brotherBody.GetComponent<CharacterMotor>().enabled = false;
                     braindeadmithrix5000unitsunderthemap = brotherBody.GetComponent<CharacterBody>();
+                    Destroy(brotherBody.GetComponent<CharacterDeathBehavior>());
                     NetworkServer.Spawn(brotherBody);
                 }
             }
@@ -213,7 +214,6 @@ namespace MithrixSlop
             
             GameObject postProcessing = Instantiate(ppEffect);
             NetworkServer.Spawn(postProcessing);
-            Log.Debug("spawned ppv");
             
             if (!(Run.instance.spawnRng.RangeFloat(0, 100) <= 20 + (Run.instance.lastCachedKarma - KarmaManager.maxKarma) * 5)) return;
             

@@ -74,12 +74,18 @@ public class coolereclipse : ModdedPatchBase<coolereclipse>
             }
 
             if (onlyOnWhitelistedStages.Value)
+            {
+                orig(self);
                 return false;
+            }
             
             if (hiddenRealmBlacklist.Value)
             {
                 if (hiddenRealmInternalNames.Contains(sceneName))
+                {
+                    orig(self);
                     return false;
+                }
             }
             
             if (!blacklistStages.Value.IsNullOrWhiteSpace())
@@ -290,16 +296,16 @@ public class coolereclipse : ModdedPatchBase<coolereclipse>
 
     private void RunOnonRunStartGlobal(Run obj)
     {
-        GameObject eclipseHandler = GameObject.Find("eclipse handler(Clone)");
-        if (eclipseHandler)
+        GameObject eclipseHandlerInstance = GameObject.Find("eclipse handler(Clone)");
+        if (eclipseHandlerInstance)
         {
-            Object.Destroy(eclipseHandler);
+            Object.Destroy(eclipseHandlerInstance);
         }
 
         if (NetworkServer.active)
         {
-            eclipseHandler = Object.Instantiate(coolereclipse.eclipseHandler);
-            NetworkServer.Spawn(eclipseHandler);
+            eclipseHandlerInstance = Object.Instantiate(eclipseHandler);
+            NetworkServer.Spawn(eclipseHandlerInstance);
         }
     }
 
@@ -388,28 +394,26 @@ class EclipseNetworkBehavior() : NetworkBehaviour
 
     private void OnEnable()
     {
-        On.RoR2.Stage.Start += StageOnStart;
-    }
-    
-    private void OnDisable()
-    {
-        On.RoR2.Stage.Start -= StageOnStart;
+        RoR2.Stage.onStageStartGlobal += StageOnonStageStartGlobal;
     }
 
-    private IEnumerator StageOnStart(Stage.orig_Start orig, RoR2.Stage self)
+    private void StageOnonStageStartGlobal(RoR2.Stage obj)
     {
-        if (NetworkServer.active)
-        {
-            int rng = Run.instance.runRNG.RangeInt(0, 100);
-            Log.Debug($"eclipse rng {rng}");
-            int pinkRNG = Run.instance.runRNG.RangeInt(0, 99);
-            Log.Debug($"pink rng = {pinkRNG}");
-            Log.Debug($"pink rng {pinkRNG < coolereclipse.pinkEclipseChance.Value}");
-            
-            eclipseRNGs.Add(rng);
-            pinkEclipses.Add(pinkRNG < coolereclipse.pinkEclipseChance.Value);
-        }
+        if (!NetworkServer.active) return;
+        if (!Run.instance) return;
         
-        return orig(self);
+        int rng = Run.instance.runRNG.RangeInt(0, 100);
+        Log.Debug($"eclipse rng {rng}");
+        int pinkRNG = Run.instance.runRNG.RangeInt(0, 99);
+        Log.Debug($"pink rng = {pinkRNG}");
+        Log.Debug($"pink rng {pinkRNG < coolereclipse.pinkEclipseChance.Value}");
+            
+        eclipseRNGs.Add(rng);
+        pinkEclipses.Add(pinkRNG < coolereclipse.pinkEclipseChance.Value);
+    }
+
+    private void OnDisable()
+    {
+        RoR2.Stage.onStageStartGlobal -= StageOnonStageStartGlobal;
     }
 }

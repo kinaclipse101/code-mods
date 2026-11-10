@@ -8,6 +8,7 @@ using RiskOfOptions;
 using RiskOfOptions.Options;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Stage = RoR2.Stage;
 
 namespace BNR;
 
@@ -23,51 +24,31 @@ public class testsceneskybox : PatchBase<testsceneskybox>
         if (enabled.Value)
         {
             //On.RoR2.SceneDirector.Start += SceneDirectorOnStart;
-            On.RoR2.Stage.Start += StageOnStart;
+            RoR2.Stage.onStageStartGlobal += StageOnStart;
         }
         else
         {
             //On.RoR2.SceneDirector.Start -= SceneDirectorOnStart;
-            On.RoR2.Stage.Start += StageOnStart;
+            RoR2.Stage.onStageStartGlobal -= StageOnStart;
         }
     }
 
-    private IEnumerator StageOnStart(Stage.orig_Start orig, RoR2.Stage self)
+    private void StageOnStart(Stage stage)
     {
-        if (SceneManager.GetActiveScene().name == "testscene")
-        {
-            //Log.Debug($"new scene !! {RenderSettings.skybox} {SceneManager.GetActiveScene().name}");
-                
-            if (skyboxMaterial == null)
-            {
-                skyboxMaterial = Object.Instantiate(RenderSettings.skybox);
-                skyboxMaterial.SetColor("_Tint", skyboxColor.Value);
-            }
-                
-            RenderSettings.skybox = skyboxMaterial;
-        }
+        if (SceneManager.GetActiveScene().name != "testscene") return;
         
-        return orig(self);
+        //Log.Debug($"new scene !! {RenderSettings.skybox} {SceneManager.GetActiveScene().name}");
+                
+        if (!skyboxMaterial)
+        {
+            skyboxMaterial = Object.Instantiate(RenderSettings.skybox);
+            skyboxMaterial.SetColor(Tint, skyboxColor.Value);
+        }
+                
+        RenderSettings.skybox = skyboxMaterial;
     }
 
     private static Material skyboxMaterial;
-    private void SceneDirectorOnStart(SceneDirector.orig_Start orig, RoR2.SceneDirector self)
-    {
-        orig(self);
-        
-        if (SceneManager.GetActiveScene().name == "testscene")
-        {
-            Log.Debug($"new scene !! {RenderSettings.skybox} {SceneManager.GetActiveScene().name}");
-                
-            if (skyboxMaterial == null)
-            {
-                skyboxMaterial = Object.Instantiate(RenderSettings.skybox);
-                skyboxMaterial.SetColor("_Tint", skyboxColor.Value);
-            }
-                
-            RenderSettings.skybox = skyboxMaterial;
-        }
-    }
 
     public override void Config(ConfigFile config)
     {
@@ -89,5 +70,6 @@ public class testsceneskybox : PatchBase<testsceneskybox>
     }
     
     private static ConfigEntry<Color> skyboxColor;
+    private static readonly int Tint = Shader.PropertyToID("_Tint");
     private ConfigEntry<bool> enabled;
 }

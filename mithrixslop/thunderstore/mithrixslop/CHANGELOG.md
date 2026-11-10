@@ -1,3 +1,6 @@
+## 1.0.3
+- fixed an issue where echo of providence wouldnt start (his brother evidently likes slop <///////////3 ,.,,,..,
+
 ## 1.0.2 
 - i left the config that makes karma increases equal to the amount of ai gen mods installed enabled by default fuckkkk ,.. 
 

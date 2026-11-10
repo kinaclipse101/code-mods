@@ -1,3 +1,6 @@
+## 0.3.6
+- fixed cooler eclipse incompat with stuff like bazaarismyhaven because i both forgot how to hook ienumerators and missed some orig calls on a weird hook <//3 .,.,
+
 ## 0.3.5
 - fixed cooler eclipse pink eclipse chance not working properly ,.., 
 - added cooler eclipse only on whitelist stages and disable on hidden realms config ,.,.
