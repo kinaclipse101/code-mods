@@ -1,3 +1,6 @@
+## 0.3.7
+- changed icon at original artists request and added them to the readme ([stealthinsane3](https://twitter.com/stealthinsane31) on twitter !! go follow them they do really cool art ,..,
+
 ## 0.3.6
 - fixed cooler eclipse incompat with stuff like bazaarismyhaven because i both forgot how to hook ienumerators and missed some orig calls on a weird hook <//3 .,.,
 

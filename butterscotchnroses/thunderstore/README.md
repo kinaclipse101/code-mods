@@ -3,6 +3,8 @@ note !! this is mostly a modpack base mod for myself !!!!! just uploading to thu
 
 everything is configurable to some degree too ,.,,. so if you dont like an edit !! just disable it you freak !!!
 
+credits to [stealthinsane3](https://twitter.com/stealthinsane31) for the mods previous icon !! go follow them they do cool art .,., 
+
 ### basegame edits ,.,,.
 <details>
 <summary> cursor edits ,.,.  </summary>

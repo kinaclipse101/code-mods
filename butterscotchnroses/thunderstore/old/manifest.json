@@ -1,9 +1,0 @@
-﻿{
-	"name": "ButterscotchandRosesBaseMod",
-	"version_number": "0.3.3",
-	"website_url": "https://github.com/kinaclipse101/code-mods/tree/main/butterscotchnroses",
-	"description": "moved team and slight rename !!!",
-	"dependencies": [
-		"kina-butterscotchandroses-0.3.3"
-	]
-}

@@ -445,7 +445,7 @@
       }
     },
     {
-      "interactableCard": "RoR2/DLC4/ShrineCompulsion/iscShrineCompulsionRare.asset",
+      "interactableCard": "RoR2/DLC4/ShrineCatastrophe/iscShrineCatastrophe.asset",
       "position": {
         "x": 337.5031,
         "y": -51.81701,
@@ -458,7 +458,7 @@
       }
     },
     {
-      "interactableCard": "RoR2/DLC4/ShrineCatastrophe/iscShrineCatastrophe.asset",
+      "interactableCard": "RoR2/DLC4/HollowChest/iscHollowChest.asset",
       "position": {
         "x": 339.7901,
         "y": -51.81701,
@@ -471,24 +471,11 @@
       }
     },
     {
-      "interactableCard": "RoR2/DLC4/HollowChest/iscHollowChest.asset",
+      "interactableCard": "RoR2/DLC4/Mimic/iscTrialMimicSpawner.asset",
       "position": {
         "x": 341.8874,
         "y": -51.81701,
         "z": -264.7896
-      },
-      "rotation": {
-        "x": 0,
-        "y": -320,
-        "z": 0
-      }
-    },
-    {
-      "interactableCard": "RoR2/DLC4/Mimic/iscTrialMimicSpawner.asset",
-      "position": {
-        "x": 343.459,
-        "y": -51.81701,
-        "z": -267.1606
       },
       "rotation": {
         "x": 0,

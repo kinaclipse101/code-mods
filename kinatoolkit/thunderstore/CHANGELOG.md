@@ -1,3 +1,7 @@
+## 0.1.9
+- changed icon at original artists request and added them in the credits ([stealthinsane3](https://twitter.com/stealthinsane31) on twitter !! go follow them they do really cool art ,..,
+- fixed default config having two shine of compulsions (i saw the rare one and didnt realize it was the exact same prefab <//3 ,,.
+
 ## 0.1.8
 - added r2api as a dep so testscene always gets added back ,.,. (thank you chinchi :plead: ,..,
 - updated parsing of run start/debug plains commands to work with arguments in quotations (eg. delay 4 \"spawn_as BrotherBody\" is now valid,.., thank you lordryn :plead: .,. ,

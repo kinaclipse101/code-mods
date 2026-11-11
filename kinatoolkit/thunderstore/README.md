@@ -20,9 +20,12 @@
 - also also also dummy is spawned on a new team so doing kill_all doesnt effect it ., ., if this affects you in literally any way ping me in modcord and ill add a config or something ,. .
 
 ### low fps in background .,. 
-![low fps .,., while tabbning .,,.  ](https://files.catbox.moe/bhlkl4.gif)
 - lowers your fps while the game isnt focused so your gpu doesnt melt when trying to test things .,,. set to 30 by default !! 
 
 ### cursor free er ., .,
 ![cursor ., .,being free .,., ](https://files.catbox.moe/xb58vl.gif)
 - adds a keybind to free the cursor whenever you want ,.., no more opening console then dragging it off while in runtime inspector :face_holding_back_tears: ., ., (default mouse 4 side button.,, .
+
+## credits .,., 
+- [stealthinsane3](https://twitter.com/stealthinsane31) for previous mods icon art .,,.
+- [addOns original debugging plains](https://thunderstore.io/c/riskofrain2/p/addOns/DebuggingPlains/) ,..,
