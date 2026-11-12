@@ -34,7 +34,7 @@ public static class Materials
             for (int i = 0; i < newParams.rendererInfos.Length; i++)
             {
                 Material newMat = Object.Instantiate(!newParams.rendererInfos[i].defaultMaterial ? newParams.rendererInfos[i].defaultMaterialAddress.LoadAssetAsync().WaitForCompletion() : newParams.rendererInfos[i].defaultMaterial);
-                Log.Debug($"new mat skinName = {newMat.name}");
+                //Log.Debug($"new mat skinName = {newMat.name}");
                 newParams.rendererInfos[i].defaultMaterial = newMat;
                 Utils.RecolorMaterial(newMat, recoloredSkinJson, dontAdd);
                 newParams.rendererInfos[i].defaultMaterialAddress = new AssetReferenceT<Material>("");

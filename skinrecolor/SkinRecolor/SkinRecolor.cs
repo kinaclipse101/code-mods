@@ -5,6 +5,8 @@ using BepInEx;
 using BepInEx.Bootstrap;
 using Newtonsoft.Json;
 using R2API;
+using RoR2;
+using RoR2.ContentManagement;
 using SkinRecolor.RecoloredSkins;
 using UnityEngine;
 
@@ -19,15 +21,14 @@ namespace SkinRecolor
         private const string PluginName = "SkinRecolor";
         private const string PluginVersion = "1.0.0";
 
-        
-
         private static bool UHRInstalled => Chainloader.PluginInfos.ContainsKey("iDeathHD.UnityHotReload");
         
         public void Awake()
         {
             Log.Init(Logger);
-
+            
             RecoloredSkinManager.Start();
+            SkinVFXOverrideHooks.Hook();
         }
         
         private void Update()

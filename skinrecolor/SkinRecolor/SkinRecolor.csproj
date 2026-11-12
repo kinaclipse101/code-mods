@@ -98,6 +98,12 @@
 		<PackageReference Include="xiaoxiao921-UnityHotReload" Version="1.0.1" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Reference Include="R2API.Skins">
+	    <HintPath>..\libs\R2API.Skins.dll</HintPath>
+	  </Reference>
+	</ItemGroup>
+
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
 		<Exec Command="$(SolutionDir)scripts/postbuild.sh '$(SolutionDir)' '$(ConfigurationName)' '$(ProjectName)' '$(PlatformName)'"/>
 	</Target>

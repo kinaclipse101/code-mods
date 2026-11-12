@@ -164,17 +164,7 @@ public static class Utils
             for (int i = 0; i < texPixels.Length; i++)
             {
                 Color pixelColor = texPixels[i];
-                UnityEngine.Color.RGBToHSV(pixelColor, out float h, out float s, out float v);
-        
-                h = (h + skinJson.hue / 360f) % 1f;
-                if (h < 0f) h += 1f;
-                v += skinJson.value/100f;
-                if (skinJson.multiplySat)
-                    s *= skinJson.saturation;
-                else
-                    s += skinJson.saturation/100f;
-            
-                Color newColor = UnityEngine.Color.HSVToRGB(h, s, v);
+                Color newColor = RecolorColor(skinJson, pixelColor);
                 newColor.a = pixelColor.a;
                 texPixels[i] = newColor;
             }
@@ -250,7 +240,6 @@ public static class Utils
             pathFinder = pathFinder.parent;
         }
                     
-        Log.Debug("child path = " + transformPath);
         return transformPath;
     }
 

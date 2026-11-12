@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using BepInEx;
+using HG;
 using Newtonsoft.Json;
 using R2API;
 using RoR2;
@@ -18,6 +19,9 @@ public static class RecoloredSkinManager
     public static List<RecoloredSkinJson> skinJsons = [];
     public static List<RecoloredSkin> completeSkins = [];
     public static List<SkinDef> skinDefs = [];
+    public static Dictionary<string, Texture2D> loadedSkinTextures = [];
+    public static Dictionary<string, EntityStateConfiguration> escDict = []; // sorry chinchi i lied ,., easier to implement ,..,
+    public static Dictionary<RecoloredSkinJson, List<SkinDefParams.ProjectileGhostReplacement>> skinJsonsToGhosts = [];
     
     public static void Start()
     {
@@ -27,7 +31,15 @@ public static class RecoloredSkinManager
 
         jsonPath = Path.Combine(Path.GetDirectoryName(Paths.BepInExConfigPath)!, "skinRecolors.json");
         if (File.Exists(jsonPath))
-            skinJsons = JsonConvert.DeserializeObject<List<RecoloredSkinJson>>(File.ReadAllText(jsonPath));
+        {
+            var settings = new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                MissingMemberHandling = MissingMemberHandling.Ignore,
+                //TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Simple
+            };
+            skinJsons = JsonConvert.DeserializeObject<List<RecoloredSkinJson>>(File.ReadAllText(jsonPath), settings);
+        }
         else
         {
             RecoloredSkinJson skinJson = new RecoloredSkinJson
@@ -48,30 +60,58 @@ public static class RecoloredSkinManager
             File.WriteAllText(jsonPath, JsonConvert.SerializeObject(skinJsons, Formatting.Indented));
         }
 
-        for(int i = 0 ; i < skinJsons.Count; i++)
+        cacheCount = skinJsons.Count;
+        foreach (var skin in skinJsons)
         {
-            TryLoadRelatedTextures(i);
+            TryLoadRelatedTextures(skin);
         }
 
         // foreach (var skin in skinJsons)
         // {
-        //      skin.projectileGhosts = null;
-        //      skin.lightReplacements = null;
-        //      skin.vfxOverrides = null;
+        //     skin.projectileGhosts = null;
+        //     skin.lightReplacements = null;
+        //     skin.vfxOverrides = null;
         // }
         
         RoR2.SkinCatalog.availability.onAvailable += AvailabilityOnonAvailable;
-    }
-    
-    public static Dictionary<string, Texture2D> loadedSkinTextures = [];
+        RoR2.EntityStateCatalog.availability.onAvailable += CreateESCDict;
 
-    public static async void TryLoadRelatedTextures(int arrayIndex)
+        new RecoloredSkinContent();
+    }
+
+    private static int cacheCount;
+
+    private static void CreateESCDict()
+    {
+        foreach (var esc in RoR2.ContentManagement.ContentManager.entityStateConfigurations)
+        {
+            string target = esc.targetType.assemblyQualifiedName;
+            foreach (var skinJson in skinJsons)
+            {
+                if(skinJson.projectileGhosts != null)
+                    foreach (var ghostJson in skinJson.projectileGhosts)
+                    {
+                        if (target != null && target == ghostJson.configurationType)
+                        {
+                            escDict.TryAdd(target, esc);
+                        }
+                    }
+                if(skinJson.vfxOverrides != null)
+                    foreach (var vfxOverrideJson in skinJson.vfxOverrides)
+                    {
+                        if (target != null && target == vfxOverrideJson.configurationType)
+                        {
+                            escDict.TryAdd(target, esc);
+                        }
+                    }
+            }
+        }
+    }
+
+    public static async void TryLoadRelatedTextures(RecoloredSkinJson skinJson)
     {
         try
         {
-            if (arrayIndex >= skinJsons.Count)
-                return;
-            var skinJson = skinJsons[arrayIndex];
             Log.Debug($"trying to precache {skinJson.skinName}");
             string endsWith = $"H{skinJson.hue}S{skinJson.saturation}V{skinJson.value}_{skinJson.baseSkinBody}.png";
             string [] fileEntries = Directory.GetFiles(textureDirs, "*.*", SearchOption.AllDirectories);
@@ -83,7 +123,7 @@ public static class RecoloredSkinManager
                 Texture2D returnTexture = new Texture2D(2, 2);
                 returnTexture.LoadImage(bytes);
                 loadedSkinTextures.Add(fileName, returnTexture);
-                Log.Debug($"added texture to loaded skin {fileName}");
+                //Log.Debug($"added texture to loaded skin {fileName}");
             }
         }
         catch (Exception e)
@@ -91,10 +131,18 @@ public static class RecoloredSkinManager
             Log.Error("error while loading textures related to a skin");
             Log.Error(e);
         }
+
+        cacheCount--;
+        if (cacheCount == 0)
+        {
+            Log.Message("finished caching all textures !!");
+        }
     }
 
+    private static int skinCount;
     private static void AvailabilityOnonAvailable()
     {
+        skinCount = skinJsons.Count;
         foreach (RecoloredSkinJson recoloredSkinJson in skinJsons)
         {
             skinRecolor(recoloredSkinJson);
@@ -170,6 +218,13 @@ public static class RecoloredSkinManager
         {
             Log.Warning($"faileds to add {recoloredSkinJson.skinName} skin to {recoloredSkinJson.baseSkinBody} ,.,.,.");
             Log.Error(e);
+        }
+
+        skinCount--;
+        if (skinCount == 0)
+        {
+            File.WriteAllTextAsync(jsonPath, JsonConvert.SerializeObject(skinJsons, Formatting.Indented));
+            Log.Error("saved to disk !!");
         }
     }
 }
