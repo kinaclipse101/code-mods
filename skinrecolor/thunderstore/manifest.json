@@ -1,0 +1,9 @@
+﻿{
+	"name": "template",
+	"version_number": "1.0.0",
+	"website_url": "https://github.com/kinaclipse101/code-mods/tree/main/template",
+	"description": "template desc",
+	"dependencies": [
+		"bbepis-BepInExPack-5.4.2122"
+	]
+}
