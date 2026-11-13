@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using BepInEx;
 using HG;
 using Newtonsoft.Json;
@@ -17,8 +18,6 @@ public static class RecoloredSkinManager
     public static string jsonPath;
     public static string textureDirs;
     public static List<RecoloredSkinJson> skinJsons = [];
-    public static List<RecoloredSkin> completeSkins = [];
-    public static List<SkinDef> skinDefs = [];
     public static Dictionary<string, Texture2D> loadedSkinTextures = [];
     public static Dictionary<string, EntityStateConfiguration> escDict = []; // sorry chinchi i lied ,., easier to implement ,..,
     public static Dictionary<RecoloredSkinJson, List<SkinDefParams.ProjectileGhostReplacement>> skinJsonsToGhosts = [];
@@ -149,7 +148,7 @@ public static class RecoloredSkinManager
         }
     }
     
-    public static async void skinRecolor(RecoloredSkinJson recoloredSkinJson, bool dontAdd = false)
+    public static async Task<SkinDef> skinRecolor(RecoloredSkinJson recoloredSkinJson, bool dontAdd = false)
     {
         try
         {
@@ -159,7 +158,7 @@ public static class RecoloredSkinManager
             if (!skinController)
             {
                 Log.Warning("couldnt find modelskincontroller on " + recoloredSkinJson.baseSkinBody);
-                return;
+                return null;
             }
             
             SkinDef originalSkin = null;
@@ -173,7 +172,7 @@ public static class RecoloredSkinManager
             if (!originalSkin)
             {
                 Log.Warning("couldnt find originalSkin on " + recoloredSkinJson.baseSkinBody);
-                return;
+                return null;
             }
             
             SkinDef recoloredSkinDef = Object.Instantiate(originalSkin);
@@ -184,7 +183,8 @@ public static class RecoloredSkinManager
             
             await SkinManager.Lights.LightReplacements(recoloredSkinJson, recoloredSkinDef, body);
             
-            await SkinManager.Ghosts.ProjectileGhostReplacementsAndVFXOverrides(recoloredSkinJson, dontAdd, body, recoloredSkinDef);
+            if(!dontAdd)
+                await SkinManager.Ghosts.ProjectileGhostReplacementsAndVFXOverrides(recoloredSkinJson, dontAdd, body, recoloredSkinDef);
             
             string internalName = recoloredSkinJson.skinName.Replace(" ", "");
             recoloredSkinDef.name = recoloredSkinDef.name.Replace("(Clone)", "");
@@ -195,24 +195,56 @@ public static class RecoloredSkinManager
 
             if (!dontAdd)
             {
-                HG.ArrayUtils.ArrayAppend(ref SkinCatalog.allSkinDefs, recoloredSkinDef);
                 HG.ArrayUtils.ArrayAppend(ref skinController.skins, recoloredSkinDef);
+                HG.ArrayUtils.ArrayAppend(ref SkinCatalog.allSkinDefs, recoloredSkinDef);
                 HG.ArrayUtils.ArrayAppend(ref SkinCatalog.skinsByBody[(int)BodyCatalog.nameToIndexMap[recoloredSkinJson.baseSkinBody]], recoloredSkinDef);
-                
-                Log.Debug($"added {recoloredSkinJson.skinName} to {recoloredSkinJson.baseSkinBody} !!!!");
-                skinDefs.Add(recoloredSkinDef);
-                RecoloredSkin recoloredSkin = new RecoloredSkin
-                {
-                    skin = recoloredSkinDef,
-                    jsonSkin = recoloredSkinJson
-                };
-                completeSkins.Add(recoloredSkin);
             }
             
-            foreach (var jsonOverride in recoloredSkinJson.vfxOverrides)
+            Log.Debug($"added {recoloredSkinJson.skinName} to {recoloredSkinJson.baseSkinBody} !!!!");
+            RecoloredSkin recoloredSkin = new RecoloredSkin
             {
-                SkinManager.VFX.AddVFXOverride(recoloredSkinJson, jsonOverride, recoloredSkinDef);
+                skin = recoloredSkinDef,
+                jsonSkin = recoloredSkinJson
+            };
+            
+            if (RecoloredSkinContent.vfxOverrides.TryGetValue(recoloredSkinJson, out var vfxOverride))
+            {
+                foreach (var vfx in vfxOverride)
+                {
+                    Log.Debug($"Added override: {recoloredSkinJson.baseSkinName} - {vfx.basePrefab}");
+                    SkinVFX.AddSkinVFX(recoloredSkinDef, vfx.basePrefab, vfx.overridePrefab);
+                }
+            };
+
+            if (recoloredSkinJson.vfxOverrides != null)
+            {
+                foreach (var jsonOverride in recoloredSkinJson.vfxOverrides)
+                {
+                    if (vfxOverride != null)
+                    {
+                        bool skipAdding = false;
+                        foreach (var vfx in vfxOverride)
+                        {
+                            if (vfx.jsonOverride != jsonOverride) continue;
+                            skipAdding = true;
+                            break;
+                        }
+                        if(skipAdding)
+                            continue;
+                    }
+                
+                    SkinManager.VFX.AddVFXOverride(recoloredSkinJson, jsonOverride, recoloredSkinDef);
+                }
             }
+            
+            skinCount--;
+            if (skinCount == 0)
+            {
+                File.WriteAllTextAsync(jsonPath, JsonConvert.SerializeObject(skinJsons, Formatting.Indented));
+                Log.Error("saved to disk !!");
+            }
+            
+            return recoloredSkinDef;
         }
         catch (Exception e)
         {
@@ -226,5 +258,7 @@ public static class RecoloredSkinManager
             File.WriteAllTextAsync(jsonPath, JsonConvert.SerializeObject(skinJsons, Formatting.Indented));
             Log.Error("saved to disk !!");
         }
+
+        return null;
     }
 }

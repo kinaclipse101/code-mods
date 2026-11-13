@@ -16,7 +16,7 @@ public class Lights
         {
             recoloredSkinJson.lightReplacements = [];
             recoloredSkinDef.skinDefParams.lightReplacements = [];
-            Light[] lights = body.GetComponentsInChildren<Light>(); // im killing an angel with this and i know it <3 .,., 
+            Light[] lights = body.GetComponentsInChildren<Light>(true); // im killing an angel with this and i know it <3 .,., 
 
             foreach (Light light in lights)
             {

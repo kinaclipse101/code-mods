@@ -9,6 +9,6 @@ public class ProjectileGhostJson
     public string guid;
     public string configurationType;
     public string controllerFieldName;
-    public int childProjectile;
+    public List<SubPrefab> subPrefabs;
     public List<TypeToPath> typesAndPaths;
 }

@@ -29,6 +29,11 @@ namespace SkinRecolor
             
             RecoloredSkinManager.Start();
             SkinVFXOverrideHooks.Hook();
+
+            RoR2.Run.onRunStartGlobal += run =>
+            {
+                commands.originalSkinIndex = -1;
+            };
         }
         
         private void Update()

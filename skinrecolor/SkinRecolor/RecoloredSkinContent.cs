@@ -2,9 +2,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using R2API;
+using R2API.Utils;
 using RoR2;
 using RoR2.ContentManagement;
 using SkinRecolor.RecoloredSkins;
+using SkinRecolor.SkinManager;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using Object = UnityEngine.Object;
@@ -25,29 +27,38 @@ public class RecoloredSkinContent : IContentPackProvider
             if(recoloredSkinJson.vfxOverrides == null) continue;
             foreach (var jsonOverride in recoloredSkinJson.vfxOverrides)
             {
-                if(jsonOverride.guid == null) continue;
+                if (jsonOverride.guid == null) continue;
                 
-                string prefabName = $"jsonPrefab_{jsonOverride.guid}_{recoloredSkinJson.saturation}{recoloredSkinJson.value}{recoloredSkinJson.skinName}";
+                var basePrefab = Addressables.LoadAssetAsync<GameObject>(jsonOverride.guid).WaitForCompletion();
+                
+                string prefabName = $"jsonPrefab_{basePrefab}_{recoloredSkinJson.saturation}{recoloredSkinJson.value}{recoloredSkinJson.skinName}";
+                if (jsonOverride.typesAndPaths.Count > 0)
+                {
+                    var effectPrefab = RecolorEffectPrefab(basePrefab, prefabName, jsonOverride, recoloredSkinJson);
                     
-                GameObject basePrefab = Addressables.LoadAssetAsync<GameObject>(jsonOverride.guid).WaitForCompletion();
-                var effectPrefab = RecolorEffectPrefab(basePrefab, prefabName, jsonOverride, recoloredSkinJson);
-
-                VFXOverride vfx = new VFXOverride()
-                {
-                    jsonOverride = jsonOverride,
-                    basePrefab = basePrefab,
-                    overridePrefab = effectPrefab
-                };
-                if (vfxOverrides.TryGetValue(recoloredSkinJson, out var vfxList))
-                {
-                    vfxList.Add(vfx);
-                }
-                else
-                {
-                    vfxOverrides.Add(recoloredSkinJson, [vfx]);
+                    VFXOverride vfx = new VFXOverride()
+                    {
+                        jsonOverride = jsonOverride,
+                        basePrefab = basePrefab,
+                        overridePrefab = effectPrefab
+                    };
+                    if (vfxOverrides.TryGetValue(recoloredSkinJson, out var vfxList))
+                        vfxList.Add(vfx);
+                    else
+                        vfxOverrides.Add(recoloredSkinJson, [vfx]);
+                    
+                    effectDefs.Add(new EffectDef(effectPrefab));
                 }
                 
-                effectDefs.Add(new EffectDef(effectPrefab));
+                foreach (var subPrefab in jsonOverride.subPrefabs)
+                {
+                    Log.Debug($"Prefab: {basePrefab}, SubPrefab: {subPrefab.type}  subPrefab: {subPrefab.varName}");
+
+                    GameObject prefabDummyStandin = PrefabAPI.CreateEmptyPrefab($"jsonPrefab_{subPrefab.prefabName}_{recoloredSkinJson.saturation}{recoloredSkinJson.value}{recoloredSkinJson.skinName}");
+                    prefabDummyStandin.AddComponent<EffectComponent>();
+                    effectDefs.Add(new EffectDef(prefabDummyStandin));
+                }
+                
                 yield return null;
             }
         }
@@ -69,10 +80,24 @@ public class RecoloredSkinContent : IContentPackProvider
                 continue;
             }
             
-            var components = objectTransform.GetComponents(typeToPath.type);
-            foreach (var component in components)
+            List<Transform> transforms = []; // evil fuckigns arti fireball with same heirarchy trail .,,.
+            string childName = typeToPath.path.Split("/")[^1];
+            for (int i = 0; i < objectTransform.parent.childCount; i++)
             {
-                RecolorComponentBehavior(recoloredSkinJson, component, typeToPath, objectTransform);
+                Transform child = objectTransform.parent.GetChild(i);
+                if (child.gameObject.name == childName)
+                {
+                    transforms.Add(child);
+                }
+            }
+
+            foreach (var trailTransform in transforms)
+            {
+                var components = objectTransform.GetComponents(typeToPath.type);
+                foreach (var component in components)
+                {
+                    RecolorComponentBehavior(recoloredSkinJson, component, typeToPath, objectTransform);
+                }
             }
         }
 
@@ -88,36 +113,25 @@ public class RecoloredSkinContent : IContentPackProvider
                 break;
                     
             case TrailRenderer trailRenderer:
-                List<Transform> trailTransforms = []; // evil fuckigns arti fireball with same heirarchy trail .,,.
-                string childName = typeToPath.path.Split("/")[^1];
-                for (int i = 0; i < objectTransform.parent.childCount; i++)
+                
+                Color newTrailStart = Utils.RecolorColor(recoloredSkinJson, trailRenderer.startColor);
+                newTrailStart.a = trailRenderer.startColor.a;
+                trailRenderer.startColor = newTrailStart;
+                
+                Color newTrailEnd = Utils.RecolorColor(recoloredSkinJson, trailRenderer.endColor);
+                newTrailEnd.a = trailRenderer.endColor.a;
+                trailRenderer.endColor = newTrailEnd;
+                
+                for (int i = 0; i < trailRenderer.colorGradient.colorKeys.Length; i++)
                 {
-                    Transform child = objectTransform.parent.GetChild(i);
-                    if (child.gameObject.name == childName)
-                    {
-                        trailTransforms.Add(child);
-                    }
+                    Color newTrailColor = Utils.RecolorColor(recoloredSkinJson, trailRenderer.colorGradient.colorKeys[i].color);
+                    newTrailColor.a = trailRenderer.colorGradient.colorKeys[i].color.a;
+                    trailRenderer.colorGradient.colorKeys[i].color = newTrailColor;
                 }
-                        
-                foreach (var trailTransform in trailTransforms)
-                {
-                    TrailRenderer[] trails = trailTransform.gameObject.GetComponents<TrailRenderer>();
-                    foreach (var trail in trails)
-                    {
-                        trail.startColor = Utils.RecolorColor(recoloredSkinJson, trail.startColor);
-                        trail.endColor = Utils.RecolorColor(recoloredSkinJson, trail.endColor);
-                        for (int i = 0; i < trail.colorGradient.colorKeys.Length; i++)
-                        {
-                            Color newTrailColor = Utils.RecolorColor(recoloredSkinJson, trail.colorGradient.colorKeys[i].color);
-                            newTrailColor.a = trail.colorGradient.colorKeys[i].color.a;
-                            trail.colorGradient.colorKeys[i].color = newTrailColor;
-                        }
 
-                        Material recoloredMatTrail = Object.Instantiate(trail.material);
-                        trail.material = recoloredMatTrail;
-                        Utils.RecolorMaterial(recoloredMatTrail, recoloredSkinJson, false);
-                    }
-                }
+                Material recoloredMatTrail = Object.Instantiate(trailRenderer.material);
+                trailRenderer.material = recoloredMatTrail;
+                Utils.RecolorMaterial(recoloredMatTrail, recoloredSkinJson, false);
                 break;
                     
             case MeshRenderer meshRenderer:
@@ -133,6 +147,7 @@ public class RecoloredSkinContent : IContentPackProvider
                 break;
                     
             case ParticleSystem ps:
+                //add alpha to the color of all of these .., 
                 var colormodule = ps.colorOverLifetime.color;
                 colormodule.color = Utils.RecolorColor(recoloredSkinJson, colormodule.color);
                 colormodule.colorMin = Utils.RecolorColor(recoloredSkinJson, colormodule.colorMin);
@@ -151,8 +166,7 @@ public class RecoloredSkinContent : IContentPackProvider
                 {
                     ps.lights.light.color = Utils.RecolorColor(recoloredSkinJson, ps.lights.light.color);
                 }
-                        
-
+                
                 var minMaxGradient = main.startColor;
                 if (minMaxGradient.mode == ParticleSystemGradientMode.Color)
                 {
@@ -186,24 +200,21 @@ public class RecoloredSkinContent : IContentPackProvider
                 }
 
                 colorOverLifetime.color = lifetimeMinMaxGradient;
-                        
-                ParticleSystemRenderer[] particleSystemRenderers = objectTransform.GetComponents<ParticleSystemRenderer>();
-                foreach (var particleSystemRenderer in particleSystemRenderers)
+                break;
+            
+            case ParticleSystemRenderer particleSystemRenderer:
+                if (particleSystemRenderer.material)
                 {
-                    if (particleSystemRenderer.material)
-                    {
-                        Material recoloredMat = Object.Instantiate(particleSystemRenderer.material);
-                        particleSystemRenderer.material = recoloredMat;
-                        Utils.RecolorMaterial(recoloredMat,
-                            recoloredSkinJson);
-                    }
-
-                    if (particleSystemRenderer.trailMaterial)
-                    {
-                        Material recoloredMat = Object.Instantiate(particleSystemRenderer.trailMaterial);
-                        particleSystemRenderer.trailMaterial = recoloredMat;
-                        Utils.RecolorMaterial(recoloredMat, recoloredSkinJson);
-                    }
+                    Material recoloredMat = Object.Instantiate(particleSystemRenderer.material);
+                    particleSystemRenderer.material = recoloredMat;
+                    Utils.RecolorMaterial(recoloredMat, recoloredSkinJson);
+                }
+                
+                if (particleSystemRenderer.trailMaterial)
+                {
+                    Material recoloredMat = Object.Instantiate(particleSystemRenderer.trailMaterial);
+                    particleSystemRenderer.trailMaterial = recoloredMat;
+                    Utils.RecolorMaterial(recoloredMat, recoloredSkinJson);
                 }
                 break;
         }

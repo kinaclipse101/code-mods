@@ -9,4 +9,5 @@ public class VFXOverrideJson
     public string configurationType;
     public string fieldName;
     public List<TypeToPath> typesAndPaths;
+    public List<SubPrefab> subPrefabs;
 }
