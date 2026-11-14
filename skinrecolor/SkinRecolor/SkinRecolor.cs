@@ -28,8 +28,8 @@ namespace SkinRecolor
             Log.Init(Logger);
             
             RecoloredSkinManager.Start();
-            SkinVFXOverrideHooks.Hook();
-
+            SkinVFXManager.Hook();
+            //start loading vfx here rather than content addition so you can async 
             RoR2.Run.onRunStartGlobal += run =>
             {
                 commands.originalSkinIndex = -1;

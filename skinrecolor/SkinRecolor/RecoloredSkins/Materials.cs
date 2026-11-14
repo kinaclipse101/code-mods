@@ -8,7 +8,7 @@ namespace SkinRecolor.SkinManager;
 
 public static class Materials
 {
-    public static async Task MeshMatReplacements(RecoloredSkinJson recoloredSkinJson, bool dontAdd, SkinDef recoloredSkinDef, SkinDef originalSkin)
+    public static async Task MeshMatReplacements(RecoloredSkinJson recoloredSkinJson, bool dontAdd, SkinDef recoloredSkinDef, SkinDef originalSkin, GameObject body)
     {
         if (recoloredSkinDef.skinDefParams == null && recoloredSkinDef.skinDefParamsAddress == null)
         {
@@ -19,8 +19,8 @@ public static class Materials
             {
                 CharacterModel.RendererInfo renderer = recoloredSkinDef.rendererInfos[i];
                 Material newMat = Object.Instantiate(renderer.defaultMaterial);
+                Utils.RecolorMaterial(ref newMat, renderer.defaultMaterial, recoloredSkinJson, dontAdd);
                 renderer.defaultMaterial = newMat;
-                Utils.RecolorMaterial(newMat, recoloredSkinJson, dontAdd);
                 renderer.defaultMaterialAddress = new AssetReferenceT<Material>("");
                 newRenderers[i] = renderer;
             }
@@ -30,16 +30,19 @@ public static class Materials
         else
         {
             var newParams = Object.Instantiate(recoloredSkinDef.skinDefParamsAddress != null && recoloredSkinDef.skinDefParamsAddress.ToString() != "[]" ? recoloredSkinDef.skinDefParamsAddress.LoadAssetAsync().WaitForCompletion() : (recoloredSkinDef.skinDefParams == null ? SkinDefParams.FromSkinDef(originalSkin) : recoloredSkinDef.skinDefParams));
-
+            
             for (int i = 0; i < newParams.rendererInfos.Length; i++)
             {
-                Material newMat = Object.Instantiate(!newParams.rendererInfos[i].defaultMaterial ? newParams.rendererInfos[i].defaultMaterialAddress.LoadAssetAsync().WaitForCompletion() : newParams.rendererInfos[i].defaultMaterial);
+                Material baseMat = !newParams.rendererInfos[i].defaultMaterial
+                    ? newParams.rendererInfos[i].defaultMaterialAddress.LoadAssetAsync().WaitForCompletion()
+                    : newParams.rendererInfos[i].defaultMaterial;
+                Material newMat = Object.Instantiate(baseMat);
                 //Log.Debug($"new mat skinName = {newMat.name}");
+                Utils.RecolorMaterial(ref newMat, baseMat, recoloredSkinJson, dontAdd);
                 newParams.rendererInfos[i].defaultMaterial = newMat;
-                Utils.RecolorMaterial(newMat, recoloredSkinJson, dontAdd);
                 newParams.rendererInfos[i].defaultMaterialAddress = new AssetReferenceT<Material>("");
             }
-
+            
             recoloredSkinDef.optimizedSkinDefParams = newParams; 
             recoloredSkinDef.skinDefParams = newParams;
             recoloredSkinDef.skinDefParamsAddress = new AssetReferenceT<SkinDefParams>("");

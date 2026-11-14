@@ -20,6 +20,7 @@ public static class RecoloredSkinManager
     public static List<RecoloredSkinJson> skinJsons = [];
     public static Dictionary<string, Texture2D> loadedSkinTextures = [];
     public static Dictionary<string, EntityStateConfiguration> escDict = []; // sorry chinchi i lied ,., easier to implement ,..,
+    public static Dictionary<SkinDef, RecoloredSkinJson> recoloredSkinDefs = [];
     public static Dictionary<RecoloredSkinJson, List<SkinDefParams.ProjectileGhostReplacement>> skinJsonsToGhosts = [];
     
     public static void Start()
@@ -65,6 +66,9 @@ public static class RecoloredSkinManager
             TryLoadRelatedTextures(skin);
         }
 
+        TryLoadBWTextures();
+        
+
         // foreach (var skin in skinJsons)
         // {
         //     skin.projectileGhosts = null;
@@ -76,6 +80,28 @@ public static class RecoloredSkinManager
         RoR2.EntityStateCatalog.availability.onAvailable += CreateESCDict;
 
         new RecoloredSkinContent();
+    }
+
+    private static async void TryLoadBWTextures()
+    {
+        try
+        {
+            string [] fileEntries = Directory.GetFiles(textureDirs, "*.*", SearchOption.AllDirectories);
+            foreach (string fileName in fileEntries)
+            {
+                if (!fileName.EndsWith("_BW.png")) continue;
+            
+                byte[] bytes = await File.ReadAllBytesAsync(fileName);
+                Texture2D returnTexture = new Texture2D(2, 2);
+                returnTexture.LoadImage(bytes);
+                loadedSkinTextures.TryAdd(fileName, returnTexture);
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Error("error while loading bw texture !!!");
+            Log.Error(e);
+        }
     }
 
     private static int cacheCount;
@@ -179,7 +205,7 @@ public static class RecoloredSkinManager
             
             //await SkinManager.Icons.IconReplacement(recoloredSkinJson, dontAdd, recoloredSkinDef);
 
-            await SkinManager.Materials.MeshMatReplacements(recoloredSkinJson, dontAdd, recoloredSkinDef, originalSkin);
+            await SkinManager.Materials.MeshMatReplacements(recoloredSkinJson, dontAdd, recoloredSkinDef, originalSkin, body);
             
             await SkinManager.Lights.LightReplacements(recoloredSkinJson, recoloredSkinDef, body);
             
@@ -201,11 +227,7 @@ public static class RecoloredSkinManager
             }
             
             Log.Debug($"added {recoloredSkinJson.skinName} to {recoloredSkinJson.baseSkinBody} !!!!");
-            RecoloredSkin recoloredSkin = new RecoloredSkin
-            {
-                skin = recoloredSkinDef,
-                jsonSkin = recoloredSkinJson
-            };
+            recoloredSkinDefs.Add(recoloredSkinDef, recoloredSkinJson);
             
             if (RecoloredSkinContent.vfxOverrides.TryGetValue(recoloredSkinJson, out var vfxOverride))
             {

@@ -7,6 +7,7 @@ using R2API.Utils;
 using RoR2;
 using RoR2.Projectile;
 using SkinRecolor.RecoloredSkins;
+using SkinRecolor.SkinVFXHooks;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 
@@ -22,7 +23,18 @@ public class Ghosts
             recoloredSkinJson.projectileGhosts = [];
             
             Log.Warning($"finding new vfx/ghosts for skin {recoloredSkinJson.skinName}");
-        
+
+            foreach (var baseSurvs in SkinVFXManager.survivorHooks.Values)
+            {
+                if (recoloredSkinJson.baseSkinBody != baseSurvs.survName) continue;
+                Log.Debug($"$$$=found matching body name looking for specifcs .,,. {recoloredSkinJson.baseSkinBody}");
+                foreach (var vfxOverrideJson in baseSurvs.SpecificReskinnedObjects(recoloredSkinJson))
+                {
+                    Log.Debug($"adadddad {vfxOverrideJson.configurationType}");
+                    recoloredSkinJson.vfxOverrides.Add(vfxOverrideJson);
+                }
+            }
+
             string internalName = "";
             GenericSkill[] skills = body.GetComponents<GenericSkill>();
             foreach (var skill in skills)
@@ -45,7 +57,7 @@ public class Ghosts
             foreach (var esc in RoR2.ContentManagement.ContentManager.entityStateConfigurations)
             {
                 if(esc.targetType.assemblyQualifiedName == null) continue;
-                if (!esc.targetType.assemblyQualifiedName.ToString().Contains(internalName)) continue;
+                if (!esc.targetType.assemblyQualifiedName.Contains(internalName)) continue;
             
                 foreach (var field in esc.serializedFieldsCollection.serializedFields)
                 {
@@ -93,12 +105,15 @@ public class Ghosts
                 GameObject subPrefabBase = prefab;
                 for (int j = 0; j < subPrefab.type.Count; j++)
                 {
+                    Log.Debug($"subprefab iterate cound {j}");
                     subPrefabBase = subPrefab.varType[j] switch
                     {
                         varType.field => subPrefabBase.GetComponent(subPrefab.type[j]).GetFieldValue<GameObject>(subPrefab.varName[j]),
                         varType.property => subPrefabBase.GetComponent(subPrefab.type[j]).GetPropertyValue<GameObject>(subPrefab.varName[j])
                     };
                 }
+                
+                Log.Debug($"found subprefab {subPrefabBase.name} on {prefab.name} {subPrefab.varName[0]} {subPrefab.type[0]}");
                 
                 if (subPrefab.projectileGhostJson != null)
                 {
@@ -107,7 +122,7 @@ public class Ghosts
 
                 if (subPrefab.vfxOverrideJson != null)
                 {
-                    await VFX.AddVFXOverride(recoloredSkinJson, subPrefab.vfxOverrideJson, recoloredSkinDef, true);
+                    await VFX.AddVFXOverride(recoloredSkinJson, subPrefab.vfxOverrideJson, recoloredSkinDef, subPrefabBase, subPrefab);
                 }
             }
 
@@ -115,27 +130,11 @@ public class Ghosts
         }
     }
 
-    private static async Task AddGhostReplacementFromGhostJson(RecoloredSkinJson recoloredSkinJson,
-        SkinDef recoloredSkinDef, ProjectileGhostJson jsonGhost, GameObject prefab)
+    private static async Task AddGhostReplacementFromGhostJson(RecoloredSkinJson recoloredSkinJson, SkinDef recoloredSkinDef, ProjectileGhostJson jsonGhost, GameObject prefab)
     {
         GameObject origGhostPrefab = jsonGhost.guid != null ? await Addressables.LoadAssetAsync<GameObject>(jsonGhost.guid).Task : prefab.GetComponent<ProjectileController>().ghostPrefab;
-        GameObject ghostPrefab = origGhostPrefab.InstantiateClone($"jsonGhost_{origGhostPrefab.name}_{recoloredSkinJson.hue}{recoloredSkinJson.saturation}{recoloredSkinJson.value}_{recoloredSkinJson.skinName}", false);
-                
-        foreach (TypeToPath typeToPath in jsonGhost.typesAndPaths)
-        {
-            var objectTransform = typeToPath.isChild ? ghostPrefab.transform.Find(typeToPath.path) : ghostPrefab.transform;
-            if (!objectTransform)
-            {
-                Log.Warning("umm bad something went bad " + typeToPath.path + " on " + ghostPrefab.name);
-                continue;
-            }
-            
-            var components = objectTransform.GetComponents(typeToPath.type);
-            foreach (var component in components)
-            {
-                RecoloredSkinContent.RecolorComponentBehavior(recoloredSkinJson, component, typeToPath, objectTransform);
-            }
-        }
+        
+        GameObject ghostPrefab = RecoloredSkinContent.RecolorEffectPrefab(origGhostPrefab, $"jsonGhost_{origGhostPrefab.name}_{recoloredSkinJson.hue}{recoloredSkinJson.saturation}{recoloredSkinJson.value}_{recoloredSkinJson.skinName}", jsonGhost.typesAndPaths, recoloredSkinJson);
 
         SkinDefParams.ProjectileGhostReplacement replacement = new SkinDefParams.ProjectileGhostReplacement
         {
@@ -184,7 +183,11 @@ public class Ghosts
 
     private static void CheckEffectComponentAndAttributes(RecoloredSkinJson recoloredSkinJson, SkinDef recoloredSkinDef, GameObject gameObject, EntityStateConfiguration esc, SerializedField field)
     {
-        if (gameObject.GetComponent<ProjectileController>()) return;
+        //sometimes rojecile controllers can have vfx on them (bola whip acolyte 
+        if (gameObject.TryGetComponent(out ProjectileController projectileController))
+        {
+            applyVfxAttributes();
+        };
         
         if (gameObject.TryGetComponent(out EffectComponent effectComponent))
         {
@@ -204,7 +207,7 @@ public class Ghosts
             }
             else
             {
-                if(VFXOverridePathfinder(recoloredSkinJson, recoloredSkinDef, gameObject, vfxOverrideJson, effectComponent)) return;
+                if(VFXOverridePathfinder(recoloredSkinJson, gameObject, vfxOverrideJson, effectComponent)) return;
 
                 AddIfValidVFX(recoloredSkinJson, vfxOverrideJson, gameObject);
             }
@@ -224,7 +227,6 @@ public class Ghosts
 
         void applyVfxAttributes()
         {
-            Log.Warning($"found vfxattributes on an object {gameObject} without effect data .,,. mmmmm adding it anyway ,,.");
             VFXOverrideJson vfxOverrideJson = new VFXOverrideJson
             {
                 typesAndPaths = [],
@@ -233,13 +235,14 @@ public class Ghosts
                 configurationType = esc.targetType.assemblyQualifiedName
             };
             
-            if(VFXOverridePathfinder(recoloredSkinJson, recoloredSkinDef, gameObject, vfxOverrideJson)) return;
+            if(VFXOverridePathfinder(recoloredSkinJson, gameObject, vfxOverrideJson)) return;
 
             AddIfValidVFX(recoloredSkinJson, vfxOverrideJson, gameObject);
+            Log.Warning($"found vfxattributes on an object {gameObject} without effect data .,,. mmmmm adding it anyway ,,.");
         }
     }
 
-    public static bool VFXOverridePathfinder(RecoloredSkinJson recoloredSkinJson, SkinDef recoloredSkinDef, GameObject gameObject, VFXOverrideJson vfxOverrideJson, EffectComponent effectComponent = null)
+    public static bool VFXOverridePathfinder(RecoloredSkinJson recoloredSkinJson, GameObject gameObject, VFXOverrideJson vfxOverrideJson, EffectComponent effectComponent = null)
     {
         if (effectComponent)
         {
@@ -309,49 +312,86 @@ public class Ghosts
 
     private static async Task CheckProjectileController(RecoloredSkinJson recoloredSkinJson, SkinDef recoloredSkinDef, GameObject gameObject, EntityStateConfiguration esc, SerializedField field, SubPrefab prefabNesting = null)
     {
-        if (!gameObject.TryGetComponent(out ProjectileController projectileController)) return;
-    
-        ProjectileGhostJson jsonGhostJson = new ProjectileGhostJson
+        if (gameObject.TryGetComponent(out ProjectileController projectileController))
         {
-            typesAndPaths = [],
-            configurationType = esc.targetType.assemblyQualifiedName,
-            controllerFieldName = field.fieldName,
-            subPrefabs = []
-        };
-        if (prefabNesting != null)
+            ProjectileGhostJson jsonGhostJson = new ProjectileGhostJson
+            {
+                typesAndPaths = [],
+                configurationType = esc.targetType.assemblyQualifiedName,
+                controllerFieldName = field.fieldName,
+                subPrefabs = []
+            };
+            if (prefabNesting != null)
+            {
+                jsonGhostJson = prefabNesting.projectileGhostJson;
+            }
+        
+            await CheckChildProjectiles(recoloredSkinJson, recoloredSkinDef, gameObject, esc, field, jsonGhostJson, prefabNesting);
+            CheckOverlapAttacks(recoloredSkinJson, recoloredSkinDef, gameObject, esc, field, jsonGhostJson, prefabNesting);
+
+            Log.Debug($"found projectile controller on {gameObject.name}");
+            GameObject ghostPrefab;
+            //modded ,..,
+            if (projectileController.ghostPrefab)
+            {
+                Log.Warning("found deprecatedd ghost prefab " + projectileController.name);
+                jsonGhostJson.guid = null;
+                ghostPrefab = projectileController.ghostPrefab;
+            }
+            else
+            {
+                //Log.Debug($"default ghost guid {projectileController.ghostPrefabAddress?.AssetGUID}");
+                jsonGhostJson.guid = projectileController.ghostPrefabAddress?.AssetGUID;
+                ghostPrefab = await Addressables.LoadAssetAsync<GameObject>(jsonGhostJson.guid).Task;
+            }
+                        
+            if (!ghostPrefab)
+            {
+                Log.Warning($"{gameObject.name} had no ghost prefab !!");
+                return;
+            }
+                        
+            AddSupportedTypes(ghostPrefab, jsonGhostJson.typesAndPaths);
+
+            AddIfValidGhost(recoloredSkinJson, jsonGhostJson, gameObject);
+            Log.Message($"added ghost {ghostPrefab.name} to {recoloredSkinJson.skinName}");
+        }
+        else if (gameObject.TryGetComponent(out LineRenderer lineRenderer))
         {
-            jsonGhostJson = prefabNesting.projectileGhostJson;
+            VFXOverrideJson vfxOverrideJson = new VFXOverrideJson
+            {
+                typesAndPaths = [],
+                subPrefabs = [],
+                fieldName = field.fieldName,
+                configurationType = esc.targetType.assemblyQualifiedName
+            };
+            
+            if(VFXOverridePathfinder(recoloredSkinJson, gameObject, vfxOverrideJson)) return;
+
+            AddIfValidVFX(recoloredSkinJson, vfxOverrideJson, gameObject);
         }
         
-        await CheckChildProjectiles(recoloredSkinJson, recoloredSkinDef, gameObject, esc, field, jsonGhostJson, prefabNesting);
-        CheckOverlapAttacks(recoloredSkinJson, recoloredSkinDef, gameObject, esc, field, jsonGhostJson, prefabNesting);
+        foreach (var baseSurvHooks in SkinVFXManager.survivorHooks.Values)
+        {
+            var components = baseSurvHooks.GetSurvivorSpecificComponents(gameObject);
 
-        Log.Debug($"found projectile controller on {gameObject.name}");
-        GameObject ghostPrefab;
-        //modded ,..,
-        if (projectileController.ghostPrefab)
-        {
-            Log.Warning("found deprecatedd ghost prefab " + projectileController.name);
-            jsonGhostJson.guid = null;
-            ghostPrefab = projectileController.ghostPrefab;
-        }
-        else
-        {
-            //Log.Debug($"default ghost guid {projectileController.ghostPrefabAddress?.AssetGUID}");
-            jsonGhostJson.guid = projectileController.ghostPrefabAddress?.AssetGUID;
-            ghostPrefab = await Addressables.LoadAssetAsync<GameObject>(jsonGhostJson.guid).Task;
-        }
-                        
-        if (!ghostPrefab)
-        {
-            Log.Warning($"{gameObject.name} had no ghost prefab !!");
-            return;
-        }
-                        
-        AddSupportedTypes(ghostPrefab, jsonGhostJson.typesAndPaths);
+            foreach (var survSpecific in components)
+            {
+                Log.Warning($"found surv specific {survSpecific.varName}");
+                
+                VFXOverrideJson vfxOverrideJson = new VFXOverrideJson
+                {
+                    typesAndPaths = [],
+                    subPrefabs = [],
+                    fieldName = field.fieldName,
+                    configurationType = esc.targetType.assemblyQualifiedName
+                };
+            
+                if(VFXOverridePathfinder(recoloredSkinJson, gameObject, vfxOverrideJson)) return;
 
-        AddIfValidGhost(recoloredSkinJson, jsonGhostJson, gameObject);
-        Log.Message($"added ghost {ghostPrefab.name} to {recoloredSkinJson.skinName}");
+                AddIfValidVFX(recoloredSkinJson, vfxOverrideJson, gameObject);
+            }
+        }
     }
 
     private static void AddSupportedTypes(GameObject gameObject, List<TypeToPath> typesAndPaths)
@@ -392,7 +432,7 @@ public class Ghosts
                 ghostJson.subPrefabs.Add(subPrefab);
 
                 Log.Message($"adding overlap attack {projectileOverlapAttack.impactEffect.name}");
-                VFXOverridePathfinder(recoloredSkinJson, recoloredSkinDef, projectileOverlapAttack.impactEffect, subPrefab.vfxOverrideJson, effectComponent);                             
+                VFXOverridePathfinder(recoloredSkinJson, projectileOverlapAttack.impactEffect, subPrefab.vfxOverrideJson, effectComponent);                             
                 AddIfValidVFX(recoloredSkinJson, subPrefab.vfxOverrideJson, projectileOverlapAttack.impactEffect);
                 //await AddVFXOverride(recoloredSkinJson, vfxOverrideJson, recoloredSkinDef);
             }
@@ -407,48 +447,27 @@ public class Ghosts
     {
         if (gameObject.TryGetComponent(out ProjectileImpactExplosion projectileImpactExplosion))
         {
-            if (projectileImpactExplosion.childrenProjectilePrefab)
+            if (projectileImpactExplosion.childrenProjectilePrefab && projectileImpactExplosion.childrenProjectilePrefab.TryGetComponent(out ProjectileController projectileController))
             {
-                if (projectileImpactExplosion.childrenProjectilePrefab.TryGetComponent(out ProjectileController projectileController))
+                Log.Message(gameObject.name + " had a child projectile prefab ,.,");
+                
+                SubPrefab subPrefab = new SubPrefab([], [], [], [], projectileImpactExplosion.childrenProjectilePrefab.GetComponent<EffectComponent>() != null);
+                HandleSubPrefab(typeof(ProjectileImpactExplosion), nestedPrefab, subPrefab, projectileImpactExplosion.childrenProjectilePrefab.name, "childrenProjectilePrefab", varType.field);
+                subPrefab.projectileGhostJson = new ProjectileGhostJson
                 {
-                    Log.Message(gameObject.name + " had a child projectile prefab ,.,");
-                    
-                    SubPrefab subPrefab = new SubPrefab([], [], [], [], projectileImpactExplosion.childrenProjectilePrefab.GetComponent<EffectComponent>() != null);
-                    HandleSubPrefab(typeof(ProjectileImpactExplosion), nestedPrefab, subPrefab, projectileImpactExplosion.childrenProjectilePrefab.name, "childrenProjectilePrefab", varType.field);
-                    subPrefab.projectileGhostJson = new ProjectileGhostJson
-                    {
-                        configurationType = esc.targetType.assemblyQualifiedName,
-                        controllerFieldName = field.fieldName,
-                        typesAndPaths = [],
-                        subPrefabs = [],
-                    };
-                    ghostJson.subPrefabs.Add(subPrefab);
+                    configurationType = esc.targetType.assemblyQualifiedName,
+                    controllerFieldName = field.fieldName,
+                    typesAndPaths = [],
+                    subPrefabs = [],
+                };
+                ghostJson.subPrefabs.Add(subPrefab);
 
-                    await CheckProjectileController(recoloredSkinJson, recoloredSkinDef, projectileImpactExplosion.childrenProjectilePrefab, esc, field, subPrefab);
-                }
+                await CheckProjectileController(recoloredSkinJson, recoloredSkinDef, projectileImpactExplosion.childrenProjectilePrefab, esc, field, subPrefab);
             }
             
             if (projectileImpactExplosion.impactEffect && projectileImpactExplosion.impactEffect.TryGetComponent(out EffectComponent effectComponent))
             {
-                SubPrefab subPrefab = new SubPrefab([], [], [], [], true);
-                HandleSubPrefab(typeof(ProjectileImpactExplosion), nestedPrefab, subPrefab, projectileImpactExplosion.impactEffect.name, "impactEffect", varType.field);
-                subPrefab.vfxOverrideJson = new VFXOverrideJson
-                {
-                    typesAndPaths = [],
-                    subPrefabs = [],
-                    guid = EffectCatalog.GetEffectDef(effectComponent.effectIndex)._prefabAssetOrDirectReference.address.AssetGUID,
-                    configurationType = esc.targetType.assemblyQualifiedName,
-                    fieldName = field.fieldName,
-                };
-                ghostJson.subPrefabs.Add(subPrefab);
-
-                Log.Message(gameObject.name + " had a projectileImpactExplosion.impactEffect prefab ,.,");
-                VFXOverridePathfinder(recoloredSkinJson, recoloredSkinDef, projectileImpactExplosion.impactEffect, subPrefab.vfxOverrideJson, effectComponent);                             
-                AddIfValidVFX(recoloredSkinJson, subPrefab.vfxOverrideJson, projectileImpactExplosion.impactEffect);
-            }
-            else
-            {
-                Log.Warning($"couldnt get effect component on impact effect {projectileImpactExplosion.impactEffect} from {projectileImpactExplosion.gameObject.name} 2");
+                addEffectSubPrefab(typeof(ProjectileImpactExplosion), nameof(projectileImpactExplosion.impactEffect), projectileImpactExplosion.impactEffect, effectComponent);
             }
         }
         
@@ -456,22 +475,50 @@ public class Ghosts
         {
             if (projectileSingleTargetImpact.impactEffect && projectileSingleTargetImpact.impactEffect.TryGetComponent(out EffectComponent effectComponent))
             {
-                SubPrefab subPrefab = new SubPrefab([], [], [], [], true);
-                HandleSubPrefab(typeof(ProjectileSingleTargetImpact), nestedPrefab, subPrefab, projectileSingleTargetImpact.impactEffect.name, "impactEffect", varType.field);
-                subPrefab.vfxOverrideJson = new VFXOverrideJson
-                {
-                    typesAndPaths = [],
-                    subPrefabs = [],
-                    guid = EffectCatalog.GetEffectDef(effectComponent.effectIndex)._prefabAssetOrDirectReference.address.AssetGUID,
-                    configurationType = esc.targetType.assemblyQualifiedName,
-                    fieldName = field.fieldName,
-                };
-                ghostJson.subPrefabs.Add(subPrefab);
-
-                Log.Message(gameObject.name + " had a projectileSingleTargetImpact.impactEffect prefab ,.,");
-                VFXOverridePathfinder(recoloredSkinJson, recoloredSkinDef, projectileSingleTargetImpact.impactEffect, subPrefab.vfxOverrideJson, effectComponent);                             
-                AddIfValidVFX(recoloredSkinJson, subPrefab.vfxOverrideJson, projectileSingleTargetImpact.impactEffect);
+                addEffectSubPrefab(typeof(ProjectileSingleTargetImpact), nameof(projectileSingleTargetImpact.impactEffect), projectileSingleTargetImpact.impactEffect, effectComponent);
             }
+        }
+        
+        if (gameObject.TryGetComponent(out ProjectileDotZone projectileDotZone))
+        {
+            if (projectileDotZone.impactEffect && projectileDotZone.impactEffect.TryGetComponent(out EffectComponent effectComponent))
+            {
+                addEffectSubPrefab(typeof(ProjectileDotZone), nameof(projectileDotZone.impactEffect), projectileDotZone.impactEffect, effectComponent);
+            }
+        }
+        
+        Log.Debug($"specific survivor checks {SkinVFXManager.survivorHooks.Values.Count}");
+        foreach (var baseSurvHooks in SkinVFXManager.survivorHooks.Values)
+        {
+            Log.Debug($"getting specific for {baseSurvHooks.GetType()}");
+            var components = baseSurvHooks.GetSurvivorSpecificComponents(gameObject);
+
+            foreach (var survSpecific in components)
+            {
+                Log.Warning($"found surv specific subprefab {survSpecific.varName}");
+                addEffectSubPrefab(survSpecific.type, survSpecific.varName, survSpecific.gameObject);
+            }
+        }
+        
+        return;
+
+        void addEffectSubPrefab(Type type, string varName, GameObject effectObject, EffectComponent effectComponent = null)
+        {
+            SubPrefab subPrefab = new SubPrefab([], [], [], [], true);
+            HandleSubPrefab(type, nestedPrefab, subPrefab, effectObject.name, varName, varType.field);
+            subPrefab.vfxOverrideJson = new VFXOverrideJson
+            {
+                typesAndPaths = [],
+                subPrefabs = [],
+                guid = effectComponent ? EffectCatalog.GetEffectDef(effectComponent.effectIndex)?._prefabAssetOrDirectReference?.address?.AssetGUID : null,
+                configurationType = esc.targetType.assemblyQualifiedName,
+                fieldName = field.fieldName,
+            };
+            ghostJson.subPrefabs.Add(subPrefab);
+
+            Log.Message( $"{gameObject.name} had a {type} {varName} prefab ,.,");
+            VFXOverridePathfinder(recoloredSkinJson, effectObject, subPrefab.vfxOverrideJson, effectComponent);                             
+            AddIfValidVFX(recoloredSkinJson, subPrefab.vfxOverrideJson, effectObject);
         }
     }
 
