@@ -15,7 +15,9 @@ using SkinRecolor.SkinVFXHooks;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using CharacterModel = On.RoR2.CharacterModel;
+using GenericDamageOrb = On.RoR2.Orbs.GenericDamageOrb;
 using Object = UnityEngine.Object;
+using OrbEffect = On.RoR2.Orbs.OrbEffect;
 using ProjectileManager = On.RoR2.Projectile.ProjectileManager;
 using TemporaryOverlayInstance = On.RoR2.TemporaryOverlayInstance;
 
@@ -33,10 +35,73 @@ public static class Generic
         On.EntityStates.GenericProjectileBaseState.OnEnter += GenericProjectileBaseStateOnOnEnter;
         On.RoR2.Projectile.ProjectileManager.FireProjectile_FireProjectileInfo += ProjectileManagerOnFireProjectile_FireProjectileInfo;
         IL.RoR2.Orbs.LightningOrb.Begin += LightningOrbOnBegin;
-        On.RoR2.CharacterModel.AddTempOverlay += CharacterModelOnAddTempOverlay;
-        //IL.RoR2.TemporaryOverlayInstance.SetupMaterial += TemporaryOverlayInstanceOnSetupMaterial;
-        //IL.RoR2.TemporaryOverlayInstance.AddToCharacterModel += TemporaryOverlayInstanceOnAddToCharacterModel;
         On.RoR2.TemporaryOverlayInstance.AddToCharacterModel += TemporaryOverlayInstanceOnAddToCharacterModel;
+        On.EntityStates.GenericBulletBaseState.OnEnter += GenericBulletBaseStateOnOnEnter;
+        IL.RoR2.Orbs.GenericDamageOrb.Begin += GenericDamageOrbOnBegin; // r2api skins has a hook here too but they dont replace start/end effects <//3 .,,
+    }
+
+    private static void GenericDamageOrbOnBegin(ILContext il)
+    {
+        ILCursor c = new ILCursor(il);
+
+        /* // EffectManager.SpawnEffect(GetOrbEffect(), effectData, transmit: true);
+           IL_0056: ldarg.0
+           IL_0057: callvirt instance class [UnityEngine.CoreModule]UnityEngine.GameObject RoR2.Orbs.GenericDamageOrb::GetOrbEffect()
+         */
+        
+        int effectLoc = -1;
+        bool found = c.TryGotoNext(MoveType.After,
+            x => x.MatchLdarg(out _),
+            x => x.MatchCallOrCallvirt(typeof(RoR2.Orbs.GenericDamageOrb), nameof(RoR2.Orbs.GenericDamageOrb.GetOrbEffect))
+        );
+
+        if (!found)
+        {
+            Log.Error($"Failed to apply SkinVFX IL hook on GenericDamageOrbOnBegin");
+            return;
+        }
+
+        c.Emit(OpCodes.Ldarg_0);
+        c.EmitDelegate<Func<GameObject, RoR2.Orbs.GenericDamageOrb, GameObject>>((orbEffect, genericOrb) =>
+        {
+            SkinVFXInfo skinVFXInfo = SkinVFXManager.FindSkinVFXInfo(genericOrb.attacker, orbEffect);
+            Log.Debug($"found replacement >? {skinVFXInfo?.ReplacementEffectPrefab != null}");
+            if (!skinVFXInfo?.ReplacementEffectPrefab) return orbEffect;
+
+            if (!skinVFXInfo?.ReplacementEffectPrefab) return skinVFXInfo.ReplacementEffectPrefab;
+            
+            if(skinVFXInfo.ReplacementEffectPrefab?.TryGetComponent<RoR2.Orbs.OrbEffect>(out var orbEffectComponent) == true)
+            {
+                SkinVFXInfo startInfo = SkinVFXManager.FindSkinVFXInfo(genericOrb.attacker, orbEffectComponent.startEffect);
+                if(startInfo?.ReplacementEffectPrefab)
+                    orbEffectComponent.startEffect = startInfo.ReplacementEffectPrefab;
+                    
+                SkinVFXInfo endInfo = SkinVFXManager.FindSkinVFXInfo(genericOrb.attacker, orbEffectComponent.endEffect);
+                if(endInfo?.ReplacementEffectPrefab)
+                    orbEffectComponent.endEffect = endInfo.ReplacementEffectPrefab;
+                
+                Log.Debug($"found startInfo >? {startInfo?.ReplacementEffectPrefab} {orbEffectComponent.startEffect}");
+                Log.Debug($"found endInfo >? {endInfo?.ReplacementEffectPrefab} {EffectCatalog.FindEffectIndexFromPrefab(orbEffectComponent.endEffect)}");
+            }
+
+            return skinVFXInfo.ReplacementEffectPrefab;
+        });
+    }
+
+    private static GameObject GenericDamageOrbOnGetOrbEffect(GenericDamageOrb.orig_GetOrbEffect orig, RoR2.Orbs.GenericDamageOrb self)
+    {
+        GameObject result = orig(self);
+        SkinVFXManager.ApplyVFXInfo(self.attacker, ref result);
+        return result;
+    }
+
+    private static void GenericBulletBaseStateOnOnEnter(GenericBulletBaseState.orig_OnEnter orig, EntityStates.GenericBulletBaseState self)
+    {
+        SkinVFXManager.ApplyVFXInfo(self.gameObject, ref self.hitEffectPrefab);
+        SkinVFXManager.ApplyVFXInfo(self.gameObject, ref self.muzzleFlashPrefab);
+        SkinVFXManager.ApplyVFXInfo(self.gameObject, ref self.tracerEffectPrefab);
+
+        orig(self);
     }
 
     private static void TemporaryOverlayInstanceOnAddToCharacterModel(TemporaryOverlayInstance.orig_AddToCharacterModel orig, RoR2.TemporaryOverlayInstance self, RoR2.CharacterModel charactermodel)
@@ -46,164 +111,23 @@ public static class Generic
         {
             self.originalMaterial = Object.Instantiate(newMat);
         }
-        
+
         orig(self, charactermodel);
     }
-
-    private static void TemporaryOverlayInstanceOnAddToCharacterModel(ILContext il)
-    {
-        ILCursor c = new ILCursor(il);
-
-        /* // if ((bool)characterModel)
-           IL_0006: ldarg.1
-           IL_0007: call bool [UnityEngine.CoreModule]UnityEngine.Object::op_Implicit(class [UnityEngine.CoreModule]UnityEngine.Object)
-           IL_000c: brfalse.s IL_002a
-         */
-        
-        bool found = c.TryGotoNext(MoveType.After,
-            x => x.MatchLdarg(out _),
-            x => x.MatchCallOrCallvirt<UnityEngine.Object>("op_Implicit"),
-            x => x.MatchBrfalse(out _)
-        );
-
-        if (!found)
-        {
-            Log.Error($"Failed to apply SkinVFX IL hook on LightningOrbOnBegin");
-            return;
-        }
-
-        c.Emit(OpCodes.Ldarg_0);
-        c.Emit(OpCodes.Ldarg_1);
-        c.EmitDelegate<Action<RoR2.TemporaryOverlayInstance, RoR2.CharacterModel>>((overlay, model) =>
-        {
-            Log.Debug("aaa 1");
-            Material newMat = SkinVFXManager.ApplyVFXInfo(model.body?.gameObject, overlay.materialInstance);
-            if (newMat)
-            {
-                //Object.Destroy(overlay.materialInstance);
-                //Object.Destroy(overlay.componentReference.materialInstance);
-                Material instanceMat = new Material(newMat);
-                overlay.materialInstance = instanceMat;
-                overlay.originalMaterial = newMat;
-                //overlay.componentReference.materialInstance = instanceMat;
-            }
-            Log.Debug("aaa 2");
-        });
-    }
-
-    private static void TemporaryOverlayInstanceOnSetupMaterial(ILContext il)
-    {
-        ILCursor c = new ILCursor(il);
-
-        /* // materialInstance = new Material(originalMaterial);
-           IL_000d: ldarg.0
-           IL_000e: ldarg.0
-           IL_000f: ldfld class [UnityEngine.CoreModule]UnityEngine.Material RoR2.TemporaryOverlayInstance::originalMaterial
-           IL_0014: newobj instance void [UnityEngine.CoreModule]UnityEngine.Material::.ctor(class [UnityEngine.CoreModule]UnityEngine.Material)
-           IL_0019: stfld class [UnityEngine.CoreModule]UnityEngine.Material RoR2.TemporaryOverlayInstance::materialInstance
-         */
-        
-        bool found = c.TryGotoNext(MoveType.After,
-            x => x.MatchLdarg(out _),
-            x => x.MatchLdarg(out _),
-            x => x.MatchLdfld<RoR2.TemporaryOverlayInstance>("originalMaterial")
-            );
-
-        if (!found)
-        {
-            Log.Error($"Failed to apply SkinVFX IL hook on LightningOrbOnBegin");
-            return;
-        }
-
-        c.Emit(OpCodes.Ldarg_0);
-        c.EmitDelegate<Func<Material, RoR2.TemporaryOverlayInstance, Material>>((baseMat, tempOverlay) =>
-        {
-            Log.Debug("aaa 1");
-            Material newMat = SkinVFXManager.ApplyVFXInfo(tempOverlay.assignedCharacterModel?.body?.gameObject, baseMat);
-            Log.Debug("aaa 2");
-            Log.Debug($"newMat nunll ? {newMat?.name}");
-            Log.Debug($"body name ? {tempOverlay.assignedCharacterModel?.body?.gameObject?.name}");
-            Log.Debug($"component {tempOverlay?.componentReference?.gameObject?.name}");
-            
-            return newMat ? newMat : baseMat;
-        });
-    }
-
-    private static void CharacterModelOnAddTempOverlay(CharacterModel.orig_AddTempOverlay orig, RoR2.CharacterModel self, RoR2.TemporaryOverlayInstance overlay)
-    {
-        if(overlay.materialInstance)
-            SkinVFXManager.ApplyVFXInfo(self.body?.gameObject, ref overlay.materialInstance);
- 
-        orig(self, overlay);
-    }
-
-    private static void OrbEffectOnUpdateOrb(ILContext il)
-    {
-        ILCursor c = new ILCursor(il);
-
-        /* // effectData.SetHurtBoxReference(target);
-           IL_0164: ldloc.1
-           IL_0165: ldarg.0
-           IL_0166: ldfld class RoR2.HurtBox RoR2.Orbs.Orb::target
-           IL_016b: callvirt instance void RoR2.EffectData::SetHurtBoxReference(class RoR2.HurtBox)
-         */
-        
-        int effectLoc = -1;
-        bool found = c.TryGotoNext(MoveType.After,
-            x => x.MatchLdloc(out effectLoc),
-            x => x.MatchLdarg(out _),
-            x => x.MatchLdfld<RoR2.Orbs.Orb>("target"),
-            x => x.MatchCallOrCallvirt(typeof(EffectData), nameof(EffectData.SetHurtBoxReference))
-        );
-
-        if (!found)
-        {
-            Log.Error($"Failed to apply SkinVFX IL hook on LightningOrbOnBegin");
-            return;
-        }
-
-        c.Emit(OpCodes.Ldarg_0);
-        c.Emit(OpCodes.Ldloc, 0); // path
-        c.Emit(OpCodes.Ldloc, effectLoc);
-        c.EmitDelegate<Action<LightningOrb, string, EffectData>>((lightningOrb, path, effectData) =>
-        {
-            SkinVFXInfo skinVFXInfo = SkinVFXManager.FindSkinVFXInfo(lightningOrb.attacker, OrbStorageUtility.Get(path));
-            Log.Debug("aaaa" + skinVFXInfo?.ReplacementEffectPrefab == null);
-            
-            if (!skinVFXInfo?.ReplacementEffectPrefab) return;
-            effectData.genericUInt = skinVFXInfo.Identifier;
-        });
-    }
-
-    // private static void TemporaryOverlayInstanceOnSetupMaterial(TemporaryOverlayInstance.orig_SetupMaterial orig, RoR2.TemporaryOverlayInstance self)
-    // {
-    //     if(self.materialInstance)
-    //         SkinVFXManager.ApplyVFXInfo(self.charactermo?.body?.gameObject, ref self.materialInstance);
-    //     else
-    //         self.materialInstance = SkinVFXManager.ApplyVFXInfo(self.assignedCharacterModel?.body?.gameObject, self.originalMaterial);
-    //     
-    //     orig(self);
-    //     
-    //     //SkinVFXManager.ApplyVFXInfo(self.assignedCharacterModel?.body?.gameObject, ref self.materialInstance);
-    // }
 
     private static void LightningOrbOnBegin(ILContext il)
     {
         ILCursor c = new ILCursor(il);
 
-        /* // effectData.SetHurtBoxReference(target);
-           IL_0164: ldloc.1
-           IL_0165: ldarg.0
-           IL_0166: ldfld class RoR2.HurtBox RoR2.Orbs.Orb::target
-           IL_016b: callvirt instance void RoR2.EffectData::SetHurtBoxReference(class RoR2.HurtBox)
+        /* // EffectManager.SpawnEffect(OrbStorageUtility.Get(path), effectData, transmit: true);
+           IL_0170: ldloc.0
+           IL_0171: call class [UnityEngine.CoreModule]UnityEngine.GameObject RoR2.Orbs.OrbStorageUtility::Get(string)
          */
         
         int effectLoc = -1;
         bool found = c.TryGotoNext(MoveType.After,
             x => x.MatchLdloc(out effectLoc),
-            x => x.MatchLdarg(out _),
-            x => x.MatchLdfld<RoR2.Orbs.Orb>("target"),
-            x => x.MatchCallOrCallvirt(typeof(EffectData), nameof(EffectData.SetHurtBoxReference))
+            x => x.MatchCallOrCallvirt(typeof(RoR2.Orbs.OrbStorageUtility), nameof(RoR2.Orbs.OrbStorageUtility.Get))
         );
 
         if (!found)
@@ -213,15 +137,29 @@ public static class Generic
         }
 
         c.Emit(OpCodes.Ldarg_0);
-        c.Emit(OpCodes.Ldloc, 0); // path
-        c.Emit(OpCodes.Ldloc, effectLoc);
-        c.EmitDelegate<Action<LightningOrb, string, EffectData>>((lightningOrb, path, effectData) =>
+        c.EmitDelegate<Func<GameObject, RoR2.Orbs.GenericDamageOrb, GameObject>>((orbEffect, genericOrb) =>
         {
-            SkinVFXInfo skinVFXInfo = SkinVFXManager.FindSkinVFXInfo(lightningOrb.attacker, OrbStorageUtility.Get(path));
-            Log.Debug("aaaa" + skinVFXInfo?.ReplacementEffectPrefab == null);
+            SkinVFXInfo skinVFXInfo = SkinVFXManager.FindSkinVFXInfo(genericOrb.attacker, orbEffect);
+            Log.Debug($"found replacement >? {skinVFXInfo?.ReplacementEffectPrefab != null}");
+            if (!skinVFXInfo?.ReplacementEffectPrefab) return orbEffect;
+
+            if (!skinVFXInfo?.ReplacementEffectPrefab) return skinVFXInfo.ReplacementEffectPrefab;
             
-            if (!skinVFXInfo?.ReplacementEffectPrefab) return;
-            effectData.genericUInt = skinVFXInfo.Identifier;
+            if(skinVFXInfo.ReplacementEffectPrefab?.TryGetComponent<RoR2.Orbs.OrbEffect>(out var orbEffectComponent) == true)
+            {
+                SkinVFXInfo startInfo = SkinVFXManager.FindSkinVFXInfo(genericOrb.attacker, orbEffectComponent.startEffect);
+                if(startInfo?.ReplacementEffectPrefab)
+                    orbEffectComponent.startEffect = startInfo.ReplacementEffectPrefab;
+                    
+                SkinVFXInfo endInfo = SkinVFXManager.FindSkinVFXInfo(genericOrb.attacker, orbEffectComponent.endEffect);
+                if(endInfo?.ReplacementEffectPrefab)
+                    orbEffectComponent.endEffect = endInfo.ReplacementEffectPrefab;
+                
+                Log.Debug($"found startInfo >? {startInfo?.ReplacementEffectPrefab} {orbEffectComponent.startEffect}");
+                Log.Debug($"found endInfo >? {endInfo?.ReplacementEffectPrefab} {EffectCatalog.FindEffectIndexFromPrefab(orbEffectComponent.endEffect)}");
+            }
+
+            return skinVFXInfo.ReplacementEffectPrefab;
         });
         
         /*
@@ -355,9 +293,10 @@ public static class Generic
                 return;
             }
 
+            overlapAttack.hitEffectPrefab = skinVFXInfo.ReplacementEffectPrefab;
             Log.Message("aaaa 1");
 
-            data.genericUInt = skinVFXInfo.Identifier;
+            //data.genericUInt = skinVFXInfo.Identifier;
         });
 
         /*
@@ -393,7 +332,7 @@ public static class Generic
 
             Log.Message("aaaa 2");
 
-            data.genericUInt = skinVFXInfo.Identifier;
+            overlapAttack.hitEffectPrefab = skinVFXInfo.ReplacementEffectPrefab;
         });
     }
 }

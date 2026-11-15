@@ -7,6 +7,7 @@ using HG;
 using Newtonsoft.Json;
 using R2API;
 using RoR2;
+using SkinRecolor.SkinVFXHooks;
 using UnityEngine;
 using Object = UnityEngine.Object;
 using Path = System.IO.Path;
@@ -22,6 +23,8 @@ public static class RecoloredSkinManager
     public static Dictionary<string, EntityStateConfiguration> escDict = []; // sorry chinchi i lied ,., easier to implement ,..,
     public static Dictionary<SkinDef, RecoloredSkinJson> recoloredSkinDefs = [];
     public static Dictionary<RecoloredSkinJson, List<SkinDefParams.ProjectileGhostReplacement>> skinJsonsToGhosts = [];
+    public static Action finishedSkinRecolors;
+    public static bool skinRecolorsFinished;
     
     public static void Start()
     {
@@ -147,7 +150,7 @@ public static class RecoloredSkinManager
                 byte[] bytes = await File.ReadAllBytesAsync(fileName);
                 Texture2D returnTexture = new Texture2D(2, 2);
                 returnTexture.LoadImage(bytes);
-                loadedSkinTextures.Add(fileName, returnTexture);
+                loadedSkinTextures.TryAdd(fileName, returnTexture);
                 //Log.Debug($"added texture to loaded skin {fileName}");
             }
         }
@@ -208,9 +211,11 @@ public static class RecoloredSkinManager
             await SkinManager.Materials.MeshMatReplacements(recoloredSkinJson, dontAdd, recoloredSkinDef, originalSkin, body);
             
             await SkinManager.Lights.LightReplacements(recoloredSkinJson, recoloredSkinDef, body);
-            
-            if(!dontAdd)
-                await SkinManager.Ghosts.ProjectileGhostReplacementsAndVFXOverrides(recoloredSkinJson, dontAdd, body, recoloredSkinDef);
+
+            if (!dontAdd)
+            {
+                await GhostsNew.ProjectileGhostReplacementsAndVFXOverrides(recoloredSkinJson, dontAdd, body, recoloredSkinDef);
+            }
             
             string internalName = recoloredSkinJson.skinName.Replace(" ", "");
             recoloredSkinDef.name = recoloredSkinDef.name.Replace("(Clone)", "");
@@ -229,16 +234,16 @@ public static class RecoloredSkinManager
             Log.Debug($"added {recoloredSkinJson.skinName} to {recoloredSkinJson.baseSkinBody} !!!!");
             recoloredSkinDefs.Add(recoloredSkinDef, recoloredSkinJson);
             
-            if (RecoloredSkinContent.vfxOverrides.TryGetValue(recoloredSkinJson, out var vfxOverride))
-            {
-                foreach (var vfx in vfxOverride)
-                {
-                    Log.Debug($"Added override: {recoloredSkinJson.baseSkinName} - {vfx.basePrefab}");
-                    SkinVFX.AddSkinVFX(recoloredSkinDef, vfx.basePrefab, vfx.overridePrefab);
-                }
-            };
+            // if (RecoloredSkinContent.vfxOverrides.TryGetValue(recoloredSkinJson, out var vfxOverride))
+            // {
+            //     foreach (var vfx in vfxOverride)
+            //     {
+            //         Log.Debug($"Added override: {recoloredSkinJson.baseSkinName} - {vfx.basePrefab}");
+            //         SkinVFX.AddSkinVFX(recoloredSkinDef, vfx.basePrefab, vfx.overridePrefab);
+            //     }
+            // };
 
-            if (recoloredSkinJson.vfxOverrides != null)
+            /*if (recoloredSkinJson.vfxOverrides != null)
             {
                 foreach (var jsonOverride in recoloredSkinJson.vfxOverrides)
                 {
@@ -257,13 +262,15 @@ public static class RecoloredSkinManager
                 
                     SkinManager.VFX.AddVFXOverride(recoloredSkinJson, jsonOverride, recoloredSkinDef);
                 }
-            }
+            }*/
             
             skinCount--;
             if (skinCount == 0)
             {
                 File.WriteAllTextAsync(jsonPath, JsonConvert.SerializeObject(skinJsons, Formatting.Indented));
                 Log.Error("saved to disk !!");
+                skinRecolorsFinished = true;
+                finishedSkinRecolors?.Invoke();
             }
             
             return recoloredSkinDef;
@@ -279,6 +286,8 @@ public static class RecoloredSkinManager
         {
             File.WriteAllTextAsync(jsonPath, JsonConvert.SerializeObject(skinJsons, Formatting.Indented));
             Log.Error("saved to disk !!");
+            skinRecolorsFinished = true;
+            finishedSkinRecolors?.Invoke();
         }
 
         return null;

@@ -110,14 +110,6 @@ public class Acolyte : SurvivorHookBase
         orig(self);
     }
 
-    private void AcolyteJavelinProjectileOnAwake(AcolyteJavelinProjectile.orig_Awake orig, RoR2.Projectile.AcolyteJavelinProjectile self)
-    {
-        orig(self);
-        
-       
-        ApplyVFXInfo(self.projectileController?.owner, ref self.lifetimeExpiredEffect);
-    }
-
     private void BolaProjectileControllerOnOnOwnerChanged(BolaProjectileController.orig_OnOwnerChanged orig, RoR2.Projectile.BolaProjectileController self, GameObject newowner)
     {
         orig(self, newowner);

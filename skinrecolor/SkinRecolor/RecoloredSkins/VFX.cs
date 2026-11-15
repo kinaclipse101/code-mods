@@ -14,10 +14,27 @@ namespace SkinRecolor.SkinManager;
 
 public class VFX
 {
-    public static async Task AddVFXOverride(RecoloredSkinJson recoloredSkinJson, VFXOverrideJson jsonOverride, SkinDef recoloredSkinDef, GameObject directSubprefab = null, SubPrefab subPrefab = null)
+    /*
+    public static async Task AddVFXOverride(RecoloredSkinJson recoloredSkinJson, VFXOverrideJson jsonOverride, SkinDef recoloredSkinDef = null, GameObject directSubprefab = null, SubPrefab subPrefab = null)
     {
         try
         {
+            if (!recoloredSkinDef)
+            {
+                foreach (var kvp in RecoloredSkinManager.recoloredSkinDefs)
+                {
+                    if (kvp.Value == recoloredSkinJson)
+                    {
+                        recoloredSkinDef = kvp.Key;
+                    }
+                }
+            }
+
+            if (!recoloredSkinDef)
+            {
+                Log.Error("couldnt find skindef !!");
+            }
+            
             Log.Debug($"attempting to adde effect {jsonOverride.guid} to skin {recoloredSkinDef.name}");
 
             if (directSubprefab)
@@ -26,20 +43,33 @@ public class VFX
                 
                 string prefabName = RecoloredSkinContent.GetPrefabNameForTemp(recoloredSkinJson, jsonOverride, subPrefab);
                 GameObject subEffectPrefab = RecoloredSkinContent.RecolorEffectPrefab(directSubprefab, prefabName, jsonOverride.typesAndPaths, recoloredSkinJson);
-                
-                if (!EffectCatalog.nameToEffectIndex.TryGetValue(prefabName, out var effectIndex))
-                {
-                    Log.Error($"couldnt find subprefab in the effect catalog {prefabName} !!");
-                    return;
-                }
 
-                EffectComponent data = subEffectPrefab.GetComponent<EffectComponent>();
-                data.effectIndex = effectIndex;
-                EffectDef def = EffectCatalog.GetEffectDef(effectIndex);
-                def.prefab = subEffectPrefab;
-                Log.Debug($"replaced prefab {subEffectPrefab} !!");
+                if (subPrefab != null && subPrefab.hasEffectData || subEffectPrefab.GetComponent<EffectComponent>())
+                {
+                    if (!EffectCatalog.nameToEffectIndex.TryGetValue(prefabName, out var effectIndex))
+                    {
+                        Log.Error($"couldnt find subprefab in the effect catalog {prefabName} !!");
+                        return;
+                    }
+                    
+                    EffectComponent data = subEffectPrefab.GetComponent<EffectComponent>();
+                    if(data)
+                        data.effectIndex = effectIndex;
+                    else
+                    {
+                        EffectComponent effect = subEffectPrefab.AddComponent<EffectComponent>();
+                        effect.effectIndex = effectIndex;
+                    }
+                    EffectDef def = EffectCatalog.GetEffectDef(effectIndex);
+                    Object.Destroy(def.prefab);
+                    def.prefab = subEffectPrefab;
+                    Log.Debug($"replaced prefab {subEffectPrefab} !!");
+                }
+                
                
-                SkinVFX.AddSkinVFX(recoloredSkinDef, directSubprefab, subEffectPrefab);
+                Log.Debug($"attempting to adde effect finalized {jsonOverride.guid} objname[{subEffectPrefab.name}] to skin {recoloredSkinDef.name}");
+                SkinVFXManager.AddSkinVFXInfo(recoloredSkinDef, directSubprefab, subEffectPrefab);
+                //SkinVFX.AddSkinVFX(recoloredSkinDef, directSubprefab, subEffectPrefab);
             
                 return;
             }
@@ -48,16 +78,15 @@ public class VFX
             if (jsonOverride.guid != null)
             {
                 basePrefab = await Addressables.LoadAssetAsync<GameObject>(jsonOverride.guid).Task;
-                
             }
             else
             {
-                basePrefab = await Ghosts.TryGetPrefabFromESC(jsonOverride.configurationType, jsonOverride.fieldName);
+                basePrefab = await Utils.TryGetPrefabFromESC(jsonOverride.configurationType, jsonOverride.fieldName);
             }
             
             if (jsonOverride.typesAndPaths.Count > 0)
             {
-                string prefabName = RecoloredSkinContent.GetPrefabNameForTemp(recoloredSkinJson, jsonOverride);
+                string prefabName = RecoloredSkinContent.GetPrefabNameForTemp(recoloredSkinJson, jsonOverride, subPrefab);
                 SkinVFX.AddSkinVFX(recoloredSkinDef, basePrefab, RecoloredSkinContent.RecolorEffectPrefab(basePrefab, prefabName, jsonOverride.typesAndPaths, recoloredSkinJson));
                 Log.Message($"added vfx override for non effect data {prefabName}");
             }
@@ -68,4 +97,5 @@ public class VFX
             Log.Error(e);
         }
     }
+*/
 }

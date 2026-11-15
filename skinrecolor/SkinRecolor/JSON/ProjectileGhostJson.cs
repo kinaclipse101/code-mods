@@ -4,11 +4,21 @@ using HG;
 
 namespace SkinRecolor;
 
-public class ProjectileGhostJson
+public class ProjectileGhostJson : JsonBase
 {
-    public string guid;
-    public string configurationType;
-    public string controllerFieldName;
-    public List<SubPrefab> subPrefabs;
-    public List<TypeToPath> typesAndPaths;
+    public string ghostGUID;
+
+    public bool Equals(ProjectileGhostJson other)
+    {
+        return ghostGUID == other.ghostGUID && 
+                configurationType == other.configurationType &&
+               fieldName == other.fieldName && 
+               Equals(subPrefabs, other.subPrefabs) &&
+               Equals(typesAndPaths, other.typesAndPaths);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(ghostGUID, configurationType, fieldName, subPrefabs, typesAndPaths);
+    }
 }

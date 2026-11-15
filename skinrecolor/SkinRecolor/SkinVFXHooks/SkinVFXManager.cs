@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using R2API;
+using R2API.Utils;
 using RoR2;
 using RoR2.AsyncManagement;
 using SkinRecolor.RecoloredSkins;
@@ -21,6 +22,57 @@ public static class SkinVFXManager
     
     private static MethodInfo FindSkinVFXBodyToReplacementMethodInfo;
     private static MethodInfo FindSkinVFXEffectUintMethodInfo;
+    private static MethodInfo FindEffectIndexesMethodInfo;
+    private static MethodInfo FindSetHooksMethodInfo;
+    private static FieldInfo findCurrentIdentifier;
+    private static FieldInfo FindSkinVFXInfos;
+    /* skinVFXInfo.Identifier = nextIdentifier;
+       skinVFXInfos.Add(skinVFXInfo);
+       SkinsPlugin.Logger.LogMessage($"finished !");
+     */
+    /*
+     * private static List<SkinVFXInfo> skinVFXInfos = new List<SkinVFXInfo>();
+       private static bool hooksSet = false;
+       private const uint BaseIdentifier = 24000; // arbitrary, but we shouldn't hit 24,000 unique items for a substantial amount of time.
+       private static uint currentIdentifier = BaseIdentifier;
+       private static uint nextIdentifier => currentIdentifier++;
+
+     */
+    
+    public static bool AddSkinVFXInfo(SkinDef skinDef, GameObject targetObject, GameObject replacementObject)
+    {
+        SkinVFXInfo skinVFXInfo = new SkinVFXInfo {
+            RequiredSkin = skinDef,
+            EffectPrefab = targetObject,
+            ReplacementEffectPrefab = replacementObject,
+        };
+
+        List<SkinVFXInfo> cachedInfos = (List<SkinVFXInfo>)FindSkinVFXInfos.GetValue(null);
+        if (cachedInfos == null)
+        {
+            Log.Error("failed to find skinVFXInfos");
+            return false;
+        }
+
+        if (findCurrentIdentifier == null)
+        {
+            Log.Error("failed to find findCurrentIdentifier");
+            return false;
+        }
+
+        uint currentID = (uint)findCurrentIdentifier.GetValue(null);
+        
+        skinVFXInfo.Identifier = currentID;
+        cachedInfos.Add(skinVFXInfo);
+
+        currentID++;
+        findCurrentIdentifier.SetValue(null, currentID);
+        FindSkinVFXInfos.SetValue(null, cachedInfos);
+        
+        Log.Debug($"added replacement on {skinDef.nameToken} for obj {skinVFXInfo.EffectPrefab} - {skinVFXInfo.ReplacementEffectPrefab} \n current id: {currentID}");
+          
+        return true;
+    }
 
     public static SkinVFXInfo FindSkinVFXInfo(GameObject gameObject, GameObject skinObject)
     {
@@ -34,22 +86,52 @@ public static class SkinVFXManager
     
     public static void Hook()
     {
+        foreach (var fieldInfo in AccessTools.GetDeclaredFields(typeof(SkinVFX)))
+        {
+            if (fieldInfo.Name == "currentIdentifier")
+            {
+                Log.Debug("found currentIdentifier !!");
+                findCurrentIdentifier = fieldInfo;
+            }
+            else if (fieldInfo.Name == "skinVFXInfos")
+            {
+                Log.Debug("found skinVFXInfos !!");
+                FindSkinVFXInfos = fieldInfo;
+            }
+        }
+
+        //typeof(SkinVFX).GetMethod("FindSkinVFXInfo", BindingFlags.NonPublic | BindingFlags.Static);
         foreach (var methodInfo in AccessTools.GetDeclaredMethods(typeof(SkinVFX)))
         {
-            if (methodInfo.Name != "FindSkinVFXInfo") continue;
-
-            if (methodInfo.GetParameters().Length == 1)
+            if (methodInfo.Name == "FindSkinVFXInfo")
             {
-                FindSkinVFXEffectUintMethodInfo = methodInfo;
-            }
-            else
+                if (methodInfo.GetParameters().Length == 1)
+                {
+                    FindSkinVFXEffectUintMethodInfo = methodInfo;
+                }
+                else
+                {
+                    FindSkinVFXBodyToReplacementMethodInfo = methodInfo;
+                }
+                Log.Debug("found FindSkinVFXInfo");
+            } 
+            else if (methodInfo.Name == "FindEffectIndexes")
             {
-                FindSkinVFXBodyToReplacementMethodInfo = methodInfo;
+                Log.Debug("found FindEffectIndexes !!");
+                FindEffectIndexesMethodInfo = methodInfo;
             }
-            Log.Debug("found FindSkinVFXInfo");
+            else if (methodInfo.Name == "SetHooks")
+            {
+                Log.Debug("found SetHooks !!");
+                FindSetHooksMethodInfo = methodInfo;
+            }
         }
         
         Generic.Hook();
+        Run.onRunStartGlobal += run =>
+        {
+            FindEffectIndexesMethodInfo.Invoke(null, []);
+        };
 
         //survivor specific .,., 
         foreach (var skinJson in RecoloredSkinManager.skinJsons)

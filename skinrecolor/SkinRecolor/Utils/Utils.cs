@@ -13,6 +13,7 @@ using RiskOfOptions.Options;
 using RoR2;
 using SkinRecolor.RecoloredSkins;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
 using UnityEngine.Networking;
 using Formatting = System.Xml.Formatting;
 using Path = System.IO.Path;
@@ -67,13 +68,14 @@ public static class Utils
         ModSettingsManager.AddOption(keyBindOption);
     }
 
-    public static Color RecolorColor(RecoloredSkinJson recoloredSkinJson, Color color)
+    public static Color RecolorColor(RecoloredSkinJson recoloredSkinJson, Color color, bool useValue = true)
     {
         UnityEngine.Color.RGBToHSV(color, out float h, out float s, out float v);
         
         h = (h + recoloredSkinJson.hue / 360f) % 1f;
         if (h < 0f) h += 1f;
-        v += recoloredSkinJson.value/100f;
+        if(useValue)
+            v += recoloredSkinJson.value/100f;
         if (recoloredSkinJson.multiplySat)
             s *= recoloredSkinJson.saturation;
         else
@@ -101,7 +103,7 @@ public static class Utils
     }
     
     public static Dictionary<RecoloredSkinJson, SkinJsonMats> recoloredMats = [];
-    public static void RecolorMaterial(ref Material recoloredMat, Material origMat, RecoloredSkinJson skinJson, bool dontAdd = false)
+    public static void RecolorMaterial(ref Material recoloredMat, Material origMat, RecoloredSkinJson skinJson, bool dontAdd = false, bool useValue = true)
     {
         try
         {
@@ -123,45 +125,47 @@ public static class Utils
                 return;
             }
             
+            Log.Debug($"recoloring mat {origMat.name} on skinjson {skinJson.baseSkinBody}");
+            
             if (recoloredMat.HasTexture(MainTex) && recoloredMat.GetTexture(MainTex))
-                RecolorTexture(recoloredMat, MainTex, skinJson, dontAdd);
+                RecolorTexture(recoloredMat, MainTex, skinJson, dontAdd, useValue);
         
             if (recoloredMat.HasTexture(EmTex) && recoloredMat.GetTexture(EmTex))
-                RecolorTexture(recoloredMat, EmTex, skinJson, dontAdd);
+                RecolorTexture(recoloredMat, EmTex, skinJson, dontAdd, useValue);
         
             if (recoloredMat.HasTexture(RemapTex) && recoloredMat.GetTexture(RemapTex))
-                RecolorTexture(recoloredMat, RemapTex, skinJson, dontAdd);
+                RecolorTexture(recoloredMat, RemapTex, skinJson, dontAdd, useValue);
         
             if (recoloredMat.HasTexture(FresnelRamp) && recoloredMat.GetTexture(FresnelRamp))
-                RecolorTexture(recoloredMat, FresnelRamp, skinJson, dontAdd);
+                RecolorTexture(recoloredMat, FresnelRamp, skinJson, dontAdd, useValue);
             
             if (recoloredMat.HasTexture(MatCapTexture) && recoloredMat.GetTexture(MatCapTexture))
-                RecolorTexture(recoloredMat, MatCapTexture, skinJson, dontAdd);
+                RecolorTexture(recoloredMat, MatCapTexture, skinJson, dontAdd, useValue);
             if (recoloredMat.HasTexture(PrimaryMistTexture) && recoloredMat.GetTexture(PrimaryMistTexture))
-                RecolorTexture(recoloredMat, PrimaryMistTexture, skinJson, dontAdd);
+                RecolorTexture(recoloredMat, PrimaryMistTexture, skinJson, dontAdd, useValue);
             if (recoloredMat.HasTexture(SecondaryMistTexture) && recoloredMat.GetTexture(SecondaryMistTexture))
-                RecolorTexture(recoloredMat, SecondaryMistTexture, skinJson, dontAdd);
+                RecolorTexture(recoloredMat, SecondaryMistTexture, skinJson, dontAdd, useValue);
             if (recoloredMat.HasTexture(CausticsTextureA) && recoloredMat.GetTexture(CausticsTextureA))
-                RecolorTexture(recoloredMat, CausticsTextureA, skinJson, dontAdd);
+                RecolorTexture(recoloredMat, CausticsTextureA, skinJson, dontAdd, useValue);
             if (recoloredMat.HasTexture(CausticsTextureB) && recoloredMat.GetTexture(CausticsTextureB))
-                RecolorTexture(recoloredMat, CausticsTextureB, skinJson, dontAdd);
+                RecolorTexture(recoloredMat, CausticsTextureB, skinJson, dontAdd, useValue);
             if (recoloredMat.HasTexture(PrintRamp) && recoloredMat.GetTexture(PrintRamp))
-                RecolorTexture(recoloredMat, PrintRamp, skinJson, dontAdd);
+                RecolorTexture(recoloredMat, PrintRamp, skinJson, dontAdd, useValue);
             
-            TryRecolorMat(recoloredMat, Color, skinJson.hue, skinJson.saturation, skinJson.value, skinJson.multiplySat);
-            TryRecolorMat(recoloredMat, EmColor, skinJson.hue, skinJson.saturation, skinJson.value, skinJson.multiplySat);
-            TryRecolorMat(recoloredMat, TintColor, skinJson.hue, skinJson.saturation, skinJson.value, skinJson.multiplySat);
-            TryRecolorMat(recoloredMat, WireframeColor, skinJson.hue, skinJson.saturation, skinJson.value, skinJson.multiplySat);
-            TryRecolorMat(recoloredMat, VertColor, skinJson.hue, skinJson.saturation, skinJson.value, skinJson.multiplySat);
-            TryRecolorMat(recoloredMat, MainColor, skinJson.hue, skinJson.saturation, skinJson.value, skinJson.multiplySat);
-            TryRecolorMat(recoloredMat, GlowColor, skinJson.hue, skinJson.saturation, skinJson.value, skinJson.multiplySat);
-            TryRecolorMat(recoloredMat, MatCapColor, skinJson.hue, skinJson.saturation, skinJson.value, skinJson.multiplySat);
-            TryRecolorMat(recoloredMat, PrimaryColor, skinJson.hue, skinJson.saturation, skinJson.value, skinJson.multiplySat);
-            TryRecolorMat(recoloredMat, SecondaryColor, skinJson.hue, skinJson.saturation, skinJson.value, skinJson.multiplySat);
-            TryRecolorMat(recoloredMat, CausticsColor, skinJson.hue, skinJson.saturation, skinJson.value, skinJson.multiplySat);
-            TryRecolorMat(recoloredMat, FresnelColor, skinJson.hue, skinJson.saturation, skinJson.value, skinJson.multiplySat);
-            TryRecolorMat(recoloredMat, InnerGlowColor, skinJson.hue, skinJson.saturation, skinJson.value, skinJson.multiplySat);
-            TryRecolorMat(recoloredMat, FlashColor, skinJson.hue, skinJson.saturation, skinJson.value, skinJson.multiplySat);
+            TryRecolorColor(recoloredMat, Color, skinJson, useValue);
+            TryRecolorColor(recoloredMat, EmColor, skinJson, useValue);
+            TryRecolorColor(recoloredMat, TintColor, skinJson, useValue);
+            TryRecolorColor(recoloredMat, WireframeColor, skinJson, useValue);
+            TryRecolorColor(recoloredMat, VertColor, skinJson, useValue);
+            TryRecolorColor(recoloredMat, MainColor, skinJson, useValue);
+            TryRecolorColor(recoloredMat, GlowColor, skinJson, useValue);
+            TryRecolorColor(recoloredMat, MatCapColor, skinJson, useValue);
+            TryRecolorColor(recoloredMat, PrimaryColor, skinJson, useValue);
+            TryRecolorColor(recoloredMat, SecondaryColor, skinJson, useValue);
+            TryRecolorColor(recoloredMat, CausticsColor, skinJson, useValue);
+            TryRecolorColor(recoloredMat, FresnelColor, skinJson, useValue);
+            TryRecolorColor(recoloredMat, InnerGlowColor, skinJson, useValue);
+            TryRecolorColor(recoloredMat, FlashColor, skinJson, useValue);
             
             jsonMats.recoloredMats.Add(origMat, recoloredMat);
         }
@@ -172,38 +176,20 @@ public static class Utils
         }
     }
 
-    private static async Task RecolorTexture(Material mat, int nameID, RecoloredSkinJson skinJson, bool dontAdd)
+    private static async Task RecolorTexture(Material mat, int nameID, RecoloredSkinJson skinJson, bool dontAdd, bool useValue = true)
     {
-        mat.SetTexture(nameID, await hsvModifyTexture(mat.GetTexture(nameID) as Texture2D, skinJson, dontAdd));
+        mat.SetTexture(nameID, await hsvModifyTexture(mat.GetTexture(nameID) as Texture2D, skinJson, dontAdd, useValue));
     }
     
-    private static void TryRecolorMat(Material mat, int nameID, float hue, float sat, float value, bool multiplySat = false)
+    private static void TryRecolorColor(Material mat, int nameID, RecoloredSkinJson recoloredSkinJson, bool useValue = true)
     {
         if (!mat.HasColor(nameID)) return;
-        
-        Color origColor = mat.GetColor(nameID);
-        UnityEngine.Color.RGBToHSV(origColor, out float colorHue, out float colorSaturation, out float colorValue);
-                        
-        colorHue = (colorHue + hue / 360f) % 1f;
-        if (colorHue < 0f)
-            colorHue += 1f;
-        
-        if (multiplySat)
-            colorSaturation *= sat / 100f;
-        else
-            colorSaturation += sat / 100f;
-        
-        colorValue += value/100f;
-        
-        Color newColor = UnityEngine.Color.HSVToRGB(colorHue, colorSaturation, colorValue);
-        newColor.a = origColor.a;
-            
-        mat.SetColor(nameID, newColor);
+        mat.SetColor(nameID, RecolorColor(recoloredSkinJson, mat.GetColor(nameID), useValue));
     }
 
     public static string bwTexturesSaved = Path.Combine(Path.GetDirectoryName(Paths.BepInExConfigPath)!, "skintextures", "bwTextures.json");
     public static List<string> bwTextures = [];
-    public static async Task<Texture2D> hsvModifyTexture(Texture2D texture, RecoloredSkinJson skinJson, bool dontExport = false)
+    public static async Task<Texture2D> hsvModifyTexture(Texture2D texture, RecoloredSkinJson skinJson, bool dontExport = false, bool useValue = true)
     {
         string textureFileName = $"{texture.name}_RecolorH{skinJson.hue}S{skinJson.saturation}V{skinJson.value}_{skinJson.baseSkinBody}.png";
         string texturePath = Path.Combine(RecoloredSkinManager.textureDirs, textureFileName);
@@ -249,7 +235,7 @@ public static class Utils
                 }
                 
                 Color pixelColor = texPixels[i];
-                Color newColor = RecolorColor(skinJson, pixelColor);
+                Color newColor = RecolorColor(skinJson, pixelColor, useValue);
                 newColor.a = pixelColor.a;
                 texPixels[i] = newColor;
             }
@@ -368,63 +354,55 @@ public static class Utils
         return skinController;
     }
 
-    private static GameObject youexistforcourotines;
-
-    public static async Task<Texture2D> LoadTexture(string filename)
+    private static Dictionary<string, GameObject> escToObj = [];
+    public static async Task<GameObject> TryGetPrefabFromESC(string configType, string fieldName)
     {
-        if (!ImageLoader.instance)
+        StringBuilder builder = new StringBuilder();
+        builder.Append(configType);
+        builder.Append(fieldName);
+
+        if (escToObj.TryGetValue(builder.ToString(), out GameObject obj))
         {
-            youexistforcourotines = new GameObject("imageloader");
-            ImageLoader.instance = youexistforcourotines.AddComponent<ImageLoader>();
+            Log.Debug("found prefab in cache !!");
+            return obj;
         }
         
-        if(!ImageLoader.textures.ContainsKey(filename))
-            ImageLoader.instance.LoadTextureFromPath(filename);
-
-        while (!ImageLoader.textures.ContainsKey(filename))
+        if (!RecoloredSkinManager.escDict.TryGetValue(configType, out var targetEsc))
         {
-            await Task.Yield();
-        }
-        
-        return ImageLoader.textures[filename];
-    }
-
-    public class ImageLoader : MonoBehaviour
-    {
-        public static ImageLoader instance;
-
-        public static Dictionary<string, Texture2D> textures = [];
-
-        public void Start()
-        {
-            instance = this;
-        }
-
-        public void LoadTextureFromPath(string filename)
-        {
-            if(!textures.ContainsKey(filename))
-                StartCoroutine(DownloadTexture(filename));
-        }
-        
-        //https://stackoverflow.com/questions/69139083/texture2d-loadimage-async
-        private IEnumerator DownloadTexture(string url)
-        {
-            using (UnityWebRequest uwr = UnityWebRequestTexture.GetTexture(url))
+            foreach (var esc in RoR2.ContentManagement.ContentManager.entityStateConfigurations)
             {
-                yield return uwr.SendWebRequest();
-
-                if (uwr.result != UnityWebRequest.Result.Success)
-                {
-                    Log.Fatal(uwr.error);
-                }
-                else
-                {
-                    // Get downloaded asset bundle
-                    var texture = DownloadHandlerTexture.GetContent(uwr);
-                    textures.Add(url, texture);
-                }
+                if (esc.targetType.assemblyQualifiedName != configType) continue;
+                targetEsc = esc;
+                break;
             }
         }
+        if (!targetEsc)
+        {
+            Log.Warning($"couldnt find esc for {configType}");
+            return null;
+        }
+
+        GameObject prefab = null;
+        foreach (var field in targetEsc.serializedFieldsCollection.serializedFields)
+        {
+            if(field.fieldName != fieldName) continue;
+            prefab = field.fieldValue.objectValue as GameObject;
+            if (!prefab)
+                prefab = await Addressables.LoadAssetAsync<GameObject>(field.fieldValue.stringValue).Task;
+                
+            break;
+        }
+        if (!prefab)
+        {
+            Log.Warning($"couldnt find GameObject for {fieldName}");
+            return null;
+        }
+        
+        
+        
+        escToObj.TryAdd(builder.ToString(), prefab);
+
+        return prefab;
     }
     
     private static readonly int MainTex = Shader.PropertyToID("_MainTex");

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using HG.GeneralSerializer;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using R2API;
@@ -68,12 +69,20 @@ public class Huntress : SurvivorHookBase
                 guid = RoR2BepInExPack.GameAssetPathsBetter.RoR2_Base_Huntress.HuntressGlaiveOrbEffect_prefab,
                 configurationType = "HuntressSpecific",
                 fieldName = "Glaive",
+            },
+            new()
+            {
+                typesAndPaths = [],
+                subPrefabs = [],
+                guid = RoR2BepInExPack.GameAssetPathsBetter.RoR2_Base_Huntress.OmniImpactVFXHuntress_prefab,
+                configurationType = "HuntressSpecific",
+                fieldName = "OmniImpactVFX",
             }
         ];
 
         foreach (var overrideJson in returnOverrides)
         {
-            Ghosts.VFXOverridePathfinder(recoloredSkinJson, Addressables.LoadAssetAsync<GameObject>(overrideJson.guid).WaitForCompletion(), overrideJson);
+            GhostsFirstLoad.CheckEffectsAndProjectiles(recoloredSkinJson, null, Addressables.LoadAssetAsync<GameObject>(overrideJson.guid).WaitForCompletion(), null, new SerializedField(), null, [], [..recoloredSkinJson.vfxOverrides]);
         }
 
         return returnOverrides;
@@ -85,67 +94,43 @@ public class Huntress : SurvivorHookBase
         AddRecoloredMat(RoR2BepInExPack.GameAssetPathsBetter.RoR2_Base_Huntress.matHuntressFlashBright_mat);
         
         IL.EntityStates.Huntress.BlinkState.CreateBlinkEffect += BlinkStateOnCreateBlinkEffect;
-        //IL.EntityStates.Huntress.BlinkState.OnExit += BlinkStateOnOnExit;
+        IL.EntityStates.Huntress.BaseBeginArrowBarrage.CreateBlinkEffect += BaseBeginArrowBarrageOnCreateBlinkEffect;
     }
 
-    private void BlinkStateOnOnExit(ILContext il)
+    private void BaseBeginArrowBarrageOnCreateBlinkEffect(ILContext il)
     {
         ILCursor c = new ILCursor(il);
         
         /*
-         * IL_00a2: stfld class [UnityEngine.CoreModule]UnityEngine.Material RoR2.TemporaryOverlayInstance::originalMaterial
+         * IL_001e: ldsfld class [UnityEngine.CoreModule]UnityEngine.GameObject EntityStates.Huntress.BaseBeginArrowBarrage::blinkPrefab
          */
 
-        bool found = c.TryGotoNext(MoveType.Before,
-            x => x.MatchStfld<RoR2.TemporaryOverlayInstance>("originalMaterial")
+        int effectLoc = -1;
+        bool found = c.TryGotoNext(MoveType.After,
+            x => x.MatchLdsfld<EntityStates.Huntress.BaseBeginArrowBarrage>("blinkPrefab")
         );
 
         if (!found)
         {
-            Log.Error($"Failed to apply SkinVFX IL hook on BlinkStateOnOnExit");
+            Log.Error($"Failed to apply SkinVFX IL hook on BlinkStateOnCreateBlinkEffect");
             return;
         }
 
         c.Emit(OpCodes.Ldarg_0);
-        c.EmitDelegate<Func<Material, EntityStates.Huntress.BlinkState, Material>>((overlayMat, blinkState) =>
+        c.EmitDelegate<Func<GameObject, EntityStates.Huntress.BlinkState, GameObject>>((blinkPrefab, blinkState) =>
         {
-            RoR2.SkinDef skindef = RoR2.SkinCatalog.FindCurrentSkinDefForBodyInstance(blinkState.characterBody.gameObject);
-            if (skindef && RecoloredSkinManager.recoloredSkinDefs.TryGetValue(skindef, out RecoloredSkinJson recoloredSkinJson))
+            SkinVFXInfo skinVFXInfo = SkinVFXManager.FindSkinVFXInfo(blinkState.gameObject, EntityStates.Huntress.BaseBeginArrowBarrage.blinkPrefab);
+
+            Log.Debug("checking blnk satta");
+            
+            if (skinVFXInfo == null)
             {
-                Log.Debug("AAA");
-                Material newMat = UnityEngine.Object.Instantiate(overlayMat);
-                Utils.RecolorMaterial(ref newMat, overlayMat, recoloredSkinJson);
-                return newMat;
+                return blinkPrefab;
             }
 
-            Log.Message("couldnt replace mat");
-            return overlayMat;
-        });
-        
-        bool found2 = c.TryGotoNext(MoveType.Before,
-            x => x.MatchStfld<RoR2.TemporaryOverlayInstance>("originalMaterial")
-        );
+            Log.Message("aaaa 12");
 
-        if (!found2)
-        {
-            Log.Error($"Failed to apply SkinVFX IL hook on BlinkStateOnOnExit 2");
-            return;
-        }
-
-        c.Emit(OpCodes.Ldarg_0);
-        c.EmitDelegate<Func<Material, EntityStates.Huntress.BlinkState, Material>>((overlayMat, blinkState) =>
-        {
-            RoR2.SkinDef skindef = RoR2.SkinCatalog.FindCurrentSkinDefForBodyInstance(blinkState.characterBody.gameObject);
-            if (skindef && RecoloredSkinManager.recoloredSkinDefs.TryGetValue(skindef, out RecoloredSkinJson recoloredSkinJson))
-            {
-                Log.Debug("AAA");
-                Material newMat = UnityEngine.Object.Instantiate(overlayMat);
-                Utils.RecolorMaterial(ref newMat, overlayMat, recoloredSkinJson);
-                return newMat;
-            }
-
-            Log.Message("couldnt replace mat");
-            return overlayMat;
+            return skinVFXInfo.ReplacementEffectPrefab;
         });
     }
 
@@ -171,8 +156,10 @@ public class Huntress : SurvivorHookBase
         c.Emit(OpCodes.Ldarg_0);
         c.EmitDelegate<Func<GameObject, EntityStates.Huntress.BlinkState, GameObject>>((blinkPrefab, blinkState) =>
         {
-            SkinVFXInfo skinVFXInfo = SkinVFXManager.FindSkinVFXInfo(blinkState.gameObject, blinkPrefab);
+            SkinVFXInfo skinVFXInfo = SkinVFXManager.FindSkinVFXInfo(blinkState.gameObject, EntityStates.Huntress.BlinkState.blinkPrefab);
 
+            Log.Debug("checking blnk satta");
+            
             if (skinVFXInfo == null)
             {
                 return blinkPrefab;

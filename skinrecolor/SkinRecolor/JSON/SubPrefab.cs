@@ -3,15 +3,28 @@ using System.Collections.Generic;
 
 namespace SkinRecolor;
 
-public class SubPrefab(List<Type> type, List<string> varName, List<varType> varType, List<string> prefabName, bool hasEffectData)
+public class SubPrefab
 {
-    public List<Type> type = type;
-    public List<string> varName = varName;
-    public List<varType> varType = varType;
-    public List<string> prefabName = prefabName;
-    public bool hasEffectData = hasEffectData;
+    public Type varType;
+    public string varName;
+    public varType fieldOrProperty;
+    public string prefabName;
+    public bool hasEffectData;
     public ProjectileGhostJson projectileGhostJson;
     public VFXOverrideJson vfxOverrideJson;
+    
+    public bool Equals(SubPrefab other)
+    {
+        if (other == null)
+            return false;
+        return varType == other?.varType && 
+               varName == other.varName && 
+               fieldOrProperty == other?.fieldOrProperty && 
+               prefabName == other?.prefabName && 
+               hasEffectData == other?.hasEffectData && 
+               projectileGhostJson?.Equals(other?.projectileGhostJson) == true && 
+               vfxOverrideJson?.Equals(other?.vfxOverrideJson) == true;
+    }
 }
 
 public enum varType
