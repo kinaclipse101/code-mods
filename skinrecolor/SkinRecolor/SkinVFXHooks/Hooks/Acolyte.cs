@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using HG.GeneralSerializer;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using On.EntityStates;
@@ -10,6 +11,7 @@ using On.RoR2.Projectile;
 using R2API;
 using SkinRecolor.RecoloredSkins;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
 using Object = System.Object;
 
 namespace SkinRecolor.SkinVFXHooks;
@@ -47,6 +49,38 @@ public class Acolyte : SurvivorHookBase
         return components;
     }
     
+    public override List<VFXOverrideJson> SpecificReskinnedObjects(RecoloredSkinJson recoloredSkinJson)
+    {
+        List<VFXOverrideJson> returnOverrides =
+        [
+            new()
+            {
+                typesAndPaths = [],
+                subPrefabs = [],
+                guid = RoR2BepInExPack.GameAssetPathsBetter.RoR2_DLC4_Acolyte.AcoThrowableVisualizer_prefab,
+                configurationType = "AcolyteSpecific",
+                fieldName = "AcoThrowableVisualizer",
+            }
+        ];
+
+        foreach (var overrideJson in returnOverrides)
+        {
+            var vfxOverride = new VFXOverrideJson()
+            {
+                configurationType = overrideJson.configurationType,
+                fieldName = overrideJson.fieldName,
+                guid = overrideJson.guid,
+                subPrefabs = [],
+                typesAndPaths = []
+            };
+            
+            GhostsFirstLoad.AddSupportedTypes(Addressables.LoadAssetAsync<GameObject>(overrideJson.guid).WaitForCompletion(), vfxOverride.typesAndPaths);
+            recoloredSkinJson.vfxOverrides.Add(vfxOverride);
+        }
+
+        return returnOverrides;
+    }
+    
     public override void Hooks()
     {
         On.EntityStates.Acolyte.Weapon.BaseBladeCombo.OnEnter += BaseBladeComboOnOnEnter;
@@ -82,6 +116,20 @@ public class Acolyte : SurvivorHookBase
                     Material newMat = UnityEngine.Object.Instantiate(smr.material);
                     Utils.RecolorMaterial(ref newMat, smr.material, recoloredSkinJson);
                     smr.material = newMat;
+                    
+                    Transform horns = self.characterBody?.modelLocator?.modelTransform?.Find("mdlAcolyte/horns");
+                    var hornsRenderer = horns.gameObject.GetComponent<SkinnedMeshRenderer>();
+                    hornsRenderer.material = newMat;
+
+                    Transform right = self.characterBody?.modelLocator?.modelTransform?.Find("mdlAcolyte/mdlAcolyteBackpack/right_arm");
+                    var rightRenderer = right.gameObject.GetComponent<SkinnedMeshRenderer>();
+                    rightRenderer.material = newMat;
+
+                    Transform left = self.characterBody?.modelLocator?.modelTransform?.Find("mdlAcolyte/mdlAcolyteBackpack/left_arm");
+                    var leftRenderer = left.gameObject.GetComponent<SkinnedMeshRenderer>();
+                    leftRenderer.material = newMat;
+
+
                 }
             };
         }

@@ -201,11 +201,14 @@ public static class SkinVFXManager
     }
 
     private static Dictionary<EntityStateGameObject, AssetReferenceT<GameObject>> esgoRefs = [];
+    private static Dictionary<SkinDef, GameObject> skinRefs = [];
+
     private static List<GameObject> esgoRefsAppliedSkinObj = [];
     
     public static void ApplyVFXInfo(GameObject gameObject, ref EntityStateGameObject skinObject)
     {
         SkinVFXInfo skinInfo = FindSkinVFXInfo(gameObject, skinObject);
+        SkinDef skinDef = SkinCatalog.FindCurrentSkinDefForBodyInstance(gameObject);
         if (skinInfo?.ReplacementEffectPrefab)
         {
             if (skinObject.addressableReference != null)
@@ -214,12 +217,27 @@ public static class SkinVFXManager
             }
             
             skinObject.SetDirectRef(skinInfo.ReplacementEffectPrefab, true); 
-            esgoRefsAppliedSkinObj.Add(skinInfo.ReplacementEffectPrefab);
+            skinRefs.TryAdd(SkinCatalog.FindCurrentSkinDefForBodyInstance(gameObject), skinInfo.ReplacementEffectPrefab);
         }
-        else if (skinObject.addressableReference == null && !esgoRefsAppliedSkinObj.Contains(skinObject.directReference) && esgoRefs.TryGetValue(skinObject, out var addressableReference))
+        else if (skinObject.addressableReference == null)
         {
-            skinObject.addressableReference = addressableReference;
-            skinObject.directReference = null;
+            if (esgoRefs.TryGetValue(skinObject, out var addressableReference) &&
+                ((skinRefs.TryGetValue(skinDef, out var skinned) && skinned != skinObject.directReference) || !skinRefs.TryGetValue(skinDef, out skinned)))
+            {
+                skinObject.addressableReference = addressableReference;
+                skinObject.directReference = null;
+                
+                skinInfo = FindSkinVFXInfo(gameObject, skinObject);
+                if (skinObject.addressableReference != null)
+                {
+                    esgoRefs.TryAdd(skinObject, skinObject.addressableReference);
+                }
+            
+                skinObject.SetDirectRef(skinInfo.ReplacementEffectPrefab, true); 
+                skinRefs.TryAdd(SkinCatalog.FindCurrentSkinDefForBodyInstance(gameObject), skinInfo.ReplacementEffectPrefab);
+            }
+            
+
         }
     }
     
