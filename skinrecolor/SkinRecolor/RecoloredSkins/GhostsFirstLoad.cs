@@ -141,9 +141,15 @@ public class GhostsFirstLoad
         {
             await addEffect(typeof(EffectManagerHelper), "SELFGAMEOBJECT", effectObject, true);
         }
+        
         if (effectObject.TryGetComponent(out TrailRenderer trailRenderer))
         {
             await addEffect(typeof(TrailRenderer), "SELFGAMEOBJECT", effectObject, true);
+        }
+        
+        if (effectObject.TryGetComponent(out ScaleParticleSystemDuration scaleparticleSystemDuration))
+        {
+            await addEffect(typeof(ScaleParticleSystemDuration), "SELFGAMEOBJECT", effectObject, true);
         }
         
         if (effectObject.TryGetComponent(out ProjectileSingleTargetImpact projectileSingleTargetImpact) && projectileSingleTargetImpact.impactEffect)

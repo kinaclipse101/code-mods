@@ -22,10 +22,13 @@ namespace SkinRecolor
         private const string PluginVersion = "1.0.0";
 
         private static bool UHRInstalled => Chainloader.PluginInfos.ContainsKey("iDeathHD.UnityHotReload");
+
+        public static SkinRecolor instance;
         
         public void Awake()
         {
             Log.Init(Logger);
+            instance = this;
             
             RecoloredSkinManager.Start();
             SkinVFXManager.Hook();

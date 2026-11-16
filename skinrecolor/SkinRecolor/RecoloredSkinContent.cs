@@ -18,8 +18,8 @@ namespace SkinRecolor;
 
 public class RecoloredSkinContent : IContentPackProvider
 {
-    public static Dictionary<RecoloredSkinJson, List<VFXOverride>> vfxOverrides = [];
     public static ContentPack RecoloredSkinContentPack { get; } = new();
+    public static List<EffectDef> tempVFXForRuntimeEdits = [];
 
     public IEnumerator LoadStaticContentAsync(LoadStaticContentAsyncArgs args)
     {
@@ -30,6 +30,14 @@ public class RecoloredSkinContent : IContentPackProvider
             if (recoloredSkinJson.projectileGhosts != null && recoloredSkinJson.vfxOverrides != null)
             {
                 SetVFXDummies(recoloredSkinJson, effectDefs);
+            }
+        }
+
+        foreach (var recoloredSkinVFX in RecoloredSkinManager.vfxJsons)
+        {
+            if(recoloredSkinVFX.vfxOverrides != null)
+            {
+                SetVFXDummies(recoloredSkinVFX, effectDefs);
             }
         }
         
@@ -54,7 +62,7 @@ public class RecoloredSkinContent : IContentPackProvider
         if (jsonBase is VFXOverrideJson vfxJson)
         {
             string prefabName = GetPrefabNameForTemp(recoloredSkinJson, vfxJson, subPrefabPath);
-            GameObject prefabDummyStandin2 = PrefabAPI.CreateEmptyPrefab(prefabName);
+            GameObject prefabDummyStandin2 = new GameObject(prefabName);
             EffectComponent component = prefabDummyStandin2.AddComponent<EffectComponent>();
             EffectDef def = new EffectDef(prefabDummyStandin2);
             effectDefs.Add(def);
@@ -83,7 +91,7 @@ public class RecoloredSkinContent : IContentPackProvider
         {
             var prefab = await Addressables.LoadAssetAsync<GameObject>(vfxJson.guid).Task;
             string prefabName = GetPrefabNameForTemp(recoloredSkinJson, vfxJson, subPrefabPath);
-            GameObject effectPrefab = RecolorEffectPrefab(prefab, prefabName, vfxJson.typesAndPaths, recoloredSkinJson);
+            GameObject effectPrefab = RecolorEffectPrefab(prefab, prefabName, vfxJson, recoloredSkinJson);
             await AddVFXFromJson(recoloredSkinJson, vfxJson, prefab, prefabName, effectPrefab);
         }
         else
@@ -113,7 +121,7 @@ public class RecoloredSkinContent : IContentPackProvider
         Log.Debug($"after subprefab path processing {prefab} from {subPrefabPath} {vfxJson.configurationType} {vfxJson.fieldName}");
      
         string prefabName = GetPrefabNameForTemp(recoloredSkinJson, vfxJson, subPrefabPath);
-        GameObject effectPrefab = RecolorEffectPrefab(prefab, prefabName, vfxJson.typesAndPaths, recoloredSkinJson);
+        GameObject effectPrefab = RecolorEffectPrefab(prefab, prefabName, vfxJson, recoloredSkinJson);
         Log.Debug($"effect prefab {prefab} from {subPrefabPath} {vfxJson.configurationType} {vfxJson.fieldName}");
         await AddVFXFromJson(recoloredSkinJson, vfxJson, prefab, prefabName, effectPrefab);
     }
@@ -138,17 +146,6 @@ public class RecoloredSkinContent : IContentPackProvider
             }
         }
         
-        VFXOverride vfx = new VFXOverride()
-        {
-            jsonOverride = vfxJson,
-            basePrefab = prefab,
-            overridePrefab = effectPrefab
-        };
-        if (vfxOverrides.TryGetValue(recoloredSkinJson, out var vfxList))
-            vfxList.Add(vfx);
-        else
-            vfxOverrides.Add(recoloredSkinJson, [vfx]);
-        
         if (RecoloredSkinManager.skinRecolorsFinished)
         {
             FinishedSkinRecolors();
@@ -171,7 +168,10 @@ public class RecoloredSkinContent : IContentPackProvider
         {
             if (kvp.Value != recoloredSkinJson) continue;
             Log.Debug($"found skin for prefab  1 {prefab} with {effectPrefab} ");
-            SkinVFXManager.AddSkinVFXInfo(kvp.Key, prefab, effectPrefab);
+            if (!SkinVFXManager.AddSkinVFXInfo(kvp.Key, prefab, effectPrefab))
+            {
+                Log.Error($"couldnt replace effect with skin {prefab} with {effectPrefab} ");
+            }
         }
     }
 
@@ -183,20 +183,20 @@ public class RecoloredSkinContent : IContentPackProvider
         
         if (vfxOverrideJson.guid != null)
         {
-            builder.Append(vfxOverrideJson.guid[..8]);
             builder.Append("_");
+            builder.Append(vfxOverrideJson.guid[..8]);
         }
         
         //possible on overrides for specific survs huntress 
         if(vfxOverrideJson.configurationType != null)
         {
-            builder.Append(vfxOverrideJson.configurationType.Split(",")[0]);
             builder.Append("_");
+            builder.Append(vfxOverrideJson.configurationType.Split(",")[0]);
         }
         if(vfxOverrideJson.fieldName != null)
         {
-            builder.Append(vfxOverrideJson.fieldName);
             builder.Append("_");
+            builder.Append(vfxOverrideJson.fieldName);
         }
 
         foreach (var subPrefab in subPrefabs)
@@ -229,11 +229,11 @@ public class RecoloredSkinContent : IContentPackProvider
         return builder.ToString();
     }
 
-    public static GameObject RecolorEffectPrefab(GameObject basePrefab, string prefabName, List<TypeToPath> typesAndPaths, RecoloredSkinJson recoloredSkinJson)
+    public static GameObject RecolorEffectPrefab(GameObject basePrefab, string prefabName, JsonBase jsonBase, RecoloredSkinJson recoloredSkinJson)
     {
         var effectPrefab = basePrefab.InstantiateClone(prefabName, false);
 
-        foreach (TypeToPath typeToPath in typesAndPaths)
+        foreach (TypeToPath typeToPath in jsonBase.typesAndPaths)
         {
             var objectTransform = typeToPath.isChild ? effectPrefab.transform.Find(typeToPath.path) : effectPrefab.transform;
             if (!objectTransform)
@@ -249,6 +249,7 @@ public class RecoloredSkinContent : IContentPackProvider
                 }
             }
             
+            //this code needs to be redone because of freakings captain alt util
             List<Transform> transforms = []; // evil fuckigns arti fireball with same heirarchy trail .,,.
             string childName = typeToPath.path.Split("/")[^1];
             if (typeToPath.isChild)
@@ -271,7 +272,7 @@ public class RecoloredSkinContent : IContentPackProvider
                 var components = individualTransform.GetComponents(typeToPath.type);
                 foreach (var component in components)
                 {
-                    RecolorComponentBehavior(recoloredSkinJson, component, typeToPath, objectTransform);
+                    RecolorComponentBehavior(recoloredSkinJson, component, jsonBase);
                 }
             }
         }
@@ -279,7 +280,7 @@ public class RecoloredSkinContent : IContentPackProvider
         return effectPrefab;
     }
 
-    public static async void RecolorComponentBehavior(RecoloredSkinJson recoloredSkinJson, Component component, TypeToPath typeToPath, Transform objectTransform)
+    public static void RecolorComponentBehavior(RecoloredSkinJson recoloredSkinJson, Component component, JsonBase jsonBase)
     {
         switch (component)
         {

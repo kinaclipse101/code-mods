@@ -20,18 +20,21 @@ public class Lights
 
             foreach (Light light in lights)
             {
-                recoloredSkinJson.lightReplacements.Add(Utils.GetTransformPath(body, light.gameObject).ToString());
+                recoloredSkinJson.lightReplacements.Add(new LightReplacement()
+                {
+                    lightPath = Utils.GetTransformPath(body, light.gameObject).ToString()
+                });
             }
             
             await File.WriteAllTextAsync(RecoloredSkinManager.jsonPath, JsonConvert.SerializeObject(RecoloredSkinManager.skinJsons, Formatting.Indented));
         } 
         
-        foreach (string lightPath in recoloredSkinJson.lightReplacements)
+        foreach (LightReplacement lightReplacement in recoloredSkinJson.lightReplacements)
         {
-            Transform lightObject = body.transform.Find(lightPath);
+            Transform lightObject = body.transform.Find(lightReplacement.lightPath);
             if (!lightObject)
             {
-                Log.Warning("umm bad something went bad " + lightPath);
+                Log.Warning("umm bad something went bad " + lightReplacement.lightPath);
                 continue;
             }
 

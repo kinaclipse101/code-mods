@@ -18,6 +18,7 @@ public static class SkinVFXManager
     {
         { "AcolyteBody", new Acolyte() },
         { "HuntressBody", new Huntress() },
+        { "MercBody", new Merc() },
     };
     
     private static MethodInfo FindSkinVFXBodyToReplacementMethodInfo;
@@ -26,18 +27,6 @@ public static class SkinVFXManager
     private static MethodInfo FindSetHooksMethodInfo;
     private static FieldInfo findCurrentIdentifier;
     private static FieldInfo FindSkinVFXInfos;
-    /* skinVFXInfo.Identifier = nextIdentifier;
-       skinVFXInfos.Add(skinVFXInfo);
-       SkinsPlugin.Logger.LogMessage($"finished !");
-     */
-    /*
-     * private static List<SkinVFXInfo> skinVFXInfos = new List<SkinVFXInfo>();
-       private static bool hooksSet = false;
-       private const uint BaseIdentifier = 24000; // arbitrary, but we shouldn't hit 24,000 unique items for a substantial amount of time.
-       private static uint currentIdentifier = BaseIdentifier;
-       private static uint nextIdentifier => currentIdentifier++;
-
-     */
     
     public static bool AddSkinVFXInfo(SkinDef skinDef, GameObject targetObject, GameObject replacementObject)
     {
@@ -202,9 +191,6 @@ public static class SkinVFXManager
 
     private static Dictionary<EntityStateGameObject, AssetReferenceT<GameObject>> esgoRefs = [];
     private static Dictionary<SkinDef, GameObject> skinRefs = [];
-
-    private static List<GameObject> esgoRefsAppliedSkinObj = [];
-    
     public static void ApplyVFXInfo(GameObject gameObject, ref EntityStateGameObject skinObject)
     {
         SkinVFXInfo skinInfo = FindSkinVFXInfo(gameObject, skinObject);

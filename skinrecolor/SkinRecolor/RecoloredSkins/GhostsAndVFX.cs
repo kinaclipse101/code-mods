@@ -8,7 +8,7 @@ using UnityEngine.AddressableAssets;
 
 namespace SkinRecolor.RecoloredSkins;
 
-public static class GhostsNew
+public static class GhostsAndVFX
 {
     public static async Task ProjectileGhostReplacementsAndVFXOverrides(RecoloredSkinJson recoloredSkinJson, bool dontAdd, GameObject body, SkinDef recoloredSkinDef)
     {
@@ -84,7 +84,7 @@ public static class GhostsNew
             return;
         }
         
-        GameObject ghostPrefab = RecoloredSkinContent.RecolorEffectPrefab(origGhostPrefab, $"jsonGhost_{origGhostPrefab.name}_{recoloredSkinJson.hue}{recoloredSkinJson.saturation}{recoloredSkinJson.value}_{recoloredSkinJson.skinName}", jsonGhost.typesAndPaths, recoloredSkinJson);
+        GameObject ghostPrefab = RecoloredSkinContent.RecolorEffectPrefab(origGhostPrefab, $"jsonGhost_{origGhostPrefab.name}_{recoloredSkinJson.hue}{recoloredSkinJson.saturation}{recoloredSkinJson.value}_{recoloredSkinJson.skinName}", jsonGhost, recoloredSkinJson);
         SkinDefParams.ProjectileGhostReplacement replacement = new SkinDefParams.ProjectileGhostReplacement
         {
             projectilePrefab = prefab,

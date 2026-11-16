@@ -17,23 +17,6 @@ public class Huntress : SurvivorHookBase
 {
     public override string survName => "HuntressBody";
 
-    public override List<BaseSurvivorSpecificComponent> GetSurvivorSpecificComponents(GameObject gameObject)
-    {
-        List<BaseSurvivorSpecificComponent> components = [];
-        
-        // if (gameObject.TryGetComponent(out RoR2.Projectile.AcolyteJavelinProjectile acolyteJavelinProjectile))
-        // {
-        //     if (acolyteJavelinProjectile.explosionEffect)
-        //     {
-        //         components.Add(new BaseSurvivorSpecificComponent(typeof(RoR2.Projectile.AcolyteJavelinProjectile), nameof(acolyteJavelinProjectile.explosionEffect), acolyteJavelinProjectile.explosionEffect));
-        //         components.Add(new BaseSurvivorSpecificComponent(typeof(RoR2.Projectile.AcolyteJavelinProjectile), nameof(acolyteJavelinProjectile.blastImpactEffect), acolyteJavelinProjectile.blastImpactEffect));
-        //         components.Add(new BaseSurvivorSpecificComponent(typeof(RoR2.Projectile.AcolyteJavelinProjectile), nameof(acolyteJavelinProjectile.lifetimeExpiredEffect), acolyteJavelinProjectile.lifetimeExpiredEffect));
-        //     }
-        // }
-
-        return components;
-    }
-
     public override List<VFXOverrideJson> SpecificReskinnedObjects(RecoloredSkinJson recoloredSkinJson)
     {
         List<VFXOverrideJson> returnOverrides =
@@ -128,7 +111,7 @@ public class Huntress : SurvivorHookBase
                 return blinkPrefab;
             }
 
-            Log.Message("aaaa 12");
+            Log.Message("aaaa 12e");
 
             return skinVFXInfo.ReplacementEffectPrefab;
         });
