@@ -6,5 +6,6 @@ namespace SkinRecolor;
 public class LightReplacement
 {
     public string lightPath;
-    public ConfigEntry<Color> recolorConfig;
+    public string configName;
+    public ReplacementHSV specificHSV;
 }

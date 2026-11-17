@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using R2API;
 using R2API.Utils;
+using RiskOfOptions;
+using RiskOfOptions.Options;
 using RoR2;
 using RoR2.ContentManagement;
 using RoR2.Projectile;
@@ -91,7 +93,8 @@ public class RecoloredSkinContent : IContentPackProvider
         {
             var prefab = await Addressables.LoadAssetAsync<GameObject>(vfxJson.guid).Task;
             string prefabName = GetPrefabNameForTemp(recoloredSkinJson, vfxJson, subPrefabPath);
-            GameObject effectPrefab = RecolorEffectPrefab(prefab, prefabName, vfxJson, recoloredSkinJson);
+            
+            GameObject effectPrefab = RecolorEffectPrefab(prefab, prefabName, vfxJson, vfxJson.specificHSV, recoloredSkinJson);
             await AddVFXFromJson(recoloredSkinJson, vfxJson, prefab, prefabName, effectPrefab);
         }
         else
@@ -113,21 +116,26 @@ public class RecoloredSkinContent : IContentPackProvider
     private static async Task WaitForESCAsync(RecoloredSkinJson recoloredSkinJson, List<SubPrefab> subPrefabPath, VFXOverrideJson vfxJson)
     {
         var prefab = await Utils.TryGetPrefabFromESC(vfxJson.configurationType, vfxJson.fieldName);
-        Log.Debug($"got prefab {prefab} from {subPrefabPath} {vfxJson.configurationType} {vfxJson.fieldName}");
+        
         foreach (var subPrefab in subPrefabPath)
         {
             prefab = prefab.GetComponent(subPrefab.varType).GetFieldValue<GameObject>(subPrefab.varName);
         }
-        Log.Debug($"after subprefab path processing {prefab} from {subPrefabPath} {vfxJson.configurationType} {vfxJson.fieldName}");
      
         string prefabName = GetPrefabNameForTemp(recoloredSkinJson, vfxJson, subPrefabPath);
-        GameObject effectPrefab = RecolorEffectPrefab(prefab, prefabName, vfxJson, recoloredSkinJson);
+        GameObject effectPrefab = RecolorEffectPrefab(prefab, prefabName, vfxJson, vfxJson.specificHSV, recoloredSkinJson);
         Log.Debug($"effect prefab {prefab} from {subPrefabPath} {vfxJson.configurationType} {vfxJson.fieldName}");
+        
         await AddVFXFromJson(recoloredSkinJson, vfxJson, prefab, prefabName, effectPrefab);
     }
 
     private static async Task AddVFXFromJson(RecoloredSkinJson recoloredSkinJson, VFXOverrideJson vfxJson, GameObject prefab, string prefabName, GameObject effectPrefab)
     {
+        ModSettingsManager.AddOption(new HSVOption(vfxJson.specificHSV, 
+            vfxJson.configName, 
+            recoloredSkinJson.sectionName, 
+            $"vfx override on base skin .,,. {vfxJson.configName}"));
+        
         Log.Debug($"processing base prefab {prefab} from {vfxJson.configurationType} {vfxJson.fieldName}");
         
         if (effectPrefab.TryGetComponent(out EffectComponent effectComponent))
@@ -217,11 +225,11 @@ public class RecoloredSkinContent : IContentPackProvider
         }
 
         builder.Append("_");
-        builder.Append(recoloredSkinJson.hue);
+        builder.Append(recoloredSkinJson.hsv.hue);
         builder.Append("_");
-        builder.Append(recoloredSkinJson.saturation);
+        builder.Append(recoloredSkinJson.hsv.saturation);
         builder.Append("_");
-        builder.Append(recoloredSkinJson.value);
+        builder.Append(recoloredSkinJson.hsv.value);
         
         builder.Append("_");
         builder.Append(recoloredSkinJson.skinName);
@@ -229,7 +237,7 @@ public class RecoloredSkinContent : IContentPackProvider
         return builder.ToString();
     }
 
-    public static GameObject RecolorEffectPrefab(GameObject basePrefab, string prefabName, JsonBase jsonBase, RecoloredSkinJson recoloredSkinJson)
+    public static GameObject RecolorEffectPrefab(GameObject basePrefab, string prefabName, JsonBase jsonBase, ReplacementHSV replacementHSV, RecoloredSkinJson recoloredSkinJson)
     {
         var effectPrefab = basePrefab.InstantiateClone(prefabName, false);
 
@@ -272,7 +280,7 @@ public class RecoloredSkinContent : IContentPackProvider
                 var components = individualTransform.GetComponents(typeToPath.type);
                 foreach (var component in components)
                 {
-                    RecolorComponentBehavior(recoloredSkinJson, component, jsonBase);
+                    RecolorComponentBehavior(replacementHSV, component, jsonBase, recoloredSkinJson);
                 }
             }
         }
@@ -280,51 +288,51 @@ public class RecoloredSkinContent : IContentPackProvider
         return effectPrefab;
     }
 
-    public static void RecolorComponentBehavior(RecoloredSkinJson recoloredSkinJson, Component component, JsonBase jsonBase)
+    public static void RecolorComponentBehavior(ReplacementHSV replacementHSV, Component component, JsonBase jsonBase, RecoloredSkinJson recoloredSkinJson)
     {
         switch (component)
         {
             case Light light:
-                light.color = Utils.RecolorColor(recoloredSkinJson, light.color);
+                light.color = Utils.RecolorColor(replacementHSV, light.color);
                 break;
                     
             case TrailRenderer trailRenderer:
-                trailRenderer.startColor = Utils.RecolorColor(recoloredSkinJson, trailRenderer.startColor, false);
-                trailRenderer.endColor = Utils.RecolorColor(recoloredSkinJson, trailRenderer.endColor, false);
+                trailRenderer.startColor = Utils.RecolorColor(replacementHSV, trailRenderer.startColor, false);
+                trailRenderer.endColor = Utils.RecolorColor(replacementHSV, trailRenderer.endColor, false);
                 
                 for (int i = 0; i < trailRenderer.colorGradient?.colorKeys?.Length; i++)
                 {
-                    trailRenderer.colorGradient.colorKeys[i].color = Utils.RecolorColor(recoloredSkinJson, trailRenderer.colorGradient.colorKeys[i].color);
+                    trailRenderer.colorGradient.colorKeys[i].color = Utils.RecolorColor(replacementHSV, trailRenderer.colorGradient.colorKeys[i].color);
                 }
 
                 Material recoloredMatTrail = new Material(trailRenderer.material);
-                Utils.RecolorMaterial(ref recoloredMatTrail, trailRenderer.material, recoloredSkinJson, false);
+                Utils.RecolorMaterial(ref recoloredMatTrail, trailRenderer.material, replacementHSV, recoloredSkinJson);
                 trailRenderer.material = recoloredMatTrail;
                 break;
             
             case LineRenderer lineRenderer:
-                lineRenderer.startColor = Utils.RecolorColor(recoloredSkinJson, lineRenderer.startColor, false);
-                lineRenderer.endColor = Utils.RecolorColor(recoloredSkinJson, lineRenderer.endColor, false);
+                lineRenderer.startColor = Utils.RecolorColor(replacementHSV, lineRenderer.startColor, false);
+                lineRenderer.endColor = Utils.RecolorColor(replacementHSV, lineRenderer.endColor, false);
                 
                 for (int i = 0; i < lineRenderer.colorGradient?.colorKeys?.Length; i++)
                 {
-                    lineRenderer.colorGradient.colorKeys[i].color = Utils.RecolorColor(recoloredSkinJson, lineRenderer.colorGradient.colorKeys[i].color, false);
+                    lineRenderer.colorGradient.colorKeys[i].color = Utils.RecolorColor(replacementHSV, lineRenderer.colorGradient.colorKeys[i].color, false);
                 }
 
                 Material recoloredMatLine = new Material(lineRenderer.material);
-                Utils.RecolorMaterial(ref recoloredMatLine, lineRenderer.material, recoloredSkinJson, false);
+                Utils.RecolorMaterial(ref recoloredMatLine, lineRenderer.material, replacementHSV, recoloredSkinJson);
                 lineRenderer.material = recoloredMatLine;
                 break;
                     
             case MeshRenderer meshRenderer:
                 Material recoloredMatMesh = new Material(meshRenderer.material);
-                Utils.RecolorMaterial(ref recoloredMatMesh, meshRenderer.material, recoloredSkinJson, false);
+                Utils.RecolorMaterial(ref recoloredMatMesh, meshRenderer.material, replacementHSV, recoloredSkinJson);
                 meshRenderer.material = recoloredMatMesh;
                 break;
                     
             case SkinnedMeshRenderer skinnedMshRenderer:
                 Material skinnedMecoloredMat = new Material(skinnedMshRenderer.material);
-                Utils.RecolorMaterial(ref skinnedMecoloredMat, skinnedMshRenderer.material, recoloredSkinJson, false);
+                Utils.RecolorMaterial(ref skinnedMecoloredMat, skinnedMshRenderer.material, replacementHSV, recoloredSkinJson);
                 skinnedMshRenderer.material = skinnedMecoloredMat;
                 break;
                     
@@ -333,20 +341,20 @@ public class RecoloredSkinContent : IContentPackProvider
 
                 if (ps.lights.enabled && ps.lights.light)
                 {
-                    ps.lights.light.color = Utils.RecolorColor(recoloredSkinJson, ps.lights.light.color, false);
+                    ps.lights.light.color = Utils.RecolorColor(replacementHSV, ps.lights.light.color, false);
                 }
                 
                 var startColor = main.startColor;
                 switch (startColor.mode)
                 {
                     case ParticleSystemGradientMode.Color:
-                        main.startColor = Utils.RecolorColor(recoloredSkinJson, startColor.color, false);
+                        main.startColor = Utils.RecolorColor(replacementHSV, startColor.color, false);
                         break;
                     case ParticleSystemGradientMode.TwoColors:
                         //Log.Debug($"two color start color on component {component}");
                         //Log.Debug($"prev color 1 {main.startColor.colorMin}");
-                        startColor.colorMin = Utils.RecolorColor(recoloredSkinJson, main.startColor.colorMin, false);
-                        startColor.colorMax = Utils.RecolorColor(recoloredSkinJson, main.startColor.colorMax, false);
+                        startColor.colorMin = Utils.RecolorColor(replacementHSV, main.startColor.colorMin, false);
+                        startColor.colorMax = Utils.RecolorColor(replacementHSV, main.startColor.colorMax, false);
                         main.startColor = startColor;
                         //main.startColor = new ParticleSystem.MinMaxGradient(, Utils.RecolorColor(recoloredSkinJson, main.startColor.colorMax));
                         //Log.Debug($"post color 1 {main.startColor.colorMin}");
@@ -361,7 +369,7 @@ public class RecoloredSkinContent : IContentPackProvider
                             
                             for (int i = 0; i < startColor.gradient.colorKeys.Length; i++)
                             {
-                                colorKeys[i].color = Utils.RecolorColor(recoloredSkinJson, startColor.gradient.colorKeys[i].color, false);
+                                colorKeys[i].color = Utils.RecolorColor(replacementHSV, startColor.gradient.colorKeys[i].color, false);
                             }
                             
                             startColor.gradient.SetKeys(colorKeys, startColor.gradient.alphaKeys);
@@ -373,7 +381,7 @@ public class RecoloredSkinContent : IContentPackProvider
                             
                             for (int i = 0; i < startColor.gradientMin.colorKeys.Length; i++)
                             {
-                                colorKeys[i].color = Utils.RecolorColor(recoloredSkinJson, startColor.gradientMin.colorKeys[i].color, false);
+                                colorKeys[i].color = Utils.RecolorColor(replacementHSV, startColor.gradientMin.colorKeys[i].color, false);
                             }
                             
                             startColor.gradientMin.SetKeys(colorKeys, startColor.gradientMin.alphaKeys);
@@ -385,7 +393,7 @@ public class RecoloredSkinContent : IContentPackProvider
                             
                             for (int i = 0; i < startColor.gradientMax.colorKeys.Length; i++)
                             {
-                                colorKeys[i].color = Utils.RecolorColor(recoloredSkinJson, startColor.gradientMax.colorKeys[i].color, false);
+                                colorKeys[i].color = Utils.RecolorColor(replacementHSV, startColor.gradientMax.colorKeys[i].color, false);
                             }
                             
                             startColor.gradientMax.SetKeys(colorKeys, startColor.gradientMax.alphaKeys);
@@ -399,13 +407,13 @@ public class RecoloredSkinContent : IContentPackProvider
                 switch (colorOverLifetimeColor.mode)
                 {
                     case ParticleSystemGradientMode.Color:
-                        colorOverLifetimeColor.color = Utils.RecolorColor(recoloredSkinJson, colorOverLifetimeColor.color, false);
+                        colorOverLifetimeColor.color = Utils.RecolorColor(replacementHSV, colorOverLifetimeColor.color, false);
                         break;
                     case ParticleSystemGradientMode.TwoColors:
                         //Log.Debug($"two color start color on component {component}");
                         //Log.Debug($"prev color 1 {main.startColor.colorMin}");
-                        colorOverLifetimeColor.colorMin = Utils.RecolorColor(recoloredSkinJson, colorOverLifetimeColor.colorMin, false);
-                        colorOverLifetimeColor.colorMax = Utils.RecolorColor(recoloredSkinJson, colorOverLifetimeColor.colorMax, false);
+                        colorOverLifetimeColor.colorMin = Utils.RecolorColor(replacementHSV, colorOverLifetimeColor.colorMin, false);
+                        colorOverLifetimeColor.colorMax = Utils.RecolorColor(replacementHSV, colorOverLifetimeColor.colorMax, false);
                         colorOverLifetime.color = colorOverLifetimeColor;
                         //colorOverLifetimeColor = startColor;
                         //main.startColor = new ParticleSystem.MinMaxGradient(, Utils.RecolorColor(recoloredSkinJson, main.startColor.colorMax));
@@ -421,7 +429,7 @@ public class RecoloredSkinContent : IContentPackProvider
                             
                             for (int i = 0; i < colorOverLifetimeColor.gradient.colorKeys.Length; i++)
                             {
-                                colorKeys[i].color = Utils.RecolorColor(recoloredSkinJson, colorOverLifetimeColor.gradient.colorKeys[i].color, false);
+                                colorKeys[i].color = Utils.RecolorColor(replacementHSV, colorOverLifetimeColor.gradient.colorKeys[i].color, false);
                             }
                             
                             colorOverLifetimeColor.gradient.SetKeys(colorKeys, colorOverLifetimeColor.gradient.alphaKeys);
@@ -433,7 +441,7 @@ public class RecoloredSkinContent : IContentPackProvider
                             
                             for (int i = 0; i < colorOverLifetimeColor.gradientMin.colorKeys.Length; i++)
                             {
-                                colorKeys[i].color = Utils.RecolorColor(recoloredSkinJson, colorOverLifetimeColor.gradientMin.colorKeys[i].color, false);
+                                colorKeys[i].color = Utils.RecolorColor(replacementHSV, colorOverLifetimeColor.gradientMin.colorKeys[i].color, false);
                             }
                             
                             colorOverLifetimeColor.gradientMin.SetKeys(colorKeys, colorOverLifetimeColor.gradientMin.alphaKeys);
@@ -445,7 +453,7 @@ public class RecoloredSkinContent : IContentPackProvider
                             
                             for (int i = 0; i < colorOverLifetimeColor.gradientMax.colorKeys.Length; i++)
                             {
-                                colorKeys[i].color = Utils.RecolorColor(recoloredSkinJson, colorOverLifetimeColor.gradientMax.colorKeys[i].color, false);
+                                colorKeys[i].color = Utils.RecolorColor(replacementHSV, colorOverLifetimeColor.gradientMax.colorKeys[i].color, false);
                             }
                             
                             colorOverLifetimeColor.gradientMax.SetKeys(colorKeys, colorOverLifetimeColor.gradientMax.alphaKeys);
@@ -460,14 +468,14 @@ public class RecoloredSkinContent : IContentPackProvider
                 if (particleSystemRenderer.material)
                 {
                     Material recoloredMat = new Material(particleSystemRenderer.material);
-                    Utils.RecolorMaterial(ref recoloredMat, particleSystemRenderer.material, recoloredSkinJson);
+                    Utils.RecolorMaterial(ref recoloredMat, particleSystemRenderer.material, replacementHSV, recoloredSkinJson);
                     particleSystemRenderer.material = recoloredMat;
                 }
                 
                 if (particleSystemRenderer.trailMaterial)
                 {
                     Material recoloredMat = new Material(particleSystemRenderer.trailMaterial);
-                    Utils.RecolorMaterial(ref recoloredMat, particleSystemRenderer.trailMaterial, recoloredSkinJson);
+                    Utils.RecolorMaterial(ref recoloredMat, particleSystemRenderer.trailMaterial, replacementHSV, recoloredSkinJson);
                     particleSystemRenderer.trailMaterial = recoloredMat;
                 }
                 break;

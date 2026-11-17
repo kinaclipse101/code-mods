@@ -1,6 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using R2API.Utils;
+using RiskOfOptions;
+using RiskOfOptions.Options;
 using RoR2;
 using RoR2.Projectile;
 using UnityEngine;
@@ -70,21 +72,24 @@ public static class GhostsAndVFX
                 GameObject subPrefabBase = prefab?.GetComponent(subPrefab.varType)?.GetFieldValue<GameObject>(subPrefab.varName);
                 await RecursiveFindGhostsInSubPrefabs(recoloredSkinJson, recoloredSkinDef, subPrefab.vfxOverrideJson, subPrefabBase);
             }
-            
-            
         }
     }
 
     private static async Task AddGhostReplacementFromGhostJson(RecoloredSkinJson recoloredSkinJson, SkinDef recoloredSkinDef, ProjectileGhostJson jsonGhost, GameObject prefab)
     {
-        GameObject origGhostPrefab = jsonGhost.ghostGUID != null ? await Addressables.LoadAssetAsync<GameObject>(jsonGhost.ghostGUID).Task : prefab.GetComponent<ProjectileController>().ghostPrefab;
+        GameObject origGhostPrefab = jsonGhost.guid != null ? await Addressables.LoadAssetAsync<GameObject>(jsonGhost.guid).Task : prefab.GetComponent<ProjectileController>().ghostPrefab;
         if (!origGhostPrefab)
         {
             Log.Error($"error while trying to add ghost replacement for {recoloredSkinJson.baseSkinBody} {jsonGhost.configurationType} {jsonGhost.fieldName}");
             return;
         }
         
-        GameObject ghostPrefab = RecoloredSkinContent.RecolorEffectPrefab(origGhostPrefab, $"jsonGhost_{origGhostPrefab.name}_{recoloredSkinJson.hue}{recoloredSkinJson.saturation}{recoloredSkinJson.value}_{recoloredSkinJson.skinName}", jsonGhost, recoloredSkinJson);
+        Log.Warning("adding option to roo " + jsonGhost.configName);
+        ModSettingsManager.AddOption(new HSVOption(jsonGhost.specificHSV, 
+            jsonGhost.configName, 
+            recoloredSkinJson.sectionName, 
+            $"projectile ghost on base skin .,,."));
+        GameObject ghostPrefab = RecoloredSkinContent.RecolorEffectPrefab(origGhostPrefab, $"jsonGhost_{origGhostPrefab.name}_{recoloredSkinJson.hsv.hue}{recoloredSkinJson.hsv.saturation}{recoloredSkinJson.hsv.value}_{recoloredSkinJson.skinName}", jsonGhost, jsonGhost.specificHSV, recoloredSkinJson);
         SkinDefParams.ProjectileGhostReplacement replacement = new SkinDefParams.ProjectileGhostReplacement
         {
             projectilePrefab = prefab,

@@ -4,13 +4,13 @@ using HG;
 
 namespace SkinRecolor;
 
+//note that  guids for ghostjsons arent particularly guids to the controller, just the ghost skin .,,. 
+// this can be confusing when the configurationtype/fieldname point to the controller while the guid points to the ghost ,..,
 public class ProjectileGhostJson : JsonBase
 {
-    public string ghostGUID;
-
     public bool Equals(ProjectileGhostJson other)
     {
-        return ghostGUID == other.ghostGUID && 
+        return guid == other.guid && 
                 configurationType == other.configurationType &&
                fieldName == other.fieldName && 
                Equals(subPrefabs, other.subPrefabs) &&
@@ -19,6 +19,6 @@ public class ProjectileGhostJson : JsonBase
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(ghostGUID, configurationType, fieldName, subPrefabs, typesAndPaths);
+        return HashCode.Combine(guid, configurationType, fieldName, subPrefabs, typesAndPaths);
     }
 }

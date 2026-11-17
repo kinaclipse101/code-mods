@@ -114,7 +114,8 @@ public class Acolyte : SurvivorHookBase
 
                     var smr = rightHand.gameObject.GetComponent<SkinnedMeshRenderer>();
                     Material newMat = UnityEngine.Object.Instantiate(smr.material);
-                    Utils.RecolorMaterial(ref newMat, smr.material, recoloredSkinJson);
+                    //note to add specific hsv here
+                    Utils.RecolorMaterial(ref newMat, smr.material, recoloredSkinJson.hsv, recoloredSkinJson);
                     smr.material = newMat;
                     
                     Transform horns = self.characterBody?.modelLocator?.modelTransform?.Find("mdlAcolyte/horns");

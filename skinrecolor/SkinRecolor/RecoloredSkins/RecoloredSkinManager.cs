@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using BepInEx;
 using HG;
@@ -23,7 +24,7 @@ public static class RecoloredSkinManager
     public static Dictionary<string, Texture2D> loadedSkinTextures = [];
     public static Dictionary<string, EntityStateConfiguration> escDict = []; // sorry chinchi i lied ,., easier to implement ,..,
     public static Dictionary<SkinDef, RecoloredSkinJson> recoloredSkinDefs = [];
-    public static Dictionary<RecoloredSkinJson, List<SkinDefParams.ProjectileGhostReplacement>> skinJsonsToGhosts = [];
+    public static Dictionary<object, ReplacementHSV> hsvConfigWorkaround = [];
     public static Action finishedSkinRecolors;
     public static bool skinRecolorsFinished;
     
@@ -54,16 +55,31 @@ public static class RecoloredSkinManager
                 skinName = "test",
                 prefix = "",
                 lightReplacements = null,
-                hue = 0,
-                saturation = 0,
-                value = 0,
-                multiplySat = true,
+                hsv = new ReplacementHSV()
+                {
+                    hue = 0,
+                    saturation = 0,
+                    value = 0,
+                    multiplySat = true
+                }
             };
 
             skinJsons.Add(skinJson);
             
             File.WriteAllText(jsonPath, JsonConvert.SerializeObject(skinJsons, Formatting.Indented));
         }
+
+        BodyCatalog.availability.onAvailable += () =>
+        {
+            foreach (var skinJson in skinJsons)
+            {
+                StringBuilder sb = new StringBuilder();
+                sb.Append(Language.GetStringFormatted(BodyCatalog.FindBodyPrefab(skinJson.baseSkinBody).GetComponent<CharacterBody>().baseNameToken, Language.english));
+                sb.Append(" - ");
+                sb.Append(skinJson.skinName);
+                skinJson.sectionName = sb.ToString();
+            }
+        };
 
         foreach (string file in Directory.GetFiles(Paths.PluginPath, "*.vfxjson", SearchOption.AllDirectories))
         {
@@ -154,7 +170,7 @@ public static class RecoloredSkinManager
         try
         {
             Log.Debug($"trying to precache {skinJson.skinName}");
-            string endsWith = $"H{skinJson.hue}S{skinJson.saturation}V{skinJson.value}_{skinJson.baseSkinBody}.png";
+            string endsWith = $"H{skinJson.hsv.hue}S{skinJson.hsv.saturation}V{skinJson.hsv.value}_{skinJson.baseSkinBody}.png";
             string [] fileEntries = Directory.GetFiles(textureDirs, "*.*", SearchOption.AllDirectories);
             foreach (string fileName in fileEntries)
             {

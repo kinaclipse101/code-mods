@@ -93,14 +93,15 @@
 
 		<PackageReference Include="RoR2BepInExPack" Version="1.44.0" />
 
-		<PackageReference Include="Rune580.Mods.RiskOfRain2.RiskOfOptions" Version="2.8.6" />
-
 		<PackageReference Include="xiaoxiao921-UnityHotReload" Version="1.0.1" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <Reference Include="R2API.Skins">
 	    <HintPath>..\libs\R2API.Skins.dll</HintPath>
+	  </Reference>
+	  <Reference Include="RiskOfOptions">
+	    <HintPath>..\libs\RiskOfOptions-nstrip.dll</HintPath>
 	  </Reference>
 	</ItemGroup>
 

@@ -141,7 +141,8 @@ public static class SkinVFXManager
                 if (skinJson.baseSkinBody != survName) continue;
 
                 Material recoloredMat = Object.Instantiate(handle.Result);
-                Utils.RecolorMaterial(ref recoloredMat, handle.Result, skinJson);
+                //note to add specific hsv here
+                Utils.RecolorMaterial(ref recoloredMat, handle.Result, skinJson.hsv, skinJson);
             }
         };
     }
@@ -168,11 +169,10 @@ public static class SkinVFXManager
         {
             foreach (var kvp in recoloredMatDict.recoloredMats)
             {
-                if (material.name.StartsWith(kvp.Key.name))
-                {
-                    material = kvp.Value;
-                    break;
-                }
+                if (!material.name.StartsWith(kvp.Key.name)) continue;
+                
+                material = kvp.Value;
+                break;
             }
         }
     }

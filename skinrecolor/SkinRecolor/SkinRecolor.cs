@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using BepInEx;
 using BepInEx.Bootstrap;
+using BepInEx.Configuration;
 using Newtonsoft.Json;
 using R2API;
 using RoR2;
 using RoR2.ContentManagement;
 using SkinRecolor.RecoloredSkins;
 using UnityEngine;
+using UnityEngine.PlayerLoop;
 
 namespace SkinRecolor
 {
@@ -24,6 +26,7 @@ namespace SkinRecolor
         private static bool UHRInstalled => Chainloader.PluginInfos.ContainsKey("iDeathHD.UnityHotReload");
 
         public static SkinRecolor instance;
+        public static ConfigEntry<bool> effectRecolorCommand;
         
         public void Awake()
         {
@@ -37,6 +40,9 @@ namespace SkinRecolor
             {
                 commands.originalSkinIndex = -1;
             };
+            
+            effectRecolorCommand = Config.Bind("SkinRecolor", "enable testing vfx replacements command (may cause slightly longer startup", false, "");
+            Utils.CheckboxConfig(effectRecolorCommand);
         }
         
         private void Update()

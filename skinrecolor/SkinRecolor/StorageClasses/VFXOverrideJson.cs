@@ -6,8 +6,6 @@ namespace SkinRecolor;
 
 public class VFXOverrideJson : JsonBase
 {
-    public string guid;
-
     public bool Equals(VFXOverrideJson other)
     {
         if (guid == other.guid && guid != null && other.guid != null)

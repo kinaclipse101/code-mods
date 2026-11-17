@@ -73,19 +73,16 @@ public class commands
             skinName = "test" + DateTime.Now,
             prefix = "",
             lightReplacements = null,
-            hue = HSVhue,
-            saturation = HSVsat,
-            value = HSVvalue,
-            multiplySat = multiplySaturation
+            hsv = new ReplacementHSV()
+            {
+                hue = HSVhue,
+                saturation = HSVsat,
+                value = HSVvalue,
+                multiplySat = multiplySaturation
+            }
         };
 
         ApplySkin(skinController, skinJson, args.senderBody);
-        //Array.Resize(ref skinController.skins, skinController.skins.Length + 1);
-        //skinController.skins[^1] = replacementSkin;
-
-        //Array.Resize(ref skinController.skins, skinController.skins.Length - 1);
-        //skinController.skins[^1] = replacementSkin;
-        //Log.Debug("bwaa");
     }
     
     private static async void ApplySkin(ModelSkinController skinController, RecoloredSkinJson skinJson, CharacterBody characterBody)
@@ -93,13 +90,6 @@ public class commands
         try
         {
             SkinDef newSkin = await RecoloredSkinManager.skinRecolor(skinJson, true);
-            // Array.Resize(ref skinController.skins, skinController.skins.Length + 1);
-            // skinController.skins[^1] = newSkin;
-            // skinController.currentSkinIndex = skinController.skins.Length - 1;
-            // characterBody.skinIndex = (uint)(skinController.skins.Length - 1);
-            //
-            // skinController.ApplySkinAsync(skinController.currentSkinIndex, AsyncReferenceHandleUnloadType.OnRunEnd);
-            // skinController.ApplySkin(skinController.currentSkinIndex);
         
             Array.Resize(ref skinController.skins, skinController.skins.Length + 1);
             skinController.skins[^1] = newSkin;
@@ -111,9 +101,6 @@ public class commands
 #pragma warning restore CS0618 // Type or member is obsolete
             
             RoR2.Console.instance.RunCmd(LocalUserManager.GetFirstLocalUser(), "apply_skin", [characterBody.skinIndex.ToString()]);
-
-        
-            //Array.Resize(ref skinController.skins, skinController.skins.Length - 1);
         }
         catch (Exception e)
         {
@@ -186,21 +173,16 @@ public class commands
             skinName = "test",
             prefix = "",
             lightReplacements = null,
-            hue = HSVhue,
-            saturation = HSVsat,
-            value = HSVvalue,
-            multiplySat = multiplySaturation
+            hsv = new ReplacementHSV()
+            {
+                hue = HSVhue,
+                saturation = HSVsat,
+                value = HSVvalue,
+                multiplySat = multiplySaturation
+            }
         };
         
         RecoloredSkinManager.skinJsons.Add(skinJson);
         File.WriteAllText(RecoloredSkinManager.jsonPath, JsonConvert.SerializeObject(RecoloredSkinManager.skinJsons, Formatting.Indented));
-
-        //ApplySkin(skinController, skinJson, args.senderBody);
-        //Array.Resize(ref skinController.skins, skinController.skins.Length + 1);
-        //skinController.skins[^1] = replacementSkin;
-
-        //Array.Resize(ref skinController.skins, skinController.skins.Length - 1);
-        //skinController.skins[^1] = replacementSkin;
-        //Log.Debug("bwaa");
     }
 }

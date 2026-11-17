@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 using HG.GeneralSerializer;
 using RoR2;
 using RoR2.Projectile;
+using RoR2.Skills;
 using SkinRecolor.SkinVFXHooks;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
@@ -61,7 +63,7 @@ public class GhostsFirstLoad
                     }
                     catch (Exception e)
                     {
-                        Log.Error($"uh oh 32 line string value wasnt ghostGUID {field.fieldValue.stringValue}");
+                        Log.Error($"uh oh 32 line string value wasnt guid {field.fieldValue.stringValue}");
                         if (field.fieldValue.objectValue is GameObject value)
                             effectObject = value;
                     }
@@ -104,12 +106,11 @@ public class GhostsFirstLoad
             {
                 foreach (var jsonBase in instanceOverrides)
                 {
-                    if (jsonBase is ProjectileGhostJson projectileGhostJson)
-                    {
-                        Log.Message(effectObject.name + $" had a child projectile prefab ,., parent override ? {jsonBase != null}");
-                        await CheckEffectsAndProjectiles(recoloredSkinJson, recoloredSkinDef, effectObject, esc, field, projectileGhostJson, totalSubPrefabs, totalOverrides, typeof(ProjectileImpactExplosion), nameof(projectileImpactExplosion.childrenProjectilePrefab));
-                        break;
-                    }
+                    if (jsonBase is not ProjectileGhostJson projectileGhostJson) continue;
+                    
+                    Log.Message(effectObject.name + $" had a child projectile prefab ,., parent override ? {jsonBase != null}");
+                    await CheckEffectsAndProjectiles(recoloredSkinJson, recoloredSkinDef, effectObject, esc, field, projectileGhostJson, totalSubPrefabs, totalOverrides, typeof(ProjectileImpactExplosion), nameof(projectileImpactExplosion.childrenProjectilePrefab));
+                    break;
                 }
             }
         }
@@ -243,6 +244,7 @@ public class GhostsFirstLoad
                         }
                 
                         Log.Debug($"adding vfxOverride {prefabObject} {vfxOverride.configurationType} {vfxOverride.fieldName} z!");
+                        await AddConfig(recoloredSkinJson, vfxOverride);
                         totalOverrides.Add(vfxOverride);
                         recoloredSkinJson.vfxOverrides.Add(vfxOverride);
                         instanceOverrides.Add(vfxOverride);
@@ -267,6 +269,7 @@ public class GhostsFirstLoad
                         return;
                     }
                 
+                    await AddConfig(recoloredSkinJson, vfxOverride);
                     totalSubPrefabs.Add(subPrefab);
                     totalOverrides.Add(vfxOverride);
                     parentOverride.subPrefabs.Add(subPrefab);
@@ -285,6 +288,7 @@ public class GhostsFirstLoad
                     }
                 
                     Log.Debug($"adding vfxOverride {prefabObject} {vfxOverride.configurationType} {vfxOverride.fieldName} z!");
+                    await AddConfig(recoloredSkinJson, vfxOverride);
                     totalOverrides.Add(vfxOverride);
                     recoloredSkinJson.vfxOverrides.Add(vfxOverride);
                     instanceOverrides.Add(vfxOverride);
@@ -315,15 +319,15 @@ public class GhostsFirstLoad
             {
                 configurationType = esc.targetType.assemblyQualifiedName,
                 fieldName = field.fieldName,
-                ghostGUID = !projectileControllerGhost.ghostPrefab ? projectileControllerGhost.ghostPrefabAddress?.AssetGUID : null,
+                guid = !projectileControllerGhost.ghostPrefab ? projectileControllerGhost.ghostPrefabAddress?.AssetGUID : null,
                 subPrefabs = [],
                 typesAndPaths = []
             };
 
             GameObject ghostObject;
-            if (projectileGhost.ghostGUID != null)
+            if (projectileGhost.guid != null)
             {
-                ghostObject = await Addressables.LoadAssetAsync<GameObject>(projectileGhost.ghostGUID).Task;
+                ghostObject = await Addressables.LoadAssetAsync<GameObject>(projectileGhost.guid).Task;
             }
             else
             {
@@ -348,6 +352,7 @@ public class GhostsFirstLoad
                     if (parentOverride != null && parentType != null && parentName != null)
                     {
                         AddSupportedTypes(prefabObject, projectileGhost.typesAndPaths);
+                        await AddConfig(recoloredSkinJson, projectileGhost);
                         totalSubPrefabs.Add(subPrefab);
                         totalOverrides.Add(projectileGhost);
                         parentOverride.subPrefabs.Add(subPrefab);
@@ -361,9 +366,10 @@ public class GhostsFirstLoad
                             if(existingOverride is not ProjectileGhostJson existingGhost) continue;
                             if (existingGhost.Equals(projectileGhost) || existingGhost.configurationType == projectileGhost.configurationType && existingGhost.fieldName == field.fieldName)
                             {
-                                Log.Debug($"already had ghost in {projectileGhost.ghostGUID} z! adding as a subprefab to that instead ,.,. ");
+                                Log.Debug($"already had ghost in {projectileGhost.guid} z! adding as a subprefab to that instead ,.,. ");
                                 Log.Debug($"had parent override {parentOverride != null}");
                                 
+                                await AddConfig(recoloredSkinJson, projectileGhost);
                                 totalSubPrefabs.Add(subPrefab);
                                 totalOverrides.Add(projectileGhost);
                                 existingGhost.subPrefabs.Add(subPrefab);
@@ -374,6 +380,7 @@ public class GhostsFirstLoad
                         }
                 
                         Log.Debug($"adding projectile ghost {prefabObject} {projectileGhost.configurationType} {projectileGhost.fieldName} z!");
+                        await AddConfig(recoloredSkinJson, projectileGhost);
                         totalOverrides.Add(projectileGhost);
                         recoloredSkinJson.projectileGhosts.Add(projectileGhost);
                         instanceOverrides.Add(projectileGhost);
@@ -398,6 +405,7 @@ public class GhostsFirstLoad
                     }
                 
                     Log.Debug($"adding subprefab {prefabObject} to parent {parentOverride.configurationType} {parentOverride.fieldName}");
+                    await AddConfig(recoloredSkinJson, projectileGhost);
                     totalSubPrefabs.Add(subPrefab);
                     totalOverrides.Add(projectileGhost);
                     parentOverride.subPrefabs.Add(subPrefab);
@@ -411,11 +419,12 @@ public class GhostsFirstLoad
                         if(existingOverride is not ProjectileGhostJson existingGhost) continue;
                         if (!existingGhost.Equals(projectileGhost)) continue;
                     
-                        Log.Debug($"already had ghost in {projectileGhost.ghostGUID} z!");
+                        Log.Debug($"already had ghost in {projectileGhost.guid} z!");
                         return;
                     }
                 
                     Log.Debug($"adding ghost realllll {prefabObject}");
+                    await AddConfig(recoloredSkinJson, projectileGhost);
                     totalOverrides.Add(projectileGhost);
                     recoloredSkinJson.projectileGhosts.Add(projectileGhost);
                     instanceOverrides.Add(projectileGhost);
@@ -429,15 +438,99 @@ public class GhostsFirstLoad
             }
         }
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
+
+    private static Dictionary<RecoloredSkinJson, List<SkillDef>> skinJsonsToSkills = [];
+    private static Dictionary<RecoloredSkinJson, List<string>> addedConfigNames = [];
+    public static async Task AddConfig(RecoloredSkinJson recoloredSkinJson, JsonBase jsonBase)
+    {
+        if (!skinJsonsToSkills.TryGetValue(recoloredSkinJson, out var skillDefs))
+        {
+            skillDefs = [];
+            CharacterBody body = BodyCatalog.FindBodyPrefab(recoloredSkinJson.baseSkinBody).gameObject.GetComponent<CharacterBody>();
+            foreach (var genericSkill in body.GetComponents<GenericSkill>())
+            {
+                foreach (var skill in genericSkill.skillFamily.variants)
+                {
+                    skillDefs.Add(skill.skillDef);
+                }
+            }
+        }
+        
+        if(!addedConfigNames.TryGetValue(recoloredSkinJson, out var configNames))
+        {
+            configNames = [];
+            addedConfigNames.Add(recoloredSkinJson, configNames);
+        }
+
+        // it shouldnt be !! 
+        if (jsonBase.configName != null) return;
+
+        if (jsonBase.configurationType != null)
+        {
+            string typeName = jsonBase.configurationType.Split(",")[0];
+            StringBuilder builder = new StringBuilder();
+
+            bool foundSkill = false;
+            foreach (var skill in skillDefs)
+            {
+                if (skill.activationState.typeName != typeName) continue;
+                
+                builder.Append(Language.GetStringFormatted(skill.skillNameToken, Language.english));
+                builder.Append(" - ");
+
+                foundSkill = true;
+                break;
+            }
+
+            string configTypeName = typeName.Split(".")[^1];
+            if (!foundSkill)
+            {
+                builder.Append(configTypeName);
+                builder.Append(" - ");
+            }
+            
+            if (jsonBase.guid != null)
+            {
+                GameObject gameObject = await Addressables.LoadAssetAsync<GameObject>(jsonBase.guid).Task;
+                builder.Append(gameObject.name);
+            }
+            else
+            {
+                builder.Append(configTypeName);
+                if (jsonBase.fieldName != null)
+                {
+                    builder.Append(" - ");
+                    builder.Append(jsonBase.fieldName);
+                }
+            }
+
+            while(configNames.Contains(builder.ToString()))
+            {
+                builder.Append(" - Clone");
+            }
+                    
+            jsonBase.configName = builder.ToString();
+        }
+        else
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append("Specific - ");
+            GameObject gameObject = await Addressables.LoadAssetAsync<GameObject>(jsonBase.guid).Task;
+            builder.Append(gameObject.name);
+            
+            while(configNames.Contains(builder.ToString()))
+            {
+                builder.Append(" - Clone");
+            }
+            
+            jsonBase.configName = builder.ToString();
+        }
+
+        configNames.Add(jsonBase.configName);
+        jsonBase.specificHSV = recoloredSkinJson.hsv;
+    }
+
     public static void AddSupportedTypes(GameObject gameObject, List<TypeToPath> typesAndPaths)
     {
         if (!gameObject)

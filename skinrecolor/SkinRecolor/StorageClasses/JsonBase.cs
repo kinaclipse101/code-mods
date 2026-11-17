@@ -6,9 +6,12 @@ namespace SkinRecolor;
 
 public class JsonBase
 {
+    public string guid;
     public string configurationType;
     public string fieldName;
     public List<TypeToPath> typesAndPaths;
     public List<SubPrefab> subPrefabs;
-    public ConfigEntry<Color> recolorConfig;
+
+    public string configName;
+    public ReplacementHSV specificHSV;
 }

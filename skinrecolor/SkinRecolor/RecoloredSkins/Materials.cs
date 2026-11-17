@@ -19,7 +19,8 @@ public static class Materials
             {
                 CharacterModel.RendererInfo renderer = recoloredSkinDef.rendererInfos[i];
                 Material newMat = Object.Instantiate(renderer.defaultMaterial);
-                Utils.RecolorMaterial(ref newMat, renderer.defaultMaterial, recoloredSkinJson, dontAdd);
+                //note to add specific hsv here
+                Utils.RecolorMaterial(ref newMat, renderer.defaultMaterial, recoloredSkinJson.hsv, recoloredSkinJson, dontAdd);
                 renderer.defaultMaterial = newMat;
                 renderer.defaultMaterialAddress = new AssetReferenceT<Material>("");
                 newRenderers[i] = renderer;
@@ -38,7 +39,7 @@ public static class Materials
                     : newParams.rendererInfos[i].defaultMaterial;
                 Material newMat = Object.Instantiate(baseMat);
                 //Log.Debug($"new mat skinName = {newMat.name}");
-                Utils.RecolorMaterial(ref newMat, baseMat, recoloredSkinJson, dontAdd);
+                Utils.RecolorMaterial(ref newMat, baseMat, recoloredSkinJson.hsv, recoloredSkinJson, dontAdd);
                 newParams.rendererInfos[i].defaultMaterial = newMat;
                 newParams.rendererInfos[i].defaultMaterialAddress = new AssetReferenceT<Material>("");
             }

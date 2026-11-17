@@ -7,15 +7,13 @@ namespace SkinRecolor;
 public class RecoloredSkinJson
 {
     public string baseSkinName;
+    public string sectionName;
     public string baseSkinBody;
     
     public string skinName;
     public string prefix;
 
-    public float hue;
-    public float saturation;
-    public float value;
-    public bool multiplySat;
+    public ReplacementHSV hsv;
 
     public List<LightReplacement> lightReplacements;
     public List<ProjectileGhostJson> projectileGhosts;

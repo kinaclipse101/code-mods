@@ -68,18 +68,36 @@ public static class Utils
         ModSettingsManager.AddOption(keyBindOption);
     }
 
+    public static Color RecolorColor(ReplacementHSV hsv, Color color, bool useValue = true)
+    {
+        UnityEngine.Color.RGBToHSV(color, out float h, out float s, out float v);
+        
+        h = (h + hsv.hue / 360f) % 1f;
+        if (h < 0f) h += 1f;
+        if(useValue)
+            v += hsv.value/100f;
+        if (hsv.multiplySat)
+            s *= hsv.saturation;
+        else
+            s += hsv.saturation/100f;
+
+        Color newColor = UnityEngine.Color.HSVToRGB(h, s, v);
+        newColor.a = color.a;
+        return newColor;
+    }
+    
     public static Color RecolorColor(RecoloredSkinJson recoloredSkinJson, Color color, bool useValue = true)
     {
         UnityEngine.Color.RGBToHSV(color, out float h, out float s, out float v);
         
-        h = (h + recoloredSkinJson.hue / 360f) % 1f;
+        h = (h + recoloredSkinJson.hsv.hue / 360f) % 1f;
         if (h < 0f) h += 1f;
         if(useValue)
-            v += recoloredSkinJson.value/100f;
-        if (recoloredSkinJson.multiplySat)
-            s *= recoloredSkinJson.saturation;
+            v += recoloredSkinJson.hsv.value/100f;
+        if (recoloredSkinJson.hsv.multiplySat)
+            s *= recoloredSkinJson.hsv.saturation;
         else
-            s += recoloredSkinJson.saturation/100f;
+            s += recoloredSkinJson.hsv.saturation/100f;
 
         Color newColor = UnityEngine.Color.HSVToRGB(h, s, v);
         newColor.a = color.a;
@@ -103,7 +121,7 @@ public static class Utils
     }
     
     public static Dictionary<RecoloredSkinJson, SkinJsonMats> recoloredMats = [];
-    public static void RecolorMaterial(ref Material recoloredMat, Material origMat, RecoloredSkinJson skinJson, bool dontAdd = false, bool useValue = true)
+    public static void RecolorMaterial(ref Material recoloredMat, Material origMat, ReplacementHSV replacementHSV, RecoloredSkinJson recoloredSkinJson, bool dontAdd = false, bool useValue = true)
     {
         try
         {
@@ -112,10 +130,10 @@ public static class Utils
                 Log.Error("orig mat was null !!");
             }
 
-            if (!recoloredMats.TryGetValue(skinJson, out var jsonMats))
+            if (!recoloredMats.TryGetValue(recoloredSkinJson, out var jsonMats))
             {
-                jsonMats = new SkinJsonMats(skinJson);
-                recoloredMats.Add(skinJson, jsonMats);
+                jsonMats = new SkinJsonMats(recoloredSkinJson);
+                recoloredMats.Add(recoloredSkinJson, jsonMats);
             }
             
             if (origMat && jsonMats.recoloredMats.ContainsKey(origMat))
@@ -125,47 +143,47 @@ public static class Utils
                 return;
             }
             
-            Log.Debug($"recoloring mat {origMat.name} on skinjson {skinJson.baseSkinBody}");
+            Log.Debug($"recoloring mat {origMat.name} on skinjson {recoloredSkinJson.baseSkinBody}");
             
             if (recoloredMat.HasTexture(MainTex) && recoloredMat.GetTexture(MainTex))
-                RecolorTexture(recoloredMat, MainTex, skinJson, dontAdd, useValue);
+                RecolorTexture(recoloredMat, MainTex, recoloredSkinJson, replacementHSV, dontAdd, useValue);
         
             if (recoloredMat.HasTexture(EmTex) && recoloredMat.GetTexture(EmTex))
-                RecolorTexture(recoloredMat, EmTex, skinJson, dontAdd, useValue);
+                RecolorTexture(recoloredMat, EmTex, recoloredSkinJson, replacementHSV, dontAdd, useValue);
         
             if (recoloredMat.HasTexture(RemapTex) && recoloredMat.GetTexture(RemapTex))
-                RecolorTexture(recoloredMat, RemapTex, skinJson, dontAdd, useValue);
+                RecolorTexture(recoloredMat, RemapTex, recoloredSkinJson, replacementHSV, dontAdd, useValue);
         
             if (recoloredMat.HasTexture(FresnelRamp) && recoloredMat.GetTexture(FresnelRamp))
-                RecolorTexture(recoloredMat, FresnelRamp, skinJson, dontAdd, useValue);
+                RecolorTexture(recoloredMat, FresnelRamp, recoloredSkinJson, replacementHSV, dontAdd, useValue);
             
             if (recoloredMat.HasTexture(MatCapTexture) && recoloredMat.GetTexture(MatCapTexture))
-                RecolorTexture(recoloredMat, MatCapTexture, skinJson, dontAdd, useValue);
+                RecolorTexture(recoloredMat, MatCapTexture, recoloredSkinJson, replacementHSV, dontAdd, useValue);
             if (recoloredMat.HasTexture(PrimaryMistTexture) && recoloredMat.GetTexture(PrimaryMistTexture))
-                RecolorTexture(recoloredMat, PrimaryMistTexture, skinJson, dontAdd, useValue);
+                RecolorTexture(recoloredMat, PrimaryMistTexture, recoloredSkinJson, replacementHSV, dontAdd, useValue);
             if (recoloredMat.HasTexture(SecondaryMistTexture) && recoloredMat.GetTexture(SecondaryMistTexture))
-                RecolorTexture(recoloredMat, SecondaryMistTexture, skinJson, dontAdd, useValue);
+                RecolorTexture(recoloredMat, SecondaryMistTexture, recoloredSkinJson, replacementHSV, dontAdd, useValue);
             if (recoloredMat.HasTexture(CausticsTextureA) && recoloredMat.GetTexture(CausticsTextureA))
-                RecolorTexture(recoloredMat, CausticsTextureA, skinJson, dontAdd, useValue);
+                RecolorTexture(recoloredMat, CausticsTextureA, recoloredSkinJson, replacementHSV, dontAdd, useValue);
             if (recoloredMat.HasTexture(CausticsTextureB) && recoloredMat.GetTexture(CausticsTextureB))
-                RecolorTexture(recoloredMat, CausticsTextureB, skinJson, dontAdd, useValue);
+                RecolorTexture(recoloredMat, CausticsTextureB, recoloredSkinJson, replacementHSV, dontAdd, useValue);
             if (recoloredMat.HasTexture(PrintRamp) && recoloredMat.GetTexture(PrintRamp))
-                RecolorTexture(recoloredMat, PrintRamp, skinJson, dontAdd, useValue);
+                RecolorTexture(recoloredMat, PrintRamp, recoloredSkinJson, replacementHSV, dontAdd, useValue);
             
-            TryRecolorColor(recoloredMat, Color, skinJson, useValue);
-            TryRecolorColor(recoloredMat, EmColor, skinJson, useValue);
-            TryRecolorColor(recoloredMat, TintColor, skinJson, useValue);
-            TryRecolorColor(recoloredMat, WireframeColor, skinJson, useValue);
-            TryRecolorColor(recoloredMat, VertColor, skinJson, useValue);
-            TryRecolorColor(recoloredMat, MainColor, skinJson, useValue);
-            TryRecolorColor(recoloredMat, GlowColor, skinJson, useValue);
-            TryRecolorColor(recoloredMat, MatCapColor, skinJson, useValue);
-            TryRecolorColor(recoloredMat, PrimaryColor, skinJson, useValue);
-            TryRecolorColor(recoloredMat, SecondaryColor, skinJson, useValue);
-            TryRecolorColor(recoloredMat, CausticsColor, skinJson, useValue);
-            TryRecolorColor(recoloredMat, FresnelColor, skinJson, useValue);
-            TryRecolorColor(recoloredMat, InnerGlowColor, skinJson, useValue);
-            TryRecolorColor(recoloredMat, FlashColor, skinJson, useValue);
+            TryRecolorColor(recoloredMat, Color, replacementHSV, useValue);
+            TryRecolorColor(recoloredMat, EmColor, replacementHSV, useValue);
+            TryRecolorColor(recoloredMat, TintColor, replacementHSV, useValue);
+            TryRecolorColor(recoloredMat, WireframeColor, replacementHSV, useValue);
+            TryRecolorColor(recoloredMat, VertColor, replacementHSV, useValue);
+            TryRecolorColor(recoloredMat, MainColor, replacementHSV, useValue);
+            TryRecolorColor(recoloredMat, GlowColor, replacementHSV, useValue);
+            TryRecolorColor(recoloredMat, MatCapColor, replacementHSV, useValue);
+            TryRecolorColor(recoloredMat, PrimaryColor, replacementHSV, useValue);
+            TryRecolorColor(recoloredMat, SecondaryColor, replacementHSV, useValue);
+            TryRecolorColor(recoloredMat, CausticsColor, replacementHSV, useValue);
+            TryRecolorColor(recoloredMat, FresnelColor, replacementHSV, useValue);
+            TryRecolorColor(recoloredMat, InnerGlowColor, replacementHSV, useValue);
+            TryRecolorColor(recoloredMat, FlashColor, replacementHSV, useValue);
             
             jsonMats.recoloredMats.Add(origMat, recoloredMat);
         }
@@ -176,22 +194,22 @@ public static class Utils
         }
     }
 
-    private static async Task RecolorTexture(Material mat, int nameID, RecoloredSkinJson skinJson, bool dontAdd, bool useValue = true)
+    private static async Task RecolorTexture(Material mat, int nameID, RecoloredSkinJson skinJson, ReplacementHSV replacementHSV, bool dontAdd, bool useValue = true)
     {
-        mat.SetTexture(nameID, await hsvModifyTexture(mat.GetTexture(nameID) as Texture2D, skinJson, dontAdd, useValue));
+        mat.SetTexture(nameID, await hsvModifyTexture(mat.GetTexture(nameID) as Texture2D, skinJson, replacementHSV, dontAdd, useValue));
     }
     
-    private static void TryRecolorColor(Material mat, int nameID, RecoloredSkinJson recoloredSkinJson, bool useValue = true)
+    private static void TryRecolorColor(Material mat, int nameID, ReplacementHSV replacementHSV, bool useValue = true)
     {
         if (!mat.HasColor(nameID)) return;
-        mat.SetColor(nameID, RecolorColor(recoloredSkinJson, mat.GetColor(nameID), useValue));
+        mat.SetColor(nameID, RecolorColor(replacementHSV, mat.GetColor(nameID), useValue));
     }
 
     public static string bwTexturesSaved = Path.Combine(Path.GetDirectoryName(Paths.BepInExConfigPath)!, "skintextures", "bwTextures.json");
     public static List<string> bwTextures = [];
-    public static async Task<Texture2D> hsvModifyTexture(Texture2D texture, RecoloredSkinJson skinJson, bool dontExport = false, bool useValue = true)
+    public static async Task<Texture2D> hsvModifyTexture(Texture2D texture, RecoloredSkinJson skinJson, ReplacementHSV replacementHSV, bool dontExport = false, bool useValue = true)
     {
-        string textureFileName = $"{texture.name}_RecolorH{skinJson.hue}S{skinJson.saturation}V{skinJson.value}_{skinJson.baseSkinBody}.png";
+        string textureFileName = $"{texture.name}_RecolorH{skinJson.hsv.hue}S{skinJson.hsv.saturation}V{skinJson.hsv.value}_{skinJson.baseSkinBody}.png";
         string texturePath = Path.Combine(RecoloredSkinManager.textureDirs, textureFileName);
         Texture2D returnTexture;
         
@@ -235,7 +253,7 @@ public static class Utils
                 }
                 
                 Color pixelColor = texPixels[i];
-                Color newColor = RecolorColor(skinJson, pixelColor, useValue);
+                Color newColor = RecolorColor(replacementHSV, pixelColor, useValue);
                 newColor.a = pixelColor.a;
                 texPixels[i] = newColor;
             }

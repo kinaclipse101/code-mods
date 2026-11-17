@@ -17,9 +17,7 @@ public static class Icons
         newIcon.SetPixels(pixels);
         newIcon.Apply();
         
-        Texture2D newTexture = await Utils.hsvModifyTexture(newIcon, 
-            recoloredSkinJson, 
-            dontAdd);
+        Texture2D newTexture = await Utils.hsvModifyTexture(newIcon, recoloredSkinJson, recoloredSkinJson.hsv, dontAdd);
             
         Sprite newIconSprite = Sprite.Create(newTexture, new Rect(0, 0, newTexture.width, newTexture.height), new Vector2(newTexture.width / 2, newTexture.height / 2));
         recoloredSkinDef.icon = newIconSprite;
