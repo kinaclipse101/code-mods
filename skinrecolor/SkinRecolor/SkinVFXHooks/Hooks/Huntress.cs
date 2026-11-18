@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using HG.GeneralSerializer;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
@@ -17,7 +18,7 @@ public class Huntress : SurvivorHookBase
 {
     public override string survName => "HuntressBody";
 
-    public override List<VFXOverrideJson> SpecificReskinnedObjects(RecoloredSkinJson recoloredSkinJson)
+    public override async Task<List<VFXOverrideJson>> SpecificReskinnedObjects(RecoloredSkinJson recoloredSkinJson)
     {
         List<VFXOverrideJson> returnOverrides =
         [
@@ -65,7 +66,7 @@ public class Huntress : SurvivorHookBase
 
         foreach (var overrideJson in returnOverrides)
         {
-            GhostsFirstLoad.CheckEffectsAndProjectiles(recoloredSkinJson, null, Addressables.LoadAssetAsync<GameObject>(overrideJson.guid).WaitForCompletion(), null, new SerializedField(), null, [], [..recoloredSkinJson.vfxOverrides]);
+            GhostsFirstLoad.CheckEffectsAndProjectiles(recoloredSkinJson,  await Addressables.LoadAssetAsync<GameObject>(overrideJson.guid).Task, null, new SerializedField(), null, [], [..recoloredSkinJson.vfxOverrides]);
         }
 
         return returnOverrides;

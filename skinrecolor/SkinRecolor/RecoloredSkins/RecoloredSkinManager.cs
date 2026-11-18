@@ -6,8 +6,10 @@ using System.Threading.Tasks;
 using BepInEx;
 using HG;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Utilities;
 using R2API;
 using RoR2;
+using SkinRecolor.SkinManager;
 using SkinRecolor.SkinVFXHooks;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -69,18 +71,6 @@ public static class RecoloredSkinManager
             File.WriteAllText(jsonPath, JsonConvert.SerializeObject(skinJsons, Formatting.Indented));
         }
 
-        BodyCatalog.availability.onAvailable += () =>
-        {
-            foreach (var skinJson in skinJsons)
-            {
-                StringBuilder sb = new StringBuilder();
-                sb.Append(Language.GetStringFormatted(BodyCatalog.FindBodyPrefab(skinJson.baseSkinBody).GetComponent<CharacterBody>().baseNameToken, Language.english));
-                sb.Append(" - ");
-                sb.Append(skinJson.skinName);
-                skinJson.sectionName = sb.ToString();
-            }
-        };
-
         foreach (string file in Directory.GetFiles(Paths.PluginPath, "*.vfxjson", SearchOption.AllDirectories))
         {
             try
@@ -99,9 +89,40 @@ public static class RecoloredSkinManager
                 Log.Error(e);
             }
         }
+        
+        BodyCatalog.availability.onAvailable += () =>
+        {
+            foreach (var skinJson in skinJsons)
+            {
+                GameObject bodyPrefab = BodyCatalog.FindBodyPrefab(skinJson.baseSkinBody);
+                if (!bodyPrefab) continue;
+                
+                StringBuilder sb = new StringBuilder();
+                sb.Append(Language.GetStringFormatted(bodyPrefab.GetComponent<CharacterBody>().baseNameToken, Language.english));
+                sb.Append(" - ");
+                sb.Append(skinJson.skinName);
+                skinJson.sectionName = sb.ToString();
+            }
+            
+            foreach (var skinJson in vfxJsons)
+            {
+                GameObject bodyPrefab = BodyCatalog.FindBodyPrefab(skinJson.baseSkinBody);
+                if (!bodyPrefab) continue;
+                
+                StringBuilder sb = new StringBuilder();
+                sb.Append(Language.GetStringFormatted(bodyPrefab.GetComponent<CharacterBody>().baseNameToken, Language.english));
+                sb.Append(" - ");
+                sb.Append(skinJson.skinName);
+                skinJson.sectionName = sb.ToString();
+            }
+        };
 
-        cacheCount = skinJsons.Count;
+        cacheCount = skinJsons.Count + vfxJsons.Count;
         foreach (var skin in skinJsons)
+        {
+            TryLoadRelatedTextures(skin);
+        }
+        foreach (var skin in vfxJsons)
         {
             TryLoadRelatedTextures(skin);
         }
@@ -118,11 +139,9 @@ public static class RecoloredSkinManager
     {
         try
         {
-            string [] fileEntries = Directory.GetFiles(textureDirs, "*.*", SearchOption.AllDirectories);
+            string [] fileEntries = Directory.GetFiles(textureDirs, "*_BW.png", SearchOption.AllDirectories);
             foreach (string fileName in fileEntries)
             {
-                if (!fileName.EndsWith("_BW.png")) continue;
-            
                 byte[] bytes = await File.ReadAllBytesAsync(fileName);
                 Texture2D returnTexture = new Texture2D(2, 2);
                 returnTexture.LoadImage(bytes);
@@ -144,6 +163,26 @@ public static class RecoloredSkinManager
         {
             string target = esc.targetType.assemblyQualifiedName;
             foreach (var skinJson in skinJsons)
+            {
+                if(skinJson.projectileGhosts != null)
+                    foreach (var ghostJson in skinJson.projectileGhosts)
+                    {
+                        if (target != null && target == ghostJson.configurationType)
+                        {
+                            escDict.TryAdd(target, esc);
+                        }
+                    }
+                if(skinJson.vfxOverrides != null)
+                    foreach (var vfxOverrideJson in skinJson.vfxOverrides)
+                    {
+                        if (target != null && target == vfxOverrideJson.configurationType)
+                        {
+                            escDict.TryAdd(target, esc);
+                        }
+                    }
+            }
+            
+            foreach (var skinJson in vfxJsons)
             {
                 if(skinJson.projectileGhosts != null)
                     foreach (var ghostJson in skinJson.projectileGhosts)
@@ -199,19 +238,29 @@ public static class RecoloredSkinManager
     private static int skinCount;
     private static void AvailabilityOnonAvailable()
     {
-        skinCount = skinJsons.Count;
+        skinCount = skinJsons.Count + vfxJsons.Count;
         foreach (RecoloredSkinJson recoloredSkinJson in skinJsons)
         {
             skinRecolor(recoloredSkinJson);
         }
+        
+        foreach (RecoloredSkinJson recoloredSkinJson in vfxJsons)
+        {
+            skinRecolor(recoloredSkinJson);
+        }
     }
+
+    private static List<SkinDef> replacedSkins = [];
     
-    public static async Task<SkinDef> skinRecolor(RecoloredSkinJson recoloredSkinJson, bool dontAdd = false)
+    public static async Task<SkinDef> skinRecolor(RecoloredSkinJson recoloredSkinJson, SkinDef skinDef = null, bool dontAdd = false, GameObject body = null)
     {
         try
         {
             //load model skin controller and get original skin ,..
-            GameObject body = BodyCatalog.FindBodyPrefab(recoloredSkinJson.baseSkinBody);
+            if (body == null)
+            {
+                body = BodyCatalog.FindBodyPrefab(recoloredSkinJson.baseSkinBody);
+            }
             ModelSkinController skinController = Utils.GetModelLocator(body);
             if (!skinController)
             {
@@ -232,19 +281,46 @@ public static class RecoloredSkinManager
                 Log.Warning("couldnt find originalSkin on " + recoloredSkinJson.baseSkinBody);
                 return null;
             }
-            
-            SkinDef recoloredSkinDef = Object.Instantiate(originalSkin);
-            
-            //await SkinManager.Icons.IconReplacement(recoloredSkinJson, dontAdd, recoloredSkinDef);
 
+            if (recoloredSkinJson.replaceSkin)
+            {
+                if (!replacedSkins.Contains(originalSkin))
+                {
+                    replacedSkins.Add(originalSkin);
+                }
+                else
+                {
+                    Log.Error("skin was already replaced !!! ummm .,,. exiting !!");
+                    return null;
+                }
+            }
+
+            SkinDef recoloredSkinDef;
+            if (recoloredSkinJson.replaceSkin)
+            {
+                recoloredSkinDef = Object.Instantiate(originalSkin);  //originalSkin;
+            }
+            else
+            {
+                if (skinDef != null)
+                {
+                    recoloredSkinDef = skinDef;
+                }
+                else
+                {
+                    recoloredSkinDef = Object.Instantiate(originalSkin);
+                }
+            }
+            
+            await Materials.LoadSkinDefParams(recoloredSkinDef, originalSkin);
+            //await SkinManager.Icons.IconReplacement(recoloredSkinJson, dontAdd, recoloredSkinDef);
+            Log.Debug("abc 2");
+            await SkinManager.Lights.LightReplacements(recoloredSkinJson, recoloredSkinDef, body, dontAdd);
+            
             await SkinManager.Materials.MeshMatReplacements(recoloredSkinJson, dontAdd, recoloredSkinDef, originalSkin, body);
             
-            await SkinManager.Lights.LightReplacements(recoloredSkinJson, recoloredSkinDef, body);
-
-            if (!dontAdd)
-            {
-                await GhostsAndVFX.ProjectileGhostReplacementsAndVFXOverrides(recoloredSkinJson, dontAdd, body, recoloredSkinDef);
-            }
+            Log.Debug("abc 3");
+            await GhostsAndVFX.ProjectileGhostReplacementsAndVFXOverrides(recoloredSkinJson, dontAdd, body, recoloredSkinDef);
             
             string internalName = recoloredSkinJson.skinName.Replace(" ", "");
             recoloredSkinDef.name = recoloredSkinDef.name.Replace("(Clone)", "");
@@ -255,43 +331,39 @@ public static class RecoloredSkinManager
 
             if (!dontAdd)
             {
-                HG.ArrayUtils.ArrayAppend(ref skinController.skins, recoloredSkinDef);
-                HG.ArrayUtils.ArrayAppend(ref SkinCatalog.allSkinDefs, recoloredSkinDef);
-                HG.ArrayUtils.ArrayAppend(ref SkinCatalog.skinsByBody[(int)BodyCatalog.nameToIndexMap[recoloredSkinJson.baseSkinBody]], recoloredSkinDef);
+                if (recoloredSkinJson.replaceSkin)
+                {
+                    Log.Debug($"replacing skin {originalSkin.name}");
+                    recoloredSkinDef.BakeAsync();
+                    if (SurvivorCatalog.availability.available)
+                    {
+                        ModelSkinController displaySkins = SurvivorCatalog.FindSurvivorDefFromBody(body)?.displayPrefab?.transform.GetChild(0)?.GetComponent<ModelSkinController>();
+                        if (displaySkins) 
+                            displaySkins.skins[displaySkins.skins.IndexOf(def => def == originalSkin)] = recoloredSkinDef;
+                    }
+                    else
+                    {
+                        SurvivorCatalog.availability.onAvailable += () =>
+                        {
+                            ModelSkinController displaySkins = SurvivorCatalog.FindSurvivorDefFromBody(body)?.displayPrefab?.transform.GetChild(0)?.GetComponent<ModelSkinController>();
+                            if (displaySkins) 
+                                displaySkins.skins[displaySkins.skins.IndexOf(def => def == originalSkin)] = recoloredSkinDef;
+                        };
+                    }
+                    skinController.skins[skinController.skins.IndexOf(def => def == originalSkin)] = recoloredSkinDef;
+                    SkinCatalog.allSkinDefs[SkinCatalog.allSkinDefs.IndexOf(def => def == originalSkin)] = recoloredSkinDef;
+                    SkinCatalog.skinsByBody[(int)BodyCatalog.nameToIndexMap[recoloredSkinJson.baseSkinBody]][SkinCatalog.skinsByBody[(int)BodyCatalog.nameToIndexMap[recoloredSkinJson.baseSkinBody]].IndexOf(def => def == originalSkin)] = recoloredSkinDef;
+                }
+                else
+                {
+                    HG.ArrayUtils.ArrayAppend(ref skinController.skins, recoloredSkinDef);
+                    HG.ArrayUtils.ArrayAppend(ref SkinCatalog.allSkinDefs, recoloredSkinDef);
+                    HG.ArrayUtils.ArrayAppend(ref SkinCatalog.skinsByBody[(int)BodyCatalog.nameToIndexMap[recoloredSkinJson.baseSkinBody]], recoloredSkinDef);
+                }
             }
             
             Log.Debug($"added {recoloredSkinJson.skinName} to {recoloredSkinJson.baseSkinBody} !!!!");
-            recoloredSkinDefs.Add(recoloredSkinDef, recoloredSkinJson);
-            
-            // if (RecoloredSkinContent.vfxOverrides.TryGetValue(recoloredSkinJson, out var vfxOverride))
-            // {
-            //     foreach (var vfx in vfxOverride)
-            //     {
-            //         Log.Debug($"Added override: {recoloredSkinJson.baseSkinName} - {vfx.basePrefab}");
-            //         SkinVFX.AddSkinVFX(recoloredSkinDef, vfx.basePrefab, vfx.overridePrefab);
-            //     }
-            // };
-
-            /*if (recoloredSkinJson.vfxOverrides != null)
-            {
-                foreach (var jsonOverride in recoloredSkinJson.vfxOverrides)
-                {
-                    if (vfxOverride != null)
-                    {
-                        bool skipAdding = false;
-                        foreach (var vfx in vfxOverride)
-                        {
-                            if (vfx.jsonOverride != jsonOverride) continue;
-                            skipAdding = true;
-                            break;
-                        }
-                        if(skipAdding)
-                            continue;
-                    }
-                
-                    SkinManager.VFX.AddVFXOverride(recoloredSkinJson, jsonOverride, recoloredSkinDef);
-                }
-            }*/
+            recoloredSkinDefs.TryAdd(recoloredSkinDef, recoloredSkinJson);
             
             skinCount--;
             if (skinCount == 0)

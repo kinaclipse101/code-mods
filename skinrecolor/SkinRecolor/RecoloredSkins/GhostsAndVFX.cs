@@ -16,18 +16,26 @@ public static class GhostsAndVFX
     {
         if (recoloredSkinJson.vfxOverrides == null || recoloredSkinJson.projectileGhosts == null)
         {
-            await GhostsFirstLoad.HandleFirstLoad(recoloredSkinJson, dontAdd, body, recoloredSkinDef);
+            await GhostsFirstLoad.HandleFirstLoad(recoloredSkinJson, body);
         }
 
-        await SetProjectileGhostReplacements(recoloredSkinJson, dontAdd, recoloredSkinDef);
+        Log.Debug($"setting ghostts .,., {recoloredSkinDef.skinDefParams == null}");
+        if (dontAdd)
+        {
+            await SetProjectileGhostReplacements(recoloredSkinJson, recoloredSkinDef, dontAdd);
+        }
+        else
+        {
+            SetProjectileGhostReplacements(recoloredSkinJson, recoloredSkinDef, dontAdd);
+        }
     }
     
-    private static async Task SetProjectileGhostReplacements(RecoloredSkinJson recoloredSkinJson, bool dontAdd, SkinDef recoloredSkinDef)
+    private static async Task SetProjectileGhostReplacements(RecoloredSkinJson recoloredSkinJson, SkinDef recoloredSkinDef, bool dontAdd)
     {
         recoloredSkinDef.skinDefParams.projectileGhostReplacements = [];
         foreach (var jsonGhost in recoloredSkinJson.projectileGhosts)
         {
-            await RecursiveFindGhostsInSubPrefabs(recoloredSkinJson, recoloredSkinDef, jsonGhost, await Utils.TryGetPrefabFromESC(jsonGhost.configurationType, jsonGhost.fieldName));
+            await RecursiveFindGhostsInSubPrefabs(recoloredSkinJson, recoloredSkinDef, jsonGhost, await Utils.TryGetPrefabFromESC(jsonGhost.configurationType, jsonGhost.fieldName), dontAdd);
         }
         foreach (var jsonGhost in recoloredSkinJson.vfxOverrides)
         {
@@ -37,45 +45,54 @@ public static class GhostsAndVFX
             else
                 prefab = await Utils.TryGetPrefabFromESC(jsonGhost.configurationType, jsonGhost.fieldName);
             
-            await RecursiveFindGhostsInSubPrefabs(recoloredSkinJson, recoloredSkinDef, jsonGhost, prefab);
+            await RecursiveFindGhostsInSubPrefabs(recoloredSkinJson, recoloredSkinDef, jsonGhost, prefab, dontAdd);
         }
     }
 
-    private static async Task RecursiveFindGhostsInSubPrefabs(RecoloredSkinJson recoloredSkinJson, SkinDef recoloredSkinDef, JsonBase jsonBase, GameObject prefab)
+    private static async Task RecursiveFindGhostsInSubPrefabs(RecoloredSkinJson recoloredSkinJson, SkinDef recoloredSkinDef, JsonBase jsonBase, GameObject prefab, bool dontAdd)
     {
-        if (jsonBase is ProjectileGhostJson projectileGhostJson)
+        try
         {
-            await AddGhostReplacementFromGhostJson(recoloredSkinJson, recoloredSkinDef, projectileGhostJson, prefab);
-        }
-        
-        foreach (var subPrefab in jsonBase.subPrefabs)
-        {
-            if (subPrefab.projectileGhostJson != null)
+            if (jsonBase is ProjectileGhostJson projectileGhostJson)
             {
-                Log.Debug($"getting {subPrefab.varType} from {prefab.name} with ame {subPrefab.varName}");
-                GameObject subPrefabBase = prefab?.GetComponent(subPrefab.varType)?.GetFieldValue<GameObject>(subPrefab.varName);
-                Log.Debug($"new ghost json gkdfg d {subPrefabBase}");
+                Log.Debug($"adding ghost {jsonBase}");
+                await AddGhostReplacementFromGhostJson(recoloredSkinJson, recoloredSkinDef, projectileGhostJson, prefab, dontAdd);
+            }
         
-                if (subPrefabBase)
+            foreach (var subPrefab in jsonBase.subPrefabs)
+            {
+                if (subPrefab.projectileGhostJson != null)
                 {
-                    Log.Debug($"found subprefab {subPrefabBase.name} on {prefab.name} {subPrefab.varName} {subPrefab.varType}");
-                    await RecursiveFindGhostsInSubPrefabs(recoloredSkinJson, recoloredSkinDef, subPrefab.projectileGhostJson, subPrefabBase);
+                    Log.Debug($"getting {subPrefab.varType} from {prefab?.name} with ame {subPrefab.varName}");
+                    GameObject subPrefabBase = prefab?.GetComponent(subPrefab.varType)?.GetFieldValue<GameObject>(subPrefab.varName);
+                    Log.Debug($"new ghost json gkdfg d {subPrefabBase}");
+        
+                    if (subPrefabBase)
+                    {
+                        Log.Debug($"found subprefab {subPrefabBase.name} on {prefab.name} {subPrefab.varName} {subPrefab.varType}");
+                        await RecursiveFindGhostsInSubPrefabs(recoloredSkinJson, recoloredSkinDef, subPrefab.projectileGhostJson, subPrefabBase, dontAdd);
+                    }
+                    else
+                    {
+                        Log.Error($"couldnt get subprefab obj in {subPrefab.projectileGhostJson.configurationType} {subPrefab.projectileGhostJson.fieldName}");
+                    }
                 }
-                else
-                {
-                    Log.Error($"couldnt get subprefab obj in {subPrefab.projectileGhostJson.configurationType} {subPrefab.projectileGhostJson.fieldName}");
-                }
-            };
 
-            if (subPrefab.vfxOverrideJson != null)
-            {
-                GameObject subPrefabBase = prefab?.GetComponent(subPrefab.varType)?.GetFieldValue<GameObject>(subPrefab.varName);
-                await RecursiveFindGhostsInSubPrefabs(recoloredSkinJson, recoloredSkinDef, subPrefab.vfxOverrideJson, subPrefabBase);
+                if (subPrefab.vfxOverrideJson != null)
+                {
+                    GameObject subPrefabBase = prefab?.GetComponent(subPrefab.varType)?.GetFieldValue<GameObject>(subPrefab.varName);
+                    await RecursiveFindGhostsInSubPrefabs(recoloredSkinJson, recoloredSkinDef, subPrefab.vfxOverrideJson, subPrefabBase, dontAdd);
+                }
             }
         }
+        catch (Exception e)
+        {
+            Log.Error("error while recursvie find ghost ");
+            Log.Error(e);
+        }
     }
 
-    private static async Task AddGhostReplacementFromGhostJson(RecoloredSkinJson recoloredSkinJson, SkinDef recoloredSkinDef, ProjectileGhostJson jsonGhost, GameObject prefab)
+    private static async Task AddGhostReplacementFromGhostJson(RecoloredSkinJson recoloredSkinJson, SkinDef recoloredSkinDef, ProjectileGhostJson jsonGhost, GameObject prefab, bool dontAdd)
     {
         GameObject origGhostPrefab = jsonGhost.guid != null ? await Addressables.LoadAssetAsync<GameObject>(jsonGhost.guid).Task : prefab.GetComponent<ProjectileController>().ghostPrefab;
         if (!origGhostPrefab)
@@ -84,11 +101,14 @@ public static class GhostsAndVFX
             return;
         }
         
-        Log.Warning("adding option to roo " + jsonGhost.configName);
-        ModSettingsManager.AddOption(new HSVOption(jsonGhost.specificHSV, 
-            jsonGhost.configName, 
-            recoloredSkinJson.sectionName, 
-            $"projectile ghost on base skin .,,."));
+        if(!dontAdd)
+        {
+            Log.Warning("adding option to roo " + jsonGhost.configName);
+            ModSettingsManager.AddOption(new HSVOption(jsonGhost.specificHSV,
+                jsonGhost.configName,
+                recoloredSkinJson.sectionName,
+                $"projectile ghost on base skin .,,."));
+        }
         GameObject ghostPrefab = RecoloredSkinContent.RecolorEffectPrefab(origGhostPrefab, $"jsonGhost_{origGhostPrefab.name}_{recoloredSkinJson.hsv.hue}{recoloredSkinJson.hsv.saturation}{recoloredSkinJson.hsv.value}_{recoloredSkinJson.skinName}", jsonGhost, jsonGhost.specificHSV, recoloredSkinJson);
         SkinDefParams.ProjectileGhostReplacement replacement = new SkinDefParams.ProjectileGhostReplacement
         {

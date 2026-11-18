@@ -23,10 +23,10 @@ public static class SkinVFXManager
     
     private static MethodInfo FindSkinVFXBodyToReplacementMethodInfo;
     private static MethodInfo FindSkinVFXEffectUintMethodInfo;
-    private static MethodInfo FindEffectIndexesMethodInfo;
+    public static MethodInfo FindEffectIndexesMethodInfo;
     private static MethodInfo FindSetHooksMethodInfo;
-    private static FieldInfo findCurrentIdentifier;
-    private static FieldInfo FindSkinVFXInfos;
+    public static FieldInfo findCurrentIdentifier;
+    public static FieldInfo FindSkinVFXInfos;
     
     public static bool AddSkinVFXInfo(SkinDef skinDef, GameObject targetObject, GameObject replacementObject)
     {

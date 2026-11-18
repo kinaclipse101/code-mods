@@ -35,10 +35,11 @@ namespace SkinRecolor
             
             RecoloredSkinManager.Start();
             SkinVFXManager.Hook();
+            Commands.Hook();
             //start loading vfx here rather than content addition so you can async 
             RoR2.Run.onRunStartGlobal += run =>
             {
-                commands.originalSkinIndex = -1;
+                Commands.originalSkinIndex = -1;
             };
             
             effectRecolorCommand = Config.Bind("SkinRecolor", "enable testing vfx replacements command (may cause slightly longer startup", false, "");

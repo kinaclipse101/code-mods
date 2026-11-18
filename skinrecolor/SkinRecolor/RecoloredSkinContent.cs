@@ -42,6 +42,23 @@ public class RecoloredSkinContent : IContentPackProvider
                 SetVFXDummies(recoloredSkinVFX, effectDefs);
             }
         }
+
+        if (SkinRecolor.effectRecolorCommand.Value)
+        {
+            for (int i = 0; i < 100; i++)
+            {
+                StringBuilder sb = new StringBuilder();
+                sb.Append("dummystandineffect");
+                sb.Append(i);
+                
+                GameObject prefabDummyStandin2 = new GameObject(sb.ToString());
+                prefabDummyStandin2.AddComponent<EffectComponent>();
+                EffectDef def = new EffectDef(prefabDummyStandin2);
+                Object.DontDestroyOnLoad(prefabDummyStandin2);
+                prefabDummyStandin2.SetActive(false);
+                effectDefs.Add(def);
+            }
+        }
         
         RecoloredSkinContentPack.effectDefs.Add(effectDefs.ToArray());
         yield break;
@@ -65,14 +82,16 @@ public class RecoloredSkinContent : IContentPackProvider
         {
             string prefabName = GetPrefabNameForTemp(recoloredSkinJson, vfxJson, subPrefabPath);
             GameObject prefabDummyStandin2 = new GameObject(prefabName);
-            EffectComponent component = prefabDummyStandin2.AddComponent<EffectComponent>();
+            prefabDummyStandin2.AddComponent<EffectComponent>();
             EffectDef def = new EffectDef(prefabDummyStandin2);
+            Object.DontDestroyOnLoad(prefabDummyStandin2);
+            prefabDummyStandin2.SetActive(false);
             effectDefs.Add(def);
             Log.Debug($"added standin prefab to catalog {prefabName}");
 
             EffectCatalog.availability.onAvailable += () =>
             {
-                CreateVFX(recoloredSkinJson, subPrefabPath, vfxJson);
+                CreateVFX(recoloredSkinJson, subPrefabPath, vfxJson, prefabName);
             };
         }
         
@@ -85,35 +104,35 @@ public class RecoloredSkinContent : IContentPackProvider
                 RecursiveFindVFXInSubPrefabsDummy(recoloredSkinJson, subPrefab.vfxOverrideJson, subPrefabPath, effectDefs);
         }
     }
- 
 
-    private static async Task CreateVFX(RecoloredSkinJson recoloredSkinJson, List<SubPrefab> subPrefabPath, VFXOverrideJson vfxJson)
+
+    public static async Task CreateVFX(RecoloredSkinJson recoloredSkinJson, List<SubPrefab> subPrefabPath, VFXOverrideJson vfxJson, string prefabName, bool dontAdd = false)
     {
         if (vfxJson.guid != null)
         {
+            Log.Debug(vfxJson.guid);
+            Log.Debug(vfxJson.specificHSV);
             var prefab = await Addressables.LoadAssetAsync<GameObject>(vfxJson.guid).Task;
-            string prefabName = GetPrefabNameForTemp(recoloredSkinJson, vfxJson, subPrefabPath);
-            
             GameObject effectPrefab = RecolorEffectPrefab(prefab, prefabName, vfxJson, vfxJson.specificHSV, recoloredSkinJson);
-            await AddVFXFromJson(recoloredSkinJson, vfxJson, prefab, prefabName, effectPrefab);
+            await AddVFXFromJson(recoloredSkinJson, vfxJson, prefab, prefabName, effectPrefab, dontAdd);
         }
         else
         {
             if (EntityStateCatalog.availability.available)
             {
-                WaitForESCAsync(recoloredSkinJson, subPrefabPath, vfxJson);
+                WaitForESCAsync(recoloredSkinJson, subPrefabPath, vfxJson, prefabName, dontAdd);
             }
             else
             {
                 EntityStateCatalog.availability.onAvailable += () =>
                 {
-                    WaitForESCAsync(recoloredSkinJson, subPrefabPath, vfxJson);
+                    WaitForESCAsync(recoloredSkinJson, subPrefabPath, vfxJson, prefabName, dontAdd);
                 };
             }
         }
     }
 
-    private static async Task WaitForESCAsync(RecoloredSkinJson recoloredSkinJson, List<SubPrefab> subPrefabPath, VFXOverrideJson vfxJson)
+    private static async Task WaitForESCAsync(RecoloredSkinJson recoloredSkinJson, List<SubPrefab> subPrefabPath, VFXOverrideJson vfxJson, string prefabName, bool dontAdd)
     {
         var prefab = await Utils.TryGetPrefabFromESC(vfxJson.configurationType, vfxJson.fieldName);
         
@@ -122,19 +141,21 @@ public class RecoloredSkinContent : IContentPackProvider
             prefab = prefab.GetComponent(subPrefab.varType).GetFieldValue<GameObject>(subPrefab.varName);
         }
      
-        string prefabName = GetPrefabNameForTemp(recoloredSkinJson, vfxJson, subPrefabPath);
         GameObject effectPrefab = RecolorEffectPrefab(prefab, prefabName, vfxJson, vfxJson.specificHSV, recoloredSkinJson);
         Log.Debug($"effect prefab {prefab} from {subPrefabPath} {vfxJson.configurationType} {vfxJson.fieldName}");
         
-        await AddVFXFromJson(recoloredSkinJson, vfxJson, prefab, prefabName, effectPrefab);
+        await AddVFXFromJson(recoloredSkinJson, vfxJson, prefab, prefabName, effectPrefab, dontAdd);
     }
 
-    private static async Task AddVFXFromJson(RecoloredSkinJson recoloredSkinJson, VFXOverrideJson vfxJson, GameObject prefab, string prefabName, GameObject effectPrefab)
+    private static async Task AddVFXFromJson(RecoloredSkinJson recoloredSkinJson, VFXOverrideJson vfxJson, GameObject prefab, string prefabName, GameObject effectPrefab, bool dontAdd)
     {
-        ModSettingsManager.AddOption(new HSVOption(vfxJson.specificHSV, 
-            vfxJson.configName, 
-            recoloredSkinJson.sectionName, 
-            $"vfx override on base skin .,,. {vfxJson.configName}"));
+        if (!dontAdd)
+        {
+            ModSettingsManager.AddOption(new HSVOption(vfxJson.specificHSV, 
+                vfxJson.configName, 
+                recoloredSkinJson.sectionName, 
+                $"vfx override on base skin .,,. {vfxJson.configName}"));
+        }
         
         Log.Debug($"processing base prefab {prefab} from {vfxJson.configurationType} {vfxJson.fieldName}");
         
@@ -144,7 +165,7 @@ public class RecoloredSkinContent : IContentPackProvider
             {
                 effectComponent.effectIndex = effectIndex;
                 EffectDef def = EffectCatalog.GetEffectDef(effectIndex);
-                Object.Destroy(def.prefab);
+                Object.Destroy(def._prefabAssetOrDirectReference.directRef);
                 def.prefab = effectPrefab;
                 Log.Message($"replaced prefab {prefab} with {effectPrefab} !!");
             }
@@ -175,10 +196,15 @@ public class RecoloredSkinContent : IContentPackProvider
         foreach (var kvp in RecoloredSkinManager.recoloredSkinDefs)
         {
             if (kvp.Value != recoloredSkinJson) continue;
+            
             Log.Debug($"found skin for prefab  1 {prefab} with {effectPrefab} ");
             if (!SkinVFXManager.AddSkinVFXInfo(kvp.Key, prefab, effectPrefab))
             {
                 Log.Error($"couldnt replace effect with skin {prefab} with {effectPrefab} ");
+            }
+            else
+            {
+                Log.Debug($"added skinvfx to {kvp.Key} {prefab.name} {effectPrefab.name}");
             }
         }
     }

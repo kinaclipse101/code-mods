@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using R2API;
 using RoR2;
 using RoR2.AsyncManagement;
@@ -21,7 +22,7 @@ public class SurvivorHookBase
         return [];
     }
     
-    public virtual List<VFXOverrideJson> SpecificReskinnedObjects(RecoloredSkinJson recoloredSkinJson)
+    public virtual async Task<List<VFXOverrideJson>> SpecificReskinnedObjects(RecoloredSkinJson recoloredSkinJson)
     {
         return [];
     }

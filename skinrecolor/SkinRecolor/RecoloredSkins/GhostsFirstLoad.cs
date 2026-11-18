@@ -14,14 +14,14 @@ namespace SkinRecolor.RecoloredSkins;
 
 public class GhostsFirstLoad
 {
-    public static async Task HandleFirstLoad(RecoloredSkinJson recoloredSkinJson, bool dontAdd, GameObject body, SkinDef recoloredSkinDef)
+    public static async Task HandleFirstLoad(RecoloredSkinJson recoloredSkinJson, GameObject body)
     {
         recoloredSkinJson.vfxOverrides = [];
         recoloredSkinJson.projectileGhosts = [];
         
         if (SkinVFXManager.survivorHooks.TryGetValue(recoloredSkinJson.baseSkinBody, out SurvivorHookBase survivorHook))
         {
-            survivorHook.SpecificReskinnedObjects(recoloredSkinJson);
+            await survivorHook.SpecificReskinnedObjects(recoloredSkinJson);
         }
         
         Log.Warning($"finding new vfx/ghosts for skin {recoloredSkinJson.skinName}");
@@ -45,6 +45,7 @@ public class GhostsFirstLoad
             return;
         }
     
+        Log.Debug($"looking for internal nale {internalName}");
         //get all objects relating to survivor
         foreach (var esc in RoR2.ContentManagement.ContentManager.entityStateConfigurations)
         {
@@ -73,13 +74,13 @@ public class GhostsFirstLoad
                     effectObject = value;
                 }
                 
-                Log.Debug($"checking effect {effectObject}");
-                await CheckEffectsAndProjectiles(recoloredSkinJson, recoloredSkinDef, effectObject, esc, field, null, [], [..recoloredSkinJson.vfxOverrides]);
+                Log.Debug($"checking effect {effectObject?.name}");
+                await CheckEffectsAndProjectiles(recoloredSkinJson, effectObject, esc, field, null, [], [..recoloredSkinJson.vfxOverrides]);
             }
         }
     }
 
-    public static async Task CheckEffectsAndProjectiles(RecoloredSkinJson recoloredSkinJson, SkinDef recoloredSkinDef, GameObject effectObject, EntityStateConfiguration esc, SerializedField field, JsonBase parentOverride, List<SubPrefab> totalSubPrefabs, List<JsonBase> totalOverrides, Type parentType = null, string parentName = null)
+    public static async Task CheckEffectsAndProjectiles(RecoloredSkinJson recoloredSkinJson, GameObject effectObject, EntityStateConfiguration esc, SerializedField field, JsonBase parentOverride, List<SubPrefab> totalSubPrefabs, List<JsonBase> totalOverrides, Type parentType = null, string parentName = null)
     {
         if (!effectObject) return;
         
@@ -109,7 +110,7 @@ public class GhostsFirstLoad
                     if (jsonBase is not ProjectileGhostJson projectileGhostJson) continue;
                     
                     Log.Message(effectObject.name + $" had a child projectile prefab ,., parent override ? {jsonBase != null}");
-                    await CheckEffectsAndProjectiles(recoloredSkinJson, recoloredSkinDef, effectObject, esc, field, projectileGhostJson, totalSubPrefabs, totalOverrides, typeof(ProjectileImpactExplosion), nameof(projectileImpactExplosion.childrenProjectilePrefab));
+                    await CheckEffectsAndProjectiles(recoloredSkinJson, effectObject, esc, field, projectileGhostJson, totalSubPrefabs, totalOverrides, typeof(ProjectileImpactExplosion), nameof(projectileImpactExplosion.childrenProjectilePrefab));
                     break;
                 }
             }
@@ -297,7 +298,7 @@ public class GhostsFirstLoad
                 if (effectObject != prefabObject)
                 {
                     Log.Debug($"iterating again from vfx ,., using {prefabObject.name } from {effectObject?.name} as a base now !! ");
-                    await CheckEffectsAndProjectiles(recoloredSkinJson, recoloredSkinDef, prefabObject, esc, field, vfxOverride, totalSubPrefabs, totalOverrides, type, varName);
+                    await CheckEffectsAndProjectiles(recoloredSkinJson, prefabObject, esc, field, vfxOverride, totalSubPrefabs, totalOverrides, type, varName);
                 }
             }
             
@@ -433,7 +434,7 @@ public class GhostsFirstLoad
                 if (ghostObject != prefabObject)
                 {
                     Log.Debug($"iterating again from ghost ,., using {ghostObject?.name} as a base now !! ");
-                    await CheckEffectsAndProjectiles(recoloredSkinJson, recoloredSkinDef, ghostObject, esc, field, projectileGhost, totalSubPrefabs, totalOverrides, type, varName);
+                    await CheckEffectsAndProjectiles(recoloredSkinJson, ghostObject, esc, field, projectileGhost, totalSubPrefabs, totalOverrides, type, varName);
                 }
             }
         }

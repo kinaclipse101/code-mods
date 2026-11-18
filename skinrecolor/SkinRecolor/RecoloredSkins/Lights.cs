@@ -15,7 +15,7 @@ namespace SkinRecolor.SkinManager;
 public class Lights
 {
     // add edge case for light replacements already existing on target skin
-    public static async Task LightReplacements(RecoloredSkinJson recoloredSkinJson, SkinDef recoloredSkinDef, GameObject body)
+    public static async Task LightReplacements(RecoloredSkinJson recoloredSkinJson, SkinDef recoloredSkinDef, GameObject body, bool dontAdd)
     {
         bool addedROO = false;
         if (recoloredSkinJson.lightReplacements == null)
@@ -61,11 +61,14 @@ public class Lights
                 lightReplacement.specificHSV = recoloredSkinJson.hsv;
                 
                 //RecoloredSkinManager.hsvConfigWorkaround.TryAdd(lightReplacement, recoloredSkinJson.hsv);
-                Log.Warning("adding option to roo " + lightReplacement.configName);
-                ModSettingsManager.AddOption(new HSVOption(lightReplacement.specificHSV, 
-                    lightReplacement.configName, 
-                    recoloredSkinJson.sectionName, 
-                    $"light override on base skin .,,. path {lightReplacement.lightPath}"));
+                if(!dontAdd)
+                {
+                    Log.Warning("adding option to roo " + lightReplacement.configName);
+                    ModSettingsManager.AddOption(new HSVOption(lightReplacement.specificHSV,
+                        lightReplacement.configName,
+                        recoloredSkinJson.sectionName,
+                        $"light override on base skin .,,. path {lightReplacement.lightPath}"));
+                }
                 addedROO = true;
                 
                 recoloredSkinJson.lightReplacements.Add(lightReplacement);
@@ -91,10 +94,14 @@ public class Lights
             if (!addedROO)
             {
                 Log.Warning("adding option to roo " + lightReplacement.configName);
-                ModSettingsManager.AddOption(new HSVOption(lightReplacement.specificHSV, 
-                    lightReplacement.configName, 
-                    recoloredSkinJson.sectionName, 
-                    $"light override on base skin .,,. path {lightReplacement.lightPath}"));
+                if(!dontAdd)
+                {
+                    Log.Warning("adding option to roo " + lightReplacement.configName);
+                    ModSettingsManager.AddOption(new HSVOption(lightReplacement.specificHSV,
+                        lightReplacement.configName,
+                        recoloredSkinJson.sectionName,
+                        $"light override on base skin .,,. path {lightReplacement.lightPath}"));
+                }
             }
             
             

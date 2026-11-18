@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using UnityEngine;
 
 namespace SkinRecolor;
 
@@ -10,6 +11,20 @@ public class ReplacementHSV
     public float value;
 
     public bool multiplySat;
+
+    public bool SameAsOriginal()
+    {
+        if (hue == 0 && saturation == 0 && value == 0 && !multiplySat)
+        {
+            return true;
+        }
+        if (hue == 0 && Mathf.Approximately(saturation, 1) && value == 0 && multiplySat)
+        {
+            return true;
+        }
+        
+        return false;
+    }
 
     public override string ToString()
     {

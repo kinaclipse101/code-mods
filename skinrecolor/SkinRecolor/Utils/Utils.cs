@@ -77,7 +77,7 @@ public static class Utils
         if(useValue)
             v += hsv.value/100f;
         if (hsv.multiplySat)
-            s *= hsv.saturation;
+            s *= hsv.saturation/100f;
         else
             s += hsv.saturation/100f;
 
@@ -114,6 +114,16 @@ public static class Utils
         return null;
     }
 
+    public static List<Transform> GetObjectsFromPath<Transform>(GameObject parent, string path)
+    {
+        foreach (var VARIABLE in path.Split("/"))
+        {
+            
+        }
+
+        return null;
+    }
+    
     public class SkinJsonMats(RecoloredSkinJson skinJson)
     {
         public Dictionary<Material, Material> recoloredMats = [];
@@ -156,6 +166,9 @@ public static class Utils
         
             if (recoloredMat.HasTexture(FresnelRamp) && recoloredMat.GetTexture(FresnelRamp))
                 RecolorTexture(recoloredMat, FresnelRamp, recoloredSkinJson, replacementHSV, dontAdd, useValue);
+            
+            if (recoloredMat.HasTexture(FlowRamp) && recoloredMat.GetTexture(FlowRamp))
+                RecolorTexture(recoloredMat, FlowRamp, recoloredSkinJson, replacementHSV, dontAdd, useValue);
             
             if (recoloredMat.HasTexture(MatCapTexture) && recoloredMat.GetTexture(MatCapTexture))
                 RecolorTexture(recoloredMat, MatCapTexture, recoloredSkinJson, replacementHSV, dontAdd, useValue);
@@ -440,6 +453,7 @@ public static class Utils
     private static readonly int CausticsTextureA = Shader.PropertyToID("_CausticsTextureA");
     private static readonly int CausticsTextureB = Shader.PropertyToID("_CausticsTextureB");
     private static readonly int PrintRamp = Shader.PropertyToID("_PrintRamp");
+    private static readonly int FlowRamp = Shader.PropertyToID("_FlowHeightRamp");
     
     private static readonly int MainColor = Shader.PropertyToID("_MainColor");
     private static readonly int GlowColor = Shader.PropertyToID("_GlowColor");

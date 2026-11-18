@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
+using HG;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using On.EntityStates;
 using R2API;
+using RiskOfOptions.Options;
 using RoR2;
 using RoR2.AsyncManagement;
 using RoR2.Orbs;
@@ -18,6 +20,7 @@ using CharacterModel = On.RoR2.CharacterModel;
 using GenericDamageOrb = On.RoR2.Orbs.GenericDamageOrb;
 using Object = UnityEngine.Object;
 using OrbEffect = On.RoR2.Orbs.OrbEffect;
+using ProjectileGhostReplacementManager = On.RoR2.ProjectileGhostReplacementManager;
 using ProjectileManager = On.RoR2.Projectile.ProjectileManager;
 using TemporaryOverlayInstance = On.RoR2.TemporaryOverlayInstance;
 
@@ -27,6 +30,9 @@ public static class Generic
 {
     public static void Hook()
     {
+        Harmony harmony = new Harmony(SkinRecolor.instance.Info.Metadata.GUID);
+        harmony.CreateClassProcessor(typeof(ROOFixNRE)).Patch(); // lma ,..o.
+        
         IL.RoR2.Projectile.ProjectileExplosion.DetonateServer += ProjectileImpactExplosionOnDetonate;
         IL.RoR2.OverlapAttack.ProcessHits += OverlapAttackSkinned;
         On.RoR2.Projectile.ProjectileSingleTargetImpact.OnProjectileImpact += ProjectileSingleTargetImpactOnOnProjectileImpact;
@@ -38,6 +44,53 @@ public static class Generic
         On.RoR2.TemporaryOverlayInstance.AddToCharacterModel += TemporaryOverlayInstanceOnAddToCharacterModel;
         On.EntityStates.GenericBulletBaseState.OnEnter += GenericBulletBaseStateOnOnEnter;
         IL.RoR2.Orbs.GenericDamageOrb.Begin += GenericDamageOrbOnBegin; // r2api skins has a hook here too but they dont replace start/end effects <//3 .,,
+        //On.RoR2.ProjectileGhostReplacementManager.TryFindProjectileGhostPrefab += ProjectileGhostReplacementManagerOnTryFindProjectileGhostPrefab;
+    }
+
+    [HarmonyPatch]
+    public class ROOFixNRE
+    {
+        [HarmonyPatch(typeof(StringInputFieldOption), "ValueChanged")]
+        [HarmonyPrefix]
+        public static bool StringInputFieldOptionPrefix(StringInputFieldOption __instance, bool __result)
+        {
+            if (__instance is not HSVOption hsvOption) return true;
+            
+            __result = !string.Equals(hsvOption.replacementHSV.ToString(), __instance.originalValue, StringComparison.InvariantCulture);
+            return false;
+
+        }
+    }
+
+    private static bool ProjectileGhostReplacementManagerOnTryFindProjectileGhostPrefab(ProjectileGhostReplacementManager.orig_TryFindProjectileGhostPrefab orig, ProjectileController projectileController, out GameObject ghostResult, out AssetReferenceT<GameObject> ghostReference)
+    {
+        ghostResult = null;
+        ghostReference = null;
+        if (!projectileController.owner || !projectileController.owner.TryGetComponent<CharacterBody>(out var component))
+        {
+            Log.Debug("1");
+            return false;
+        }
+        SkinDef bodySkinDef = SkinCatalog.GetBodySkinDef(component.bodyIndex, (int)component.skinIndex);
+        if (!bodySkinDef)
+        {
+            Log.Debug($"{SkinCatalog.skinsByBody[(int)component.bodyIndex][(int)component.skinIndex].name}");
+            return false;
+        }
+        ReadOnlyArray<SkinDef.GhostReplacementTemplate> ghostReplacementTemplates = bodySkinDef.runtimeSkin.ghostReplacementTemplates;
+        for (int i = 0; i < ghostReplacementTemplates.Length; i++)
+        {
+            SkinDef.GhostReplacementTemplate ghostReplacementTemplate = ghostReplacementTemplates[(Index)i];
+            if (ghostReplacementTemplate.projectileIndex == projectileController.catalogIndex && (bool)ghostReplacementTemplate.ghostReference.Result)
+            {
+                ghostResult = ghostReplacementTemplate.ghostReference.Result;
+                ghostReference = ghostReplacementTemplate.ghostReference.address;
+                Log.Debug("3");
+                return true;
+            }
+        }
+        Log.Debug("4");
+        return false;
     }
 
     private static void GenericDamageOrbOnBegin(ILContext il)

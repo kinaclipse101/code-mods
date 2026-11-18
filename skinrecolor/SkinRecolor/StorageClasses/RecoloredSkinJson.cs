@@ -14,7 +14,9 @@ public class RecoloredSkinJson
     public string prefix;
 
     public ReplacementHSV hsv;
+    public bool replaceSkin;
 
+    public List<MatReplacement> matReplacements;
     public List<LightReplacement> lightReplacements;
     public List<ProjectileGhostJson> projectileGhosts;
     public List<VFXOverrideJson> vfxOverrides;

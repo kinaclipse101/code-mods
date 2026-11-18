@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using HG.GeneralSerializer;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
@@ -49,7 +50,7 @@ public class Acolyte : SurvivorHookBase
         return components;
     }
     
-    public override List<VFXOverrideJson> SpecificReskinnedObjects(RecoloredSkinJson recoloredSkinJson)
+    public override async Task<List<VFXOverrideJson>> SpecificReskinnedObjects(RecoloredSkinJson recoloredSkinJson)
     {
         List<VFXOverrideJson> returnOverrides =
         [
@@ -74,7 +75,7 @@ public class Acolyte : SurvivorHookBase
                 typesAndPaths = []
             };
             
-            GhostsFirstLoad.AddSupportedTypes(Addressables.LoadAssetAsync<GameObject>(overrideJson.guid).WaitForCompletion(), vfxOverride.typesAndPaths);
+            GhostsFirstLoad.AddSupportedTypes(await Addressables.LoadAssetAsync<GameObject>(overrideJson.guid).Task, vfxOverride.typesAndPaths);
             recoloredSkinJson.vfxOverrides.Add(vfxOverride);
         }
 

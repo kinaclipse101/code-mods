@@ -8,10 +8,10 @@ namespace RiskOfOptions.Options;
 
 public class HSVOption : StringInputFieldOption
 {
-    private readonly ReplacementHSV replacementHSV;
-    private string name;
-    private string sectionName;
-    private string desc;
+    public readonly ReplacementHSV replacementHSV;
+    public string name;
+    public string sectionName;
+    public string desc;
     
     public HSVOption(ReplacementHSV replacementHSV, string name, string sectionName, string desc) : base(new InputFieldConfig() { submitOn = InputFieldConfig.SubmitEnum.OnSubmit, restartRequired = true}, replacementHSV.ToString())
     {
