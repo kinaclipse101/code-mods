@@ -1,11 +1,14 @@
+using System.Collections.Generic;
 using BNR.patches;
 using BepInEx.Configuration;
 using On.RoR2.UI;
 using RiskOfOptions;
 using RiskOfOptions.Options;
 using RoR2;
+using RoR2BepInExPack.GameAssetPaths;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 using MPEventSystem = RoR2.UI.MPEventSystem;
 
@@ -21,6 +24,8 @@ public class cursoredits : PatchBase<cursoredits>
     private Texture cursor2Active;
     private Texture cursor3;
     private Texture cursor3Active;
+
+    private GameObject cursorPrefab;
     
     public override void Init()
     {
@@ -38,6 +43,16 @@ public class cursoredits : PatchBase<cursoredits>
 
     private void applyHooks()
     {
+        if (swingyCursor.Value)
+        {
+            Addressables.LoadAssetAsync<GameObject>(RoR2BepInExPack.GameAssetPathsBetter.RoR2_Base_UI_Cursor.CursorIndicator_prefab).Completed +=
+                handle =>
+                {
+                    cursorPrefab = handle.Result;
+                    cursorPrefab.transform.GetChild(0).transform.gameObject.AddComponent<OsuPhysics>();
+                };
+        }
+        
         if (enabled.Value)
         {
             RoR2Application.onLoadFinished += applyCursorEdits;
@@ -97,6 +112,12 @@ public class cursoredits : PatchBase<cursoredits>
             "");
         cursorColor.SettingChanged += (_, _) => { applyCursorEdits(); };
         ModSettingsManager.AddOption(new ColorOption(cursorColor));
+        
+        swingyCursor = config.Bind("BNR - cursoredits",
+            "swingy cursor ,..,",
+            true,
+            "");
+        ModSettingsManager.AddOption(new CheckBoxOption(swingyCursor));
 
         enabled = config.Bind("BNR - cursoredits",
             "enable patches for cursoredits",
@@ -117,4 +138,165 @@ public class cursoredits : PatchBase<cursoredits>
     private ConfigEntry<cursorTypes> cursorType;
     private ConfigEntry<Color> cursorColor;
     private ConfigEntry<bool> enabled;
+    public static ConfigEntry<bool> swingyCursor;
+}
+
+class OsuPhysics : CursorPhysicsBase
+{
+    private Vector3? initialPos;
+    private void Update()
+    {
+        if (Input.GetMouseButtonDown(0) && spinDegrees == 0)
+        {
+            //targetVector = new Vector2(Mathf.Cos(Mathf.Deg2Rad * spinDegrees), Mathf.Sin(Mathf.Deg2Rad * spinDegrees));
+            prevVector = targetVector;
+            initialPos = transform.position;
+        }
+        
+        if(Input.GetMouseButtonDown(0))
+            initialPos = transform.position;
+        
+        if (Input.GetMouseButtonUp(0))
+        {
+            if(added180)
+                spinDegrees -= 180;
+            added180 = false;
+            timeHoldingDownCursor = 0;
+            lastSpinDegree = 0;
+
+            positions = [];
+            for (int i = 0; i < 3; i++)
+            {
+                positions.Enqueue(new Vector2(1f, 0f));
+            }
+            
+            prevVector = new Vector2(1f, 0f);
+            targetVector = new Vector2(1f, 0f);
+        }
+        
+        if (Input.GetMouseButton(0) && timeHoldingDownCursor > 0.5f)
+        {
+            Vector2 lookVector = positions.Peek() - (Vector2)transform.position;
+            
+            if (lookVector != Vector2.zero && transform.position != initialPos)
+            {
+                positions.Enqueue(transform.position);
+                positions.Dequeue();
+                float angle2 = Mathf.Atan2(lookVector.normalized.y, lookVector.normalized.x) * Mathf.Rad2Deg;
+                angle2 -= 135; // offset to make cursor base look right .,,
+                
+                prevVector = new Vector2(Mathf.Cos(Mathf.Deg2Rad * angle2), Mathf.Sin(Mathf.Deg2Rad * angle2));
+                initialPos = null;
+            }
+            
+            Log.Debug($"target {targetVector} prev {prevVector} at {timeHoldingDownCursor}");
+            targetVector = Vector2.Lerp(targetVector, prevVector, Time.unscaledDeltaTime * 4f);
+            angle = Mathf.Atan2(targetVector.y, targetVector.x) * Mathf.Rad2Deg;
+            
+            HandleSpinAnlge();
+        }
+        else
+        {
+            spinDegrees = Mathf.Lerp(spinDegrees, 0f, Time.unscaledDeltaTime * 2f);
+            spinDegrees = Mathf.MoveTowards(spinDegrees, 0f, Time.unscaledDeltaTime * 6f);
+            angle = spinDegrees;
+        }
+        
+        base.Update();
+    }
+}
+
+class ConstantSwingy : CursorPhysicsBase
+{
+    private void Update()
+    {
+        Vector2 lookVector = (Vector2)transform.position - positions.Dequeue();
+        positions.Enqueue(transform.position);
+        
+        if (lookVector != Vector2.zero)
+        {
+            prevVector = lookVector.normalized;
+            float angle2 = Mathf.Atan2(prevVector.y, prevVector.x) * Mathf.Rad2Deg;
+            angle2 -= 135; // offset to make cursor base look right .,,
+            
+            prevVector = new Vector2(Mathf.Cos(Mathf.Deg2Rad * angle2), Mathf.Sin(Mathf.Deg2Rad * angle2));
+        }
+        else
+        {
+            prevVector = Vector2.right; //new Vector2(1f, 0f);
+        
+            spinDegrees = Mathf.Lerp(spinDegrees, 0f, Time.deltaTime * 2f);
+            spinDegrees = Mathf.MoveTowards(spinDegrees, 0f, Time.deltaTime * 6f);
+            lastSpinDegree = 0;
+        }
+        
+        targetVector = Vector2.Lerp(targetVector, prevVector, Time.deltaTime * 4f);
+        angle = Mathf.Atan2(targetVector.y, targetVector.x) * Mathf.Rad2Deg;
+
+        //HandleSpinAnlge();
+        
+        base.Update();
+    }
+}
+
+class CursorPhysicsBase : MonoBehaviour
+{
+    public Vector2 targetVector;
+    public RectTransform rectTransform;
+    public Vector2 prevVector;
+
+    public float spinDegrees = 0f;
+    public float lastSpinDegree = -1f;
+    
+    public Queue<Vector2> positions = new();
+
+    public float timeHoldingDownCursor;
+    
+
+    private void Start()
+    {
+        rectTransform = GetComponent<RectTransform>();
+        for (int i = 0; i < 3; i++)
+        {
+            positions.Enqueue(new Vector2(1f, 0f));
+        }
+    }
+
+    public bool added180;
+    public float angle;
+
+    protected void Update()
+    {
+        if (Input.GetMouseButton(0) && spinDegrees == 0)
+        {
+            timeHoldingDownCursor += Time.unscaledDeltaTime;
+        }
+        
+        rectTransform.eulerAngles = rectTransform.eulerAngles with { z = angle };
+    }
+
+    public void HandleSpinAnlge()
+    {
+        float spinAngle = angle;
+        if (spinAngle < 180)
+        {
+            added180 = true;
+            spinAngle += 180;
+        }
+        
+        if (lastSpinDegree > spinAngle && Mathf.Abs(spinAngle - lastSpinDegree) > 200)
+        {
+            spinDegrees += 360 - Mathf.Abs(lastSpinDegree - spinAngle);
+        }
+        else if (spinAngle > lastSpinDegree && Mathf.Abs(spinAngle - lastSpinDegree) > 200)
+        {
+            spinDegrees -= 360 - Mathf.Abs(lastSpinDegree - spinAngle);
+        }
+        else
+        {
+            spinDegrees += Mathf.Abs(spinAngle) - lastSpinDegree;
+        }
+        
+        lastSpinDegree = Mathf.Abs(spinAngle);
+    }
 }

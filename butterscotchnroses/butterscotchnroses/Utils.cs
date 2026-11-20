@@ -131,7 +131,8 @@ public class Utils
                 UnityEngine.Color.RGBToHSV(pixelColor, out float h, out float s, out float v);
             
                 h = (h + hueShift / 360f) % 1f;
-                if (h < 0f) h += 1f;
+                if (h < 0f) 
+                    h += 1f;
                 v += value/100f;
                 if (multiplySaturation)
                 {
@@ -194,8 +195,6 @@ public class Utils
     private static void TryRecolorMat(Material mat, int nameID, float hue, float sat, float value, bool multiplySat = false)
     {
         if (!mat.HasColor(nameID)) return;
-        
-        //Log.Debug($"asdasdasd {mat}");
         
         Color origColor = mat.GetColor(nameID);
         UnityEngine.Color.RGBToHSV(origColor, out float colorHue, out float colorSaturation, out float colorValue);

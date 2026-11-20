@@ -24,7 +24,7 @@ namespace BNR
 
         private const string PluginAuthor = "kina";
         private const string PluginName = "BNR";
-        private const string PluginVersion = "0.3.6";
+        private const string PluginVersion = "0.3.9";
 
         public static butterscotchnroses instance;
         public static AssetBundle carvingKitBundle;
@@ -41,6 +41,7 @@ namespace BNR
             clientSide = Config.Bind("BNR", "client side", false, "whether the mod should run in clientside mode or not .,,. disables content/changed behavior that would otherwise cause desyncs automatically !!!");
             Utils.CheckboxConfig(clientSide);
             logDebug = Config.Bind("BNR", "debug logs", false, "whether the mod should log debug logs.,.,");
+            Utils.CheckboxConfig(logDebug);
 
             carvingKitBundle = AssetBundle.LoadFromFile(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Info.Location)!, "carvingkit_assets"));
             StartCoroutine(carvingKitBundle.UpgradeStubbedShadersAsync());

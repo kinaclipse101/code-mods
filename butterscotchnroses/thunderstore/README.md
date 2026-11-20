@@ -9,6 +9,8 @@ credits to [stealthinsane3](https://twitter.com/stealthinsane31) for the mods pr
 <details>
 <summary> cursor edits ,.,.  </summary>
 
+- you can spin the cursor around ,.,. like osu ,.,. 
+
 - lets you use random cursors i found in the files ,.,.. and lets you cahnge its color ,.. ,
 
 ![](https://files.catbox.moe/wd6fce.png)

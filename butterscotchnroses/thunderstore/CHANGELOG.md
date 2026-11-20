@@ -1,3 +1,9 @@
+## 0.3.9
+- added osu cursor physics after holding mouse1 down for half a second ,..,
+
+## 0.3.8
+- attempted to fix an issue where an improper skinrecolors config could lead to a unity crash on exiting a run (oops ,.,. skin recolors is in the process of branching off to its own mod atm so i didnt test this fix too hard ,.,.
+
 ## 0.3.7
 - changed icon at original artists request and added them to the readme ([stealthinsane3](https://twitter.com/stealthinsane31) on twitter !! go follow them they do really cool art ,..,
 

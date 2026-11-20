@@ -52,10 +52,8 @@ public class skinrecolors : PatchBase<skinrecolors>
     {
         textureDirs = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Paths.BepInExConfigPath)!, "skintextures");
         if (!Directory.Exists(textureDirs))
-        {
             Directory.CreateDirectory(textureDirs);
-        }
-
+        
         baseSkin = Addressables.LoadAssetAsync<SkinDef>(RoR2BepInExPack.GameAssetPaths.Version_1_39_0.RoR2_Base_Commando.skinCommandoDefault_asset).WaitForCompletion();
         applyHooks();
         
@@ -146,6 +144,12 @@ public class skinrecolors : PatchBase<skinrecolors>
             {
                 string[] skinArgs = skinRecolorParams.Split(",");
 
+                if (skinArgs.Length < 6)
+                {
+                    Log.Warning("somethings wrong with a skin config in skin recolors .,,. skipping !!!!");
+                    continue;
+                }
+
                 skinRecolor(skinArgs[0],
                     skinArgs[1],
                     float.Parse(skinArgs[2]),
@@ -170,8 +174,9 @@ public class skinrecolors : PatchBase<skinrecolors>
         try
         {
             ModelSkinController skinController = Utils.GetModelLocator(BodyCatalog.FindBodyPrefab(bodyName));
-            if (skinController == null)
+            if (!skinController)
             {
+                Log.Error($"couldnt find skin controller on {BodyCatalog.FindBodyPrefab(bodyName)} !!");
                 return recoloredSkinDef;
             }
             SkinDef originalSkin = null;
@@ -181,9 +186,14 @@ public class skinrecolors : PatchBase<skinrecolors>
                 originalSkin = iterateSkinDef;
                 break;
             }
-            if(originalSkin == null) return recoloredSkinDef;
 
-            SkinDef skinDef = UnityEngine.Object.Instantiate(originalSkin);
+            if (!originalSkin)
+            {
+                Log.Error($"couldnt find original skin for skin {baseSkinDefName} !!");
+                return recoloredSkinDef;
+            }
+
+            SkinDef skinDef = Object.Instantiate(originalSkin);
             
             Texture2D newTexture = Utils.hsvModifyTexture(skinDef.icon.texture, hue, saturation/100f, value/100f, dontAdd);
             Texture2D newIcon = new Texture2D(Mathf.FloorToInt(skinDef.icon.textureRect.width), Mathf.FloorToInt(skinDef.icon.textureRect.height));
@@ -567,8 +577,6 @@ public class skinrecolors : PatchBase<skinrecolors>
             }
         }
     }
-
-    
 
     public class evilcomponnet : MonoBehaviour
     {
