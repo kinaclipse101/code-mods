@@ -4,15 +4,11 @@ using System.Linq;
 using BepInEx;
 using BepInEx.Bootstrap;
 using BepInEx.Configuration;
-using Newtonsoft.Json.Utilities;
-using R2API.Utils;
 using RoR2;
 using RoR2.UI;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.UI;
-using Console = System.Console;
-using Object = System.Object;
 
 namespace LoadingSpriteAdditions
 {
@@ -25,7 +21,7 @@ namespace LoadingSpriteAdditions
         private const string PluginGUID = PluginAuthor + "." + PluginName;
         private const string PluginAuthor = "kina";
         private const string PluginName = "LoadingSpriteAdditions";
-        private const string PluginVersion = "1.1.3";
+        private const string PluginVersion = "1.1.4";
         
         private static bool ROOInstalled => Chainloader.PluginInfos.ContainsKey("com.rune580.riskofoptions");
 
@@ -66,11 +62,25 @@ namespace LoadingSpriteAdditions
             "REX"
         ];
 
-        private string[] disabledByDefault =
-        [
-            "CHEF", // too long !!
-            "Acrid", // too wide !!
-        ];
+        private Dictionary<string, OverridePosition> overridePositions = new()
+        {
+            { "CHEF", new OverridePosition()
+            {
+                pivot = new Vector2(0.8f, 0.1f),
+                scale = new Vector2(30, 45),
+            }},
+            { "Acrid", new OverridePosition()
+            {
+                pivot = new Vector2(0.95f, 0f),
+                scale = new Vector2(71, 30),
+            }}
+        };
+
+        public class OverridePosition
+        {
+            public Vector2 pivot;
+            public Vector2 scale;
+        }
 
         public enum spriteType
         {
@@ -98,6 +108,7 @@ namespace LoadingSpriteAdditions
         private List<string> blacklistBodiesList = [];
         private ConfigEntry<float> ponchoOverride;
         private ConfigEntry<bool> ponchoAddition;
+        private ConfigEntry<bool> replaceOldConfig;
         private SimpleSpriteAnimation ponchoSSA;
 
         public void Awake()
@@ -119,8 +130,9 @@ namespace LoadingSpriteAdditions
                 {
                     for (int i = 0; i < LoadingScreenFix.LoadingScreenFix.instance._spriteAnimations.Count; i++)
                     {
-                        if(LoadingScreenFix.LoadingScreenFix.instance._spriteAnimations[i].name != "ssaExecutionerWalk") continue;
-                        LoadingScreenFix.LoadingScreenFix.instance._spriteAnimations[i] = loadingSpritesBundle.LoadAsset<SimpleSpriteAnimation>("ExecutionerWalk");
+                        var simpleSpriteAnimationData = LoadingScreenFix.LoadingScreenFix.instance._spriteAnimations[i];
+                        if(simpleSpriteAnimationData.animation.name != "ssaExecutionerWalk") continue;
+                        simpleSpriteAnimationData.animation = loadingSpritesBundle.LoadAsset<SimpleSpriteAnimation>("ExecutionerWalk");
                         break;
                     }
                 } 
@@ -128,7 +140,7 @@ namespace LoadingSpriteAdditions
                 {
                     for (int i = 0; i < LoadingScreenFix.LoadingScreenFix.instance._spriteAnimations.Count; i++)
                     {
-                        if(LoadingScreenFix.LoadingScreenFix.instance._spriteAnimations[i].name != "ssaExecutionerWalk") continue;
+                        if(LoadingScreenFix.LoadingScreenFix.instance._spriteAnimations[i].animation.name != "ssaExecutionerWalk") continue;
                         LoadingScreenFix.LoadingScreenFix.instance._spriteAnimations.RemoveAt(i);
                         break;
                     }
@@ -139,6 +151,7 @@ namespace LoadingSpriteAdditions
                 Log.Warning("error while trying to replace exe loading sprite ,.., ");
                 Log.Warning(e);
             }
+            
             
             ponchoAddition = Config.Bind("LSA - Misc", 
                 "poncho addition,..,", 
@@ -152,7 +165,21 @@ namespace LoadingSpriteAdditions
             if (ponchoAddition.Value)
                 LoadingScreenFix.LoadingScreenFix.AddSpriteAnimation(ponchoSSA);
             
-
+            replaceOldConfig = Config.Bind("LSA - Misc", 
+                "replace old configs ,.,", 
+                true, 
+                "if set to true ,., will set chef and acrid to be enabled by default if both are disabled !!!!!!");
+            if (replaceOldConfig.Value)
+            {
+                var chefConfig = Config.Bind("LSA - Sprites", "CHEF", spriteType.rorr, "whether CHEF should show up as a loading screen icon .,,");
+                var acridConfig = Config.Bind("LSA - Sprites", "Acrid", spriteType.rorr, "whether Acrid should show up as a loading screen icon .,,");
+                if (chefConfig.Value == spriteType.disabled && acridConfig.Value == spriteType.disabled)
+                {
+                    chefConfig.Value = spriteType.rorr;
+                    acridConfig.Value = spriteType.rorr;
+                }
+            }
+            
             onlyCurrentSurv = Config.Bind("LSA - Misc", 
                 "only pick currently playing survivor,..,", 
                 true, 
@@ -174,30 +201,33 @@ namespace LoadingSpriteAdditions
             
             foreach (string spriteName in loadingSpriteNames)
             {
-                spriteType defaultType = spriteType.rorr;
-                if(disabledByDefault.Contains(spriteName))
-                    defaultType = spriteType.disabled;
-                
                 ConfigEntry<spriteType> spriteTypeConfig = Config.Bind($"LSA - Sprites",
                     $"{spriteName}",
-                    defaultType,
+                    spriteType.rorr,
                     $"whether {spriteName} should show up as a loading screen icon .,,");
                 
                 if(ROOInstalled)
                     ROOSupport.AddConfig(spriteTypeConfig);
 
-                if (spriteTypeConfig.Value == spriteType.rorr)
+                if (spriteTypeConfig.Value != spriteType.rorr) continue;
+                
+                try
                 {
-                    try
+                    SimpleSpriteAnimation ssa = loadingSpritesBundle.LoadAsset<SimpleSpriteAnimation>($"ssa{spriteName}");
+                        
+                    if (!overridePositions.TryGetValue(spriteName, out var overridePosition))
                     {
-                        SimpleSpriteAnimation ssa = loadingSpritesBundle.LoadAsset<SimpleSpriteAnimation>($"ssa{spriteName}");
                         LoadingScreenFix.LoadingScreenFix.AddSpriteAnimation(ssa);
                     }
-                    catch (Exception e)
+                    else
                     {
-                       Log.Error($"failed while trying to add {spriteName} !!!");
-                       Log.Error(e);
+                        LoadingScreenFix.LoadingScreenFix.AddSpriteAnimation(ssa, overridePosition.pivot, overridePosition.scale);
                     }
+                }
+                catch (Exception e)
+                {
+                    Log.Error($"failed while trying to add {spriteName} !!!");
+                    Log.Error(e);
                 }
             }
             

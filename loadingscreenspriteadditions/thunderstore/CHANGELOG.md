@@ -1,3 +1,8 @@
+## 1.1.4
+- updated the mod to work with loadingscreenspritefix 3.1.0 ,..,
+- made chef and acrid both enabled by default again and added a replace old configs option thatll enable them both if both are disabled .,.,.,
+- chef and acrid now display better using loadingscreenspritefix 3.1.0 new pivot and scale feature (thank you nebby :plead: ..,
+
 ## 1.1.3
 - poncho no longer overstays his welcome ,..,,.., 
 
